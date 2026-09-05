@@ -3,6 +3,7 @@
 @theme {
   --font-sans: "Inter", "Cairo", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Inter", "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --color-oxford: #0d1b2a;
   --color-gunmetal: #1b263b;
@@ -269,6 +270,20 @@ html[dir="rtl"] {
   --font-display: "Cairo", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+.landing-editorial {
+  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Inter", "Cairo", ui-sans-serif, system-ui, sans-serif;
+}
+
+html[dir="rtl"] .landing-editorial {
+  --font-display: "Cairo", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Cairo", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+}
+
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
   font-weight: 400;
@@ -373,9 +388,141 @@ html[dir="rtl"] {
   animation: landingKenBurns 12s ease-out both;
 }
 
+.landing-editorial .text-stroke {
+  -webkit-text-stroke: 1.5px currentColor;
+  -webkit-text-fill-color: transparent;
+}
+
+.landing-marquee {
+  animation: landingMarquee 32s linear infinite;
+}
+
+.landing-marquee-reverse {
+  animation: landingMarqueeReverse 28s linear infinite;
+}
+
+@keyframes landingMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes landingMarqueeReverse {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+html[dir="rtl"] .landing-marquee {
+  animation-name: landingMarqueeReverse;
+}
+
+html[dir="rtl"] .landing-marquee-reverse {
+  animation-name: landingMarquee;
+}
+
+.landing-char-in {
+  animation: landingCharIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes landingCharIn {
+  from {
+    opacity: 0;
+    filter: blur(24px);
+    transform: translateY(80%);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+.landing-line-reveal {
+  animation: landingLineReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes landingLineReveal {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+html[dir="rtl"] .landing-line-reveal {
+  animation-name: landingLineRevealRtl;
+}
+
+@keyframes landingLineRevealRtl {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes landingProgress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.landing-progress {
+  animation: landingProgress 5s linear forwards;
+}
+
+.landing-editorial .landing-hover-lift {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease;
+}
+
+.landing-editorial .landing-hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.landing-noise::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing-fade-up,
-  .landing-hero-media {
+  .landing-hero-media,
+  .landing-marquee,
+  .landing-marquee-reverse,
+  .landing-char-in,
+  .landing-line-reveal,
+  .landing-progress,
+  .landing-editorial .landing-hover-lift {
+    animation: none;
+  }
+
+  .landing-editorial .landing-hover-lift:hover {
+    transform: none;
+  }
+
+  html[dir="rtl"] .landing-marquee,
+  html[dir="rtl"] .landing-marquee-reverse {
     animation: none;
   }
 }
