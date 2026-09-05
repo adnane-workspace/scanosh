@@ -279,6 +279,10 @@ html {
   --font-mono: "Inter", "Cairo", ui-sans-serif, system-ui, sans-serif;
 }
 
+.landing-editorial section[id] {
+  scroll-margin-top: 6.5rem;
+}
+
 html[dir="rtl"] .landing-editorial {
   --font-display: "Cairo", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Cairo", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;

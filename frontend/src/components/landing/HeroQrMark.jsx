@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+﻿import { useEffect, useId, useState } from 'react';
 
 /** Stable pseudo-QR matrix: finder corners + data modules (visual only). */
 const SIZE = 25;
@@ -20,13 +20,11 @@ function buildMatrix() {
   paintFinder(SIZE - 7, 0);
   paintFinder(0, SIZE - 7);
 
-  // Timing patterns
   for (let i = 8; i < SIZE - 8; i += 1) {
     matrix[6][i] = i % 2 === 0 ? 1 : 0;
     matrix[i][6] = i % 2 === 0 ? 1 : 0;
   }
 
-  // Alignment-ish block
   for (let y = 16; y <= 20; y += 1) {
     for (let x = 16; x <= 20; x += 1) {
       const edge = x === 16 || y === 16 || x === 20 || y === 20;
@@ -35,11 +33,9 @@ function buildMatrix() {
     }
   }
 
-  // Data modules (deterministic pattern — looks QR-like)
   for (let y = 0; y < SIZE; y += 1) {
     for (let x = 0; x < SIZE; x += 1) {
       if (matrix[y][x]) continue;
-      // Keep quiet zones around finders
       const inTopLeft = x < 9 && y < 9;
       const inTopRight = x > SIZE - 10 && y < 9;
       const inBottomLeft = x < 9 && y > SIZE - 10;
@@ -56,7 +52,7 @@ function buildMatrix() {
 
 const MATRIX = buildMatrix();
 
-export default function HeroQrMark({ className = '' }) {
+export default function HeroQrMark({ className = '', density = 'hero' }) {
   const reactId = useId().replace(/:/g, '');
   const [tick, setTick] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -72,39 +68,48 @@ export default function HeroQrMark({ className = '' }) {
     return () => window.clearInterval(interval);
   }, []);
 
-  const cell = 8;
-  const pad = 16;
+  const cell = density === 'hero' ? 10 : 8;
+  const pad = density === 'hero' ? 20 : 16;
   const dim = SIZE * cell + pad * 2;
+  const gap = density === 'hero' ? 1.6 : 1.2;
 
   return (
     <svg
       viewBox={`0 0 ${dim} ${dim}`}
-      className={`h-full w-full text-on-surface ${className}`}
+      className={`h-full w-full text-[#778da9] ${className}`}
       aria-hidden="true"
     >
       <defs>
-        <radialGradient id={`qrFade-${reactId}`} cx="50%" cy="50%" r="55%">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.55" />
-          <stop offset="70%" stopColor="currentColor" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+        <radialGradient id={`qrFade-${reactId}`} cx="50%" cy="42%" r="62%">
+          <stop offset="0%" stopColor="#415a77" stopOpacity="0.08" />
+          <stop offset="55%" stopColor="#778da9" stopOpacity="0.03" />
+          <stop offset="100%" stopColor="#778da9" stopOpacity="0" />
         </radialGradient>
+        <linearGradient id={`qrScan-${reactId}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#415a77" stopOpacity="0" />
+          <stop offset="50%" stopColor="#415a77" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#415a77" stopOpacity="0" />
+        </linearGradient>
       </defs>
 
-      <rect x="0" y="0" width={dim} height={dim} fill={`url(#qrFade-${reactId})`} opacity="0.12" />
+      <rect x="0" y="0" width={dim} height={dim} fill={`url(#qrFade-${reactId})`} />
 
       {MATRIX.map((row, y) =>
         row.map((on, x) => {
           if (!on) return null;
+          const isFinder =
+            (x < 7 && y < 7) || (x >= SIZE - 7 && y < 7) || (x < 7 && y >= SIZE - 7);
           const pulse = !reduceMotion && (x + y + tick) % 11 === 0;
-          const opacity = pulse ? 0.95 : 0.28 + ((x * 3 + y * 5) % 5) * 0.08;
+          const base = isFinder ? 0.55 : 0.22 + ((x * 3 + y * 5) % 5) * 0.05;
+          const opacity = pulse ? 0.62 : base;
           return (
             <rect
               key={`${x}-${y}`}
               x={pad + x * cell}
               y={pad + y * cell}
-              width={cell - 1.2}
-              height={cell - 1.2}
-              rx="1"
+              width={cell - gap}
+              height={cell - gap}
+              rx={density === 'hero' ? 2 : 1}
               fill="currentColor"
               opacity={opacity}
               className={pulse ? 'transition-opacity duration-500' : undefined}
@@ -113,25 +118,22 @@ export default function HeroQrMark({ className = '' }) {
         }),
       )}
 
-      {/* Soft scan line */}
       {!reduceMotion ? (
-        <rect x={pad} width={SIZE * cell} height="10" fill="currentColor" opacity="0.12">
-          <animate attributeName="y" values={`${pad};${pad + SIZE * cell - 10};${pad}`} dur="3.2s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0;0.18;0" dur="3.2s" repeatCount="indefinite" />
+        <rect x={pad} width={SIZE * cell} height="14" fill={`url(#qrScan-${reactId})`}>
+          <animate attributeName="y" values={`${pad};${pad + SIZE * cell - 14};${pad}`} dur="3.6s" repeatCount="indefinite" />
         </rect>
       ) : null}
 
-      {/* Outer quiet ring suggestion */}
       <rect
-        x={pad - 6}
-        y={pad - 6}
-        width={SIZE * cell + 12}
-        height={SIZE * cell + 12}
-        rx="10"
+        x={pad - 8}
+        y={pad - 8}
+        width={SIZE * cell + 16}
+        height={SIZE * cell + 16}
+        rx="14"
         fill="none"
-        stroke="currentColor"
+        stroke="#778da9"
         strokeWidth="1.5"
-        opacity="0.18"
+        opacity="0.22"
       />
     </svg>
   );

@@ -40,11 +40,9 @@ export default function MarketingLayout({ children }) {
   ];
 
   const homeLinks = [
-    { href: '#accueil', label: t('landing.navHome') },
-    { href: '#probleme', label: t('landing.navProblem') },
-    { href: '#fonctionnalites', label: t('landing.navFeatures') },
-    { href: '#demo', label: t('landing.navDemo') },
     { href: '#comment', label: t('landing.navHow') },
+    { href: '#fonctionnalites', label: t('landing.navFeatures') },
+    { href: '#tarifs', label: t('landing.navPricing') },
     { href: '#faq', label: t('landing.navFaq') },
   ];
 
