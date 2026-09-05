@@ -280,7 +280,7 @@ html {
 }
 
 .landing-editorial section[id] {
-  scroll-margin-top: 6.5rem;
+  scroll-margin-top: calc(5.75rem + env(safe-area-inset-top, 0px));
 }
 
 html[dir="rtl"] .landing-editorial {

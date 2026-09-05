@@ -62,24 +62,59 @@ export default function MarketingLayout({ children }) {
 
   useEffect(() => {
     if (!menuOpen) return undefined;
+    function onKey(event) {
+      if (event.key === 'Escape') setMenuOpen(false);
+    }
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = previous;
+      window.removeEventListener('keydown', onKey);
     };
   }, [menuOpen]);
 
-  const pill = scrolled || menuOpen || !isHome;
+  const pill = scrolled || !isHome;
+  const activeHash = location.hash;
+  const drawerLinks = isHome
+    ? [
+        ...homeLinks.map((link) => ({
+          key: link.href,
+          href: link.href,
+          label: link.label,
+          type: 'anchor',
+          active: activeHash === link.href,
+        })),
+        { key: 'contact', to: LANDING_CONTACT, label: t('landing.navContact'), type: 'route' },
+      ]
+    : [
+        ...pageLinks.map((link) => ({
+          key: link.to,
+          to: link.to,
+          label: link.label,
+          type: 'route',
+          active: link.match(path),
+        })),
+        {
+          key: 'contact',
+          to: LANDING_CONTACT,
+          label: t('landing.navContact'),
+          type: 'route',
+          active: path.startsWith('/contact'),
+        },
+      ];
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-on-surface">
       <header
         className={`pointer-events-none fixed z-50 transition-all duration-500 ${
-          pill ? 'inset-x-4 top-4' : 'inset-x-0 top-0 pt-[env(safe-area-inset-top)]'
+          pill
+            ? 'inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] sm:inset-x-4 sm:top-[max(1rem,env(safe-area-inset-top))]'
+            : 'inset-x-0 top-0 pt-[env(safe-area-inset-top)]'
         }`}
       >
         <nav
-          className={`pointer-events-auto mx-auto transition-all duration-500 ${
+          className={`pointer-events-auto relative mx-auto transition-all duration-500 ${
             pill
               ? 'max-w-[1200px] rounded-2xl border border-on-surface/10 bg-background/80 shadow-lg backdrop-blur-xl'
               : 'max-w-[1400px] bg-transparent'
@@ -95,6 +130,7 @@ export default function MarketingLayout({ children }) {
               className="relative z-20 flex min-w-0 shrink items-center"
               aria-label={APP_NAME}
               onClick={() => {
+                setMenuOpen(false);
                 if (path === '/') {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
@@ -103,23 +139,23 @@ export default function MarketingLayout({ children }) {
               <BrandLogo className={`transition-all duration-500 ${pill ? 'h-6 max-w-[9rem] sm:h-7' : 'h-7 max-w-[10rem] sm:h-8 sm:max-w-[12rem]'}`} />
             </MarketingLink>
 
-            <div className="hidden items-center gap-8 lg:flex xl:gap-10">
+            <div className="hidden min-w-0 items-center gap-5 xl:flex xl:gap-8">
               {isHome
                 ? homeLinks.map((link) => (
-                    <a key={link.href} href={link.href} className={navLinkClass(false)}>
+                    <a key={link.href} href={link.href} className={`${navLinkClass(false)} shrink-0 whitespace-nowrap`}>
                       {link.label}
                       <span className="absolute -bottom-1 start-0 h-px w-0 bg-on-surface transition-all duration-300 group-hover:w-full" />
                     </a>
                   ))
                 : pageLinks.map((link) => (
-                    <Link key={link.to} to={link.to} className={navLinkClass(link.match(path))}>
+                    <Link key={link.to} to={link.to} className={`${navLinkClass(link.match(path))} shrink-0 whitespace-nowrap`}>
                       {link.label}
                       <span className="absolute -bottom-1 start-0 h-px w-0 bg-on-surface transition-all duration-300 group-hover:w-full" />
                     </Link>
                   ))}
             </div>
 
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
               <LanguageSwitcher compact className="hidden md:inline-flex" />
               <AppLink
                 to="/login"
@@ -131,16 +167,16 @@ export default function MarketingLayout({ children }) {
               </AppLink>
               <AppLink
                 to="/essai"
-                className={`inline-flex items-center justify-center rounded-full bg-on-surface font-medium text-background transition-all duration-500 hover:bg-on-surface/90 ${
-                  pill ? 'h-8 px-4 text-xs' : 'h-10 px-5 text-sm sm:h-11 sm:px-6'
+                className={`inline-flex max-w-[9.5rem] items-center justify-center truncate rounded-full bg-on-surface font-medium text-background transition-all duration-500 hover:bg-on-surface/90 sm:max-w-none ${
+                  pill ? 'h-8 px-3 text-[11px] sm:px-4 sm:text-xs' : 'h-9 px-3.5 text-xs sm:h-11 sm:px-6 sm:text-sm'
                 }`}
               >
                 {t('landing.ctaTrial')}
               </AppLink>
               <button
                 type="button"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-on-surface hover:bg-on-surface/5 lg:hidden"
-                aria-label={t('common.openMenu')}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-on-surface hover:bg-on-surface/5 xl:hidden"
+                aria-label={menuOpen ? t('common.closeMenu') : t('common.openMenu')}
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((open) => !open)}
               >
@@ -151,65 +187,144 @@ export default function MarketingLayout({ children }) {
         </nav>
       </header>
 
-      {menuOpen ? (
-        <div className="fixed inset-0 z-40 bg-background px-8 pt-28 pb-[max(2rem,env(safe-area-inset-bottom))] lg:hidden">
-          <div className="flex h-full flex-col">
-            <nav className="flex flex-1 flex-col justify-center gap-6 overflow-y-auto">
-              {isHome
-                ? homeLinks.map((link, index) => (
-                    <a
-                      key={link.href}
-                      href={link.href}
-                      className="font-display text-4xl text-on-surface transition-colors hover:text-on-surface-variant sm:text-5xl"
-                      style={{ transitionDelay: `${index * 75}ms` }}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {link.label}
-                    </a>
-                  ))
-                : pageLinks.map((link, index) => (
-                    <Link
-                      key={link.to}
-                      to={link.to}
-                      className="font-display text-4xl text-on-surface transition-colors hover:text-on-surface-variant sm:text-5xl"
-                      style={{ transitionDelay: `${index * 75}ms` }}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-              <Link
-                to={LANDING_CONTACT}
-                className="font-display text-4xl text-on-surface transition-colors hover:text-on-surface-variant sm:text-5xl"
+      <div
+        className={`fixed inset-0 z-[60] xl:hidden ${menuOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        aria-hidden={!menuOpen}
+      >
+        <button
+          type="button"
+          aria-label={t('common.closeMenu')}
+          className={`absolute inset-0 bg-[#0d1b2a]/50 transition-opacity duration-300 ${
+            menuOpen ? 'opacity-100' : 'opacity-0'
+          }`}
+          onClick={() => setMenuOpen(false)}
+        />
+
+        <aside
+          className={`absolute inset-y-0 start-0 flex w-[min(80vw,21rem)] flex-col overflow-hidden bg-[#0d1b2a] text-[#e0e1dd] shadow-[16px_0_48px_rgba(0,0,0,0.4)] transition-transform duration-[380ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            menuOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'
+          }`}
+        >
+          {/* Atmosphere */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-80"
+            style={{
+              background:
+                'radial-gradient(ellipse 90% 50% at 0% 0%, rgba(119,141,169,0.22), transparent 55%), radial-gradient(ellipse 70% 40% at 100% 100%, rgba(65,90,119,0.2), transparent 50%)',
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.12]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, rgba(224,225,221,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(224,225,221,0.35) 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+              maskImage: 'linear-gradient(to bottom, black, transparent 70%)',
+            }}
+          />
+
+          <div className="relative z-10 flex items-center justify-between gap-3 border-b border-white/10 px-5 pt-[max(1.1rem,env(safe-area-inset-top))] pb-4">
+            <div>
+              <p className="font-display text-lg font-bold tracking-[0.04em] text-[#e0e1dd]">{APP_NAME}</p>
+              <p className="mt-0.5 text-[10px] font-medium tracking-[0.16em] text-[#778da9] uppercase">
+                {t('landing.heroEyebrow')}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[#e0e1dd]/85 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label={t('common.closeMenu')}
+              onClick={() => setMenuOpen(false)}
+            >
+              <MaterialIcon name="close" className="text-[18px]" />
+            </button>
+          </div>
+
+          <nav className="relative z-10 flex-1 overflow-y-auto px-3 py-3">
+            {drawerLinks.map((link, index) => {
+              const className = `group relative flex items-center gap-3 rounded-xl px-3 py-3.5 transition-all duration-300 ${
+                link.active ? 'bg-white/8' : 'hover:bg-white/5'
+              } ${menuOpen ? 'translate-x-0 opacity-100' : 'translate-x-3 opacity-0'}`;
+              const delay = menuOpen ? `${80 + index * 45}ms` : '0ms';
+
+              const inner = (
+                <>
+                  <span
+                    className={`w-7 shrink-0 font-mono text-[11px] tracking-wider ${
+                      link.active ? 'text-[#778da9]' : 'text-white/25 group-hover:text-white/45'
+                    }`}
+                  >
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span
+                    className={`min-w-0 flex-1 font-display text-[1.2rem] font-semibold tracking-tight ${
+                      link.active ? 'text-white' : 'text-[#e0e1dd]/88 group-hover:text-white'
+                    }`}
+                  >
+                    {link.label}
+                  </span>
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full transition-opacity ${
+                      link.active ? 'bg-[#778da9] opacity-100' : 'opacity-0 group-hover:bg-white/40 group-hover:opacity-100'
+                    }`}
+                  />
+                  {link.active ? (
+                    <span className="absolute inset-y-2 start-0 w-0.5 rounded-full bg-[#778da9]" />
+                  ) : null}
+                </>
+              );
+
+              if (link.type === 'anchor') {
+                return (
+                  <a
+                    key={link.key}
+                    href={link.href}
+                    className={className}
+                    style={{ transitionDelay: delay }}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {inner}
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={link.key}
+                  to={link.to}
+                  className={className}
+                  style={{ transitionDelay: delay }}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {inner}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="relative z-10 mt-auto space-y-3 border-t border-white/10 bg-[#0a1520]/55 px-4 pt-4 pb-[max(1.15rem,env(safe-area-inset-bottom))] backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-3">
+              <LanguageSwitcher compact onDark />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <AppLink
+                to="/login"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#e0e1dd]/22 text-sm font-medium text-[#e0e1dd] transition-colors hover:bg-white/5"
                 onClick={() => setMenuOpen(false)}
               >
-                {t('landing.navContact')}
-              </Link>
-            </nav>
-            <div className="space-y-4 border-t border-on-surface/10 pt-8">
-              <div className="md:hidden">
-                <LanguageSwitcher compact />
-              </div>
-              <div className="flex gap-3">
-                <AppLink
-                  to="/login"
-                  className="inline-flex h-14 flex-1 items-center justify-center rounded-full border border-on-surface/20 text-base font-medium"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {t('landing.ctaLogin')}
-                </AppLink>
-                <AppLink
-                  to="/essai"
-                  className="inline-flex h-14 flex-1 items-center justify-center rounded-full bg-on-surface text-base font-medium text-background"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {t('landing.ctaTrial')}
-                </AppLink>
-              </div>
+                {t('landing.ctaLogin')}
+              </AppLink>
+              <AppLink
+                to="/essai"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-[#e0e1dd] text-sm font-semibold text-[#0d1b2a] transition-colors hover:bg-white"
+                onClick={() => setMenuOpen(false)}
+              >
+                {t('landing.ctaTrial')}
+              </AppLink>
             </div>
           </div>
-        </div>
-      ) : null}
+        </aside>
+      </div>
 
       <div
         className={

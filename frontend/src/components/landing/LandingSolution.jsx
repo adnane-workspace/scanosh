@@ -33,7 +33,7 @@ export default function LandingSolution() {
               {index < STEPS.length - 1 ? (
                 <MaterialIcon
                   name="arrow_forward"
-                  className="absolute top-1/2 -end-4 z-10 hidden -translate-y-1/2 text-[#778da9] lg:block"
+                  className="absolute top-1/2 -end-4 z-10 hidden -translate-y-1/2 text-[#778da9] lg:block rtl:rotate-180"
                 />
               ) : null}
               <div className="flex items-center justify-between">
