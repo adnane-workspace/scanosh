@@ -17,7 +17,12 @@ import {
   LANDING_PRODUCT,
 } from '../utils/paths.js';
 
-function navLinkClass(active) {
+function navLinkClass(active, onDark = false) {
+  if (onDark) {
+    return `relative text-sm transition-colors duration-300 group ${
+      active ? 'text-white' : 'text-white/75 hover:text-white'
+    }`;
+  }
   return `relative text-sm transition-colors duration-300 group ${
     active ? 'text-on-surface' : 'text-on-surface/70 hover:text-on-surface'
   }`;
@@ -42,7 +47,6 @@ export default function MarketingLayout({ children }) {
   const homeLinks = [
     { href: '#comment', label: t('landing.navHow') },
     { href: '#fonctionnalites', label: t('landing.navFeatures') },
-    { href: '#tarifs', label: t('landing.navPricing') },
     { href: '#faq', label: t('landing.navFaq') },
   ];
 
@@ -75,6 +79,7 @@ export default function MarketingLayout({ children }) {
   }, [menuOpen]);
 
   const pill = scrolled || !isHome;
+  const onDarkNav = !pill;
   const activeHash = location.hash;
   const drawerLinks = isHome
     ? [
@@ -108,7 +113,7 @@ export default function MarketingLayout({ children }) {
     <div className="min-h-screen overflow-x-hidden bg-background text-on-surface">
       <header
         className={`pointer-events-none fixed z-50 transition-all duration-500 ${
-          pill
+          pill || onDarkNav
             ? 'inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] sm:inset-x-4 sm:top-[max(1rem,env(safe-area-inset-top))]'
             : 'inset-x-0 top-0 pt-[env(safe-area-inset-top)]'
         }`}
@@ -117,12 +122,14 @@ export default function MarketingLayout({ children }) {
           className={`pointer-events-auto relative mx-auto transition-all duration-500 ${
             pill
               ? 'max-w-[1200px] rounded-2xl border border-on-surface/10 bg-background/80 shadow-lg backdrop-blur-xl'
-              : 'max-w-[1400px] bg-transparent'
+              : onDarkNav
+                ? 'max-w-[1200px] rounded-2xl border border-white/10 bg-[#0d1b2a]/70 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl'
+                : 'max-w-[1400px] bg-transparent'
           }`}
         >
           <div
             className={`flex items-center justify-between gap-3 px-4 transition-all duration-500 sm:px-6 lg:px-8 ${
-              pill ? 'h-14' : 'h-16 sm:h-20'
+              pill || onDarkNav ? 'h-14' : 'h-16 sm:h-20'
             }`}
           >
             <MarketingLink
@@ -136,46 +143,69 @@ export default function MarketingLayout({ children }) {
                 }
               }}
             >
-              <BrandLogo className={`transition-all duration-500 ${pill ? 'h-6 max-w-[9rem] sm:h-7' : 'h-7 max-w-[10rem] sm:h-8 sm:max-w-[12rem]'}`} />
+              <BrandLogo
+                onDark={onDarkNav}
+                className={`transition-all duration-500 ${
+                  pill || onDarkNav ? 'h-6 max-w-[9rem] sm:h-7' : 'h-7 max-w-[10rem] sm:h-8 sm:max-w-[12rem]'
+                }`}
+              />
             </MarketingLink>
 
             <div className="hidden min-w-0 items-center gap-5 xl:flex xl:gap-8">
               {isHome
                 ? homeLinks.map((link) => (
-                    <a key={link.href} href={link.href} className={`${navLinkClass(false)} shrink-0 whitespace-nowrap`}>
+                    <a key={link.href} href={link.href} className={`${navLinkClass(false, onDarkNav)} shrink-0 whitespace-nowrap`}>
                       {link.label}
-                      <span className="absolute -bottom-1 start-0 h-px w-0 bg-on-surface transition-all duration-300 group-hover:w-full" />
+                      <span
+                        className={`absolute -bottom-1 start-0 h-px w-0 transition-all duration-300 group-hover:w-full ${
+                          onDarkNav ? 'bg-white' : 'bg-on-surface'
+                        }`}
+                      />
                     </a>
                   ))
                 : pageLinks.map((link) => (
-                    <Link key={link.to} to={link.to} className={`${navLinkClass(link.match(path))} shrink-0 whitespace-nowrap`}>
+                    <Link key={link.to} to={link.to} className={`${navLinkClass(link.match(path), onDarkNav)} shrink-0 whitespace-nowrap`}>
                       {link.label}
-                      <span className="absolute -bottom-1 start-0 h-px w-0 bg-on-surface transition-all duration-300 group-hover:w-full" />
+                      <span
+                        className={`absolute -bottom-1 start-0 h-px w-0 transition-all duration-300 group-hover:w-full ${
+                          onDarkNav ? 'bg-white' : 'bg-on-surface'
+                        }`}
+                      />
                     </Link>
                   ))}
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-              <LanguageSwitcher compact className="hidden md:inline-flex" />
+              <LanguageSwitcher compact onDark={onDarkNav} className="hidden md:inline-flex" />
               <AppLink
                 to="/login"
                 className={`hidden transition-all duration-500 sm:inline-flex ${
-                  pill ? 'text-xs text-on-surface/70 hover:text-on-surface' : 'text-sm text-on-surface/70 hover:text-on-surface'
+                  onDarkNav
+                    ? 'text-sm text-white/80 hover:text-white'
+                    : pill
+                      ? 'text-xs text-on-surface/70 hover:text-on-surface'
+                      : 'text-sm text-on-surface/70 hover:text-on-surface'
                 }`}
               >
                 {t('landing.ctaLogin')}
               </AppLink>
               <AppLink
                 to="/essai"
-                className={`inline-flex max-w-[9.5rem] items-center justify-center truncate rounded-full bg-on-surface font-medium text-background transition-all duration-500 hover:bg-on-surface/90 sm:max-w-none ${
-                  pill ? 'h-8 px-3 text-[11px] sm:px-4 sm:text-xs' : 'h-9 px-3.5 text-xs sm:h-11 sm:px-6 sm:text-sm'
+                className={`inline-flex max-w-[9.5rem] items-center justify-center truncate rounded-full font-medium transition-all duration-500 sm:max-w-none ${
+                  onDarkNav
+                    ? 'h-9 bg-[#e0e1dd] px-3.5 text-xs text-[#0d1b2a] hover:bg-white sm:h-11 sm:px-6 sm:text-sm'
+                    : `bg-on-surface text-background hover:bg-on-surface/90 ${
+                        pill ? 'h-8 px-3 text-[11px] sm:px-4 sm:text-xs' : 'h-9 px-3.5 text-xs sm:h-11 sm:px-6 sm:text-sm'
+                      }`
                 }`}
               >
                 {t('landing.ctaTrial')}
               </AppLink>
               <button
                 type="button"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-on-surface hover:bg-on-surface/5 xl:hidden"
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-xl xl:hidden ${
+                  onDarkNav ? 'text-white hover:bg-white/10' : 'text-on-surface hover:bg-on-surface/5'
+                }`}
                 aria-label={menuOpen ? t('common.closeMenu') : t('common.openMenu')}
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((open) => !open)}

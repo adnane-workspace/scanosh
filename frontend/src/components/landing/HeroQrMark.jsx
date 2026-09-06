@@ -76,19 +76,19 @@ export default function HeroQrMark({ className = '', density = 'hero' }) {
   return (
     <svg
       viewBox={`0 0 ${dim} ${dim}`}
-      className={`h-full w-full text-[#778da9] ${className}`}
+      className={`h-full w-full ${className || 'text-[#778da9]'}`}
       aria-hidden="true"
     >
       <defs>
         <radialGradient id={`qrFade-${reactId}`} cx="50%" cy="42%" r="62%">
-          <stop offset="0%" stopColor="#415a77" stopOpacity="0.08" />
-          <stop offset="55%" stopColor="#778da9" stopOpacity="0.03" />
-          <stop offset="100%" stopColor="#778da9" stopOpacity="0" />
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.14" />
+          <stop offset="55%" stopColor="currentColor" stopOpacity="0.04" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </radialGradient>
         <linearGradient id={`qrScan-${reactId}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#415a77" stopOpacity="0" />
-          <stop offset="50%" stopColor="#415a77" stopOpacity="0.12" />
-          <stop offset="100%" stopColor="#415a77" stopOpacity="0" />
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0" />
+          <stop offset="50%" stopColor="currentColor" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
 
@@ -100,8 +100,8 @@ export default function HeroQrMark({ className = '', density = 'hero' }) {
           const isFinder =
             (x < 7 && y < 7) || (x >= SIZE - 7 && y < 7) || (x < 7 && y >= SIZE - 7);
           const pulse = !reduceMotion && (x + y + tick) % 11 === 0;
-          const base = isFinder ? 0.55 : 0.22 + ((x * 3 + y * 5) % 5) * 0.05;
-          const opacity = pulse ? 0.62 : base;
+          const base = isFinder ? 0.72 : 0.32 + ((x * 3 + y * 5) % 5) * 0.06;
+          const opacity = pulse ? 0.88 : base;
           return (
             <rect
               key={`${x}-${y}`}
@@ -131,9 +131,9 @@ export default function HeroQrMark({ className = '', density = 'hero' }) {
         height={SIZE * cell + 16}
         rx="14"
         fill="none"
-        stroke="#778da9"
+        stroke="currentColor"
         strokeWidth="1.5"
-        opacity="0.22"
+        opacity="0.28"
       />
     </svg>
   );
