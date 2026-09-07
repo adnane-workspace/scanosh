@@ -1,0 +1,81 @@
+import { z } from 'zod';
+import { isMenuSectionKey } from '../utils/menuSections.js';
+import { uuidSchema } from './id.schema.js';
+import { paginationFields } from './pagination.schema.js';
+
+const draftProductSchema = z.object({
+  id: z.string().trim().max(80).optional(),
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500).optional().default(''),
+  price: z.preprocess((value) => {
+    if (typeof value === 'string') {
+      const cleaned = value.trim().replace(/\s/g, '').replace(',', '.');
+      if (!cleaned) return 0;
+      return cleaned;
+    }
+    return value;
+  }, z.coerce.number().min(0)),
+  selected: z.boolean().optional().default(true),
+  needsReview: z.boolean().optional().default(false),
+  confidence: z.number().min(0).max(1).nullable().optional(),
+});
+
+const draftSectionKeySchema = z.preprocess(
+  (value) => {
+    if (value == null || value === '') return 'restaurant';
+    return String(value).trim().toLowerCase();
+  },
+  z
+    .string()
+    .refine((value) => isMenuSectionKey(value), 'Invalid section key')
+    .default('restaurant'),
+);
+
+const draftCategorySchema = z.object({
+  id: z.string().trim().max(80).optional(),
+  name: z.string().trim().min(1).max(80),
+  sectionKey: draftSectionKeySchema.optional().default('restaurant'),
+  selected: z.boolean().optional().default(true),
+  products: z.array(draftProductSchema).default([]),
+});
+
+export const listMenuImportsSchema = z.object({
+  query: z.object({
+    ...paginationFields,
+  }),
+});
+
+export const menuImportIdSchema = z.object({
+  params: z.object({
+    id: uuidSchema,
+  }),
+});
+
+export const updateMenuImportDraftSchema = z.object({
+  params: z.object({
+    id: uuidSchema,
+  }),
+  body: z.object({
+    draftMenu: z.object({
+      categories: z.array(draftCategorySchema).max(80),
+      meta: z.record(z.string(), z.unknown()).optional(),
+    }),
+  }),
+});
+
+export const publishMenuImportSchema = z.object({
+  params: z.object({
+    id: uuidSchema,
+  }),
+  body: z.preprocess(
+    (value) => (value == null || typeof value !== 'object' ? {} : value),
+    z.object({
+      draftMenu: z
+        .object({
+          categories: z.array(draftCategorySchema).max(80),
+          meta: z.record(z.string(), z.unknown()).optional(),
+        })
+        .optional(),
+    }),
+  ),
+});

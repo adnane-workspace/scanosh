@@ -32,6 +32,7 @@ const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
 const ProductsPage = lazy(() => import('./pages/ProductsPage.jsx'));
+const AiFillPage = lazy(() => import('./pages/AiFillPage.jsx'));
 const PublicMenuLandingPage = lazy(() => import('./pages/PublicMenuLandingPage.jsx'));
 const MenuDeveloperPage = lazy(() => import('./pages/MenuDeveloperPage.jsx'));
 const PublicMenuSectionsPage = lazy(() => import('./pages/PublicMenuSectionsPage.jsx'));
@@ -122,6 +123,7 @@ function ProductRoutes() {
           <Route index element={<DashboardPage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
+          <Route path="ai-fill" element={<AiFillPage />} />
           <Route path="menu" element={<PublicMenuSettingsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

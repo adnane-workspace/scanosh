@@ -18,9 +18,25 @@ export const productImageUpload = multer({
   },
 });
 
+/** OCR service currently caps uploads around 4 Mo. */
+export const menuImportImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 4 * 1024 * 1024,
+  },
+  fileFilter(_req, file, callback) {
+    if (!allowedTypes.has(file.mimetype)) {
+      callback(new ApiError(400, 'Only JPG, PNG, WEBP and GIF images are allowed', null, 'IMAGE_TYPE'));
+      return;
+    }
+
+    callback(null, true);
+  },
+});
+
 export function handleUploadError(err, _req, _res, next) {
   if (err?.code === 'LIMIT_FILE_SIZE') {
-    return next(new ApiError(400, 'Image too large (max 5MB)', null, 'IMAGE_TOO_LARGE'));
+    return next(new ApiError(400, 'Image too large (max 4–5MB)', null, 'IMAGE_TOO_LARGE'));
   }
 
   return next(err);

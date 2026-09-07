@@ -43,6 +43,14 @@ const envSchema = z.object({
   ),
   MAIL_FROM: z.string().trim().optional().default('Scanosh <contact@scanosh.com>'),
   ROOT_DOMAIN: z.string().trim().optional().default('scanosh.com'),
+  OCR_SERVICE_URL: z.string().trim().optional().default(''),
+  OCR_SERVICE_TOKEN: z.string().trim().optional().default(''),
+  OCR_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
+  NVIDIA_API_KEY: z.string().trim().optional().default(''),
+  MENU_LLM_API_KEY: z.string().trim().optional().default(''),
+  MENU_LLM_BASE_URL: z.string().trim().optional().default('https://integrate.api.nvidia.com/v1'),
+  MENU_LLM_MODEL: z.string().trim().optional().default('meta/llama-3.2-11b-vision-instruct'),
+  MENU_LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(90000),
 });
 
 const parsed = envSchema.safeParse(process.env);

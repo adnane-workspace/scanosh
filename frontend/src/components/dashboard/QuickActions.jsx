@@ -20,6 +20,13 @@ export default function QuickActions({ menuUrl, hasCategory }) {
       hint: t('dashboard.quickAddCategoryHint'),
     },
     {
+      key: 'aiFill',
+      to: '/app/ai-fill',
+      icon: 'auto_awesome',
+      label: t('dashboard.quickAiFill'),
+      hint: t('dashboard.quickAiFillHint'),
+    },
+    {
       key: 'settings',
       to: '/app/settings',
       icon: 'tune',

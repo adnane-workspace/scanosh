@@ -4,6 +4,7 @@ import { cafeRouter } from './cafe.routes.js';
 import { categoryRouter } from './category.routes.js';
 import { dashboardRouter } from './dashboard.routes.js';
 import { healthRouter } from './health.routes.js';
+import { menuImportRouter } from './menuImport.routes.js';
 import { menuRouter } from './menu.routes.js';
 import { shareRouter } from './share.routes.js';
 import { platformRouter } from './platform.routes.js';
@@ -20,6 +21,7 @@ router.use('/share', shareRouter);
 router.use('/me/cafe', cafeRouter);
 router.use('/me/categories', categoryRouter);
 router.use('/me/products', productRouter);
+router.use('/me/menu-imports', menuImportRouter);
 router.use('/me/stats', dashboardRouter);
 
 router.use('/cafe', cafeRouter);

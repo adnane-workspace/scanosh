@@ -35,6 +35,7 @@ export default function Sidebar({ cafe, role, onLogout, onNavigate, qrRequestCou
         { to: '/app', label: t('nav.dashboard'), icon: 'home', end: true },
         { to: '/app/categories', label: t('nav.categories'), icon: 'grid_view' },
         { to: '/app/products', label: t('nav.products'), icon: 'lunch_dining' },
+        { to: '/app/ai-fill', label: t('nav.aiFill'), icon: 'auto_awesome' },
         { to: '/app/menu', label: t('nav.publicMenu'), icon: 'menu_book' },
         { to: '/app/settings', label: t('nav.settings'), icon: 'settings' },
       ];

@@ -58,6 +58,13 @@ enum CafeTrialRole {
   template
 }
 
+enum MenuImportStatus {
+  pending
+  reviewed
+  published
+  failed
+}
+
 model Cafe {
   id          String        @id @default(uuid())
   name        String        @db.VarChar(120)
@@ -81,8 +88,29 @@ model Cafe {
   products        Product[]
   activityLogs    ActivityLog[]
   qrChangeRequests QrChangeRequest[]
+  menuImports     MenuImport[]
 
   @@index([trialRole])
+}
+
+model MenuImport {
+  id             String           @id @default(uuid())
+  cafeId         String
+  cafe           Cafe             @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  status         MenuImportStatus @default(pending)
+  sourceImageUrl String           @default("")
+  mergeLevel     String           @default("paragraph") @db.VarChar(20)
+  rawText        String           @default("") @db.Text
+  rawBlocks      Json             @default("[]")
+  draftMenu      Json?
+  provider       String           @default("") @db.VarChar(80)
+  errorMessage   String           @default("") @db.VarChar(500)
+  durationMs     Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([cafeId, createdAt])
+  @@index([cafeId, status])
 }
 
 model User {
