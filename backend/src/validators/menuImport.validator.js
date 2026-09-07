@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_DRAFT_SECTION_KEY } from '../utils/menuImport.js';
 import { isMenuSectionKey } from '../utils/menuSections.js';
 import { uuidSchema } from './id.schema.js';
 import { paginationFields } from './pagination.schema.js';
@@ -22,21 +23,26 @@ const draftProductSchema = z.object({
 
 const draftSectionKeySchema = z.preprocess(
   (value) => {
-    if (value == null || value === '') return 'restaurant';
+    if (value == null || value === '') return DEFAULT_DRAFT_SECTION_KEY;
     return String(value).trim().toLowerCase();
   },
   z
     .string()
     .refine((value) => isMenuSectionKey(value), 'Invalid section key')
-    .default('restaurant'),
+    .default(DEFAULT_DRAFT_SECTION_KEY),
 );
 
 const draftCategorySchema = z.object({
   id: z.string().trim().max(80).optional(),
   name: z.string().trim().min(1).max(80),
-  sectionKey: draftSectionKeySchema.optional().default('restaurant'),
+  sectionKey: draftSectionKeySchema.optional().default(DEFAULT_DRAFT_SECTION_KEY),
   selected: z.boolean().optional().default(true),
   products: z.array(draftProductSchema).default([]),
+});
+
+const draftMenuSchema = z.object({
+  categories: z.array(draftCategorySchema).max(80),
+  meta: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const listMenuImportsSchema = z.object({
@@ -56,10 +62,7 @@ export const updateMenuImportDraftSchema = z.object({
     id: uuidSchema,
   }),
   body: z.object({
-    draftMenu: z.object({
-      categories: z.array(draftCategorySchema).max(80),
-      meta: z.record(z.string(), z.unknown()).optional(),
-    }),
+    draftMenu: draftMenuSchema,
   }),
 });
 
@@ -70,12 +73,7 @@ export const publishMenuImportSchema = z.object({
   body: z.preprocess(
     (value) => (value == null || typeof value !== 'object' ? {} : value),
     z.object({
-      draftMenu: z
-        .object({
-          categories: z.array(draftCategorySchema).max(80),
-          meta: z.record(z.string(), z.unknown()).optional(),
-        })
-        .optional(),
+      draftMenu: draftMenuSchema.optional(),
     }),
   ),
 });

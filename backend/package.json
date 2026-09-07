@@ -12,6 +12,7 @@
     "cloudinary:purge": "node scripts/purge-cloudinary.mjs",
     "db:clear-images": "node scripts/clear-db-cloudinary-urls.mjs",
     "mail:test": "node scripts/test-mail.mjs",
+    "menu-llm:test": "node scripts/test-menu-llm.mjs",
     "postinstall": "node scripts/prisma.mjs generate",
     "db:generate": "node scripts/prisma.mjs generate",
     "db:migrate": "node scripts/prisma.mjs migrate",

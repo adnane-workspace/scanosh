@@ -7,9 +7,6 @@ export const DEFAULT_SECTION_DEFS = [
 
 export const DEFAULT_SECTION_KEYS = DEFAULT_SECTION_DEFS.map((item) => item.key);
 
-/** @deprecated use DEFAULT_SECTION_KEYS */
-export const MENU_SECTION_KEYS = DEFAULT_SECTION_KEYS;
-
 export const MAX_MENU_SECTIONS = 12;
 export const SECTION_KEY_MAX_LENGTH = 40;
 

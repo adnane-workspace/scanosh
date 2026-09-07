@@ -1,7 +1,6 @@
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
-
-const MERGE_LEVELS = new Set(['word', 'sentence', 'paragraph']);
+import { normalizeMergeLevel } from '../utils/menuImport.js';
 
 function resolveOcrEndpoint() {
   const raw = String(env.OCR_SERVICE_URL || '').trim().replace(/\/+$/, '');
@@ -22,7 +21,7 @@ export async function runOcrOnImage(file, { mergeLevel = 'paragraph' } = {}) {
     throw new ApiError(503, 'OCR service is not configured', null, 'OCR_NOT_CONFIGURED');
   }
 
-  const level = MERGE_LEVELS.has(mergeLevel) ? mergeLevel : 'paragraph';
+  const level = normalizeMergeLevel(mergeLevel);
   const mime = file.mimetype || 'image/jpeg';
   const imageBase64 = `data:${mime};base64,${file.buffer.toString('base64')}`;
 
@@ -70,6 +69,5 @@ export async function runOcrOnImage(file, { mergeLevel = 'paragraph' } = {}) {
     provider: String(payload?.provider || 'nvidia-nemotron-ocr-v2'),
     mergeLevel: String(payload?.mergeLevel || level),
     durationMs: Number(payload?.meta?.durationMs) || null,
-    meta: payload?.meta || null,
   };
 }

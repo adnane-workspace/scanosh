@@ -1,5 +1,6 @@
 import multer from 'multer';
 import { ApiError } from '../utils/ApiError.js';
+import { MENU_IMPORT_MAX_IMAGE_BYTES } from '../utils/menuImport.js';
 
 const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
@@ -22,7 +23,7 @@ export const productImageUpload = multer({
 export const menuImportImageUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 4 * 1024 * 1024,
+    fileSize: MENU_IMPORT_MAX_IMAGE_BYTES,
   },
   fileFilter(_req, file, callback) {
     if (!allowedTypes.has(file.mimetype)) {

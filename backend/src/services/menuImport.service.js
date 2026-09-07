@@ -1,6 +1,10 @@
 import { prisma } from '../config/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
-import { isMenuSectionKey } from '../utils/menuSections.js';
+import {
+  MENU_IMPORT_MAX_IMAGE_BYTES,
+  normalizeMergeLevel,
+  resolveDraftSectionKey,
+} from '../utils/menuImport.js';
 import { buildPaginationMeta, paginatedResult, parsePaginationQuery } from '../utils/pagination.js';
 import { createCategory, ensureDefaultSections } from './category.service.js';
 import { extractDraftMenu, normalizeDraftMenu } from './menuDraft.extractor.js';
@@ -8,8 +12,6 @@ import { extractDraftMenuWithLlm, isMenuLlmConfigured } from './menuDraft.llm.js
 import { isOcrConfigured, runOcrOnImage } from './ocr.client.js';
 import { createProduct } from './product.service.js';
 import { uploadProductImage } from './storage.service.js';
-
-const MERGE_LEVELS = new Set(['word', 'sentence', 'paragraph']);
 
 function requireCafeId(user) {
   if (!user.cafeId) {
@@ -74,7 +76,7 @@ export function getMenuImportStatus() {
   return {
     configured: isOcrConfigured(),
     llmConfigured: isMenuLlmConfigured(),
-    maxImageBytes: 4 * 1024 * 1024,
+    maxImageBytes: MENU_IMPORT_MAX_IMAGE_BYTES,
   };
 }
 
@@ -89,7 +91,7 @@ export async function createMenuImport(user, file, { mergeLevel = 'paragraph' } 
     throw new ApiError(503, 'OCR service is not configured', null, 'OCR_NOT_CONFIGURED');
   }
 
-  const level = MERGE_LEVELS.has(mergeLevel) ? mergeLevel : 'paragraph';
+  const level = normalizeMergeLevel(mergeLevel);
 
   let sourceImageUrl = '';
   try {
@@ -237,9 +239,7 @@ export async function publishMenuImport(user, id, draftMenuInput = null) {
   const sectionByKey = new Map(sections.map((item) => [item.sectionKey, item]));
 
   const usedSectionKeys = new Set(
-    selectedCategories.map((cat) =>
-      isMenuSectionKey(cat.sectionKey) ? cat.sectionKey : 'restaurant',
-    ),
+    selectedCategories.map((cat) => resolveDraftSectionKey(cat.sectionKey)),
   );
 
   for (const key of usedSectionKeys) {
@@ -258,7 +258,7 @@ export async function publishMenuImport(user, id, draftMenuInput = null) {
   let productsCreated = 0;
 
   for (const [index, cat] of selectedCategories.entries()) {
-    const sectionKey = isMenuSectionKey(cat.sectionKey) ? cat.sectionKey : 'restaurant';
+    const sectionKey = resolveDraftSectionKey(cat.sectionKey);
     const section = sectionByKey.get(sectionKey);
 
     if (!section) {

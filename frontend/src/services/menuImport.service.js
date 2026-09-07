@@ -24,11 +24,6 @@ export async function listMenuImports(params = {}) {
   };
 }
 
-export async function getMenuImport(id) {
-  const { data } = await api.get(`/me/menu-imports/${id}`);
-  return data.data.import;
-}
-
 export async function updateMenuImportDraft(id, draftMenu) {
   const { data } = await api.put(`/me/menu-imports/${id}/draft`, { draftMenu });
   return data.data.import;

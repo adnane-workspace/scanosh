@@ -122,7 +122,7 @@ const RESTAURANT_SECTION_HINTS = [
  * Guess Scanosh menu section for a draft category.
  * @returns {'cafe' | 'restaurant'}
  */
-export function guessSectionKey(categoryName = '', products = []) {
+function guessSectionKey(categoryName = '', products = []) {
   const blob = [
     categoryName,
     ...products.map((p) => `${p?.name || ''} ${p?.description || ''}`),
@@ -141,9 +141,6 @@ export function guessSectionKey(categoryName = '', products = []) {
 
   if (cafeScore > restaurantScore) return 'cafe';
   if (restaurantScore > cafeScore) return 'restaurant';
-
-  // Soft default: drink-like category names → cafe, otherwise restaurant
-  if (/boisson|drink|cafe|café|coffee|jus|thé|the/i.test(categoryName)) return 'cafe';
   return 'restaurant';
 }
 
@@ -212,11 +209,12 @@ function linesFromOcr({ text, blocks }) {
     .filter((item) => item.text);
 }
 
-function newCategory(name, index, productsForGuess = []) {
+function newCategory(name, index) {
   return {
     id: `cat-${index}`,
     name: String(name || '').slice(0, 80),
-    sectionKey: guessSectionKey(name, productsForGuess),
+    // Temporary; re-scored after products are filled
+    sectionKey: guessSectionKey(name),
     selected: true,
     products: [],
   };
