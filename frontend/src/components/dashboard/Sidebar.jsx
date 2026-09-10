@@ -17,7 +17,7 @@ function navClassName() {
     }`;
 }
 
-export default function Sidebar({ cafe, role, onLogout, onNavigate, qrRequestCount = 0 }) {
+export default function Sidebar({ cafe, role, onLogout, onNavigate }) {
   const { t } = useLocale();
   const { isDark } = useTheme();
   const isSuperAdmin = role === 'superadmin';
@@ -26,7 +26,6 @@ export default function Sidebar({ cafe, role, onLogout, onNavigate, qrRequestCou
         { to: '/platform', label: t('nav.dashboard'), icon: 'home', end: true },
         { to: '/platform/cafes', label: t('nav.cafes'), icon: 'storefront' },
         { to: '/platform/trials', label: t('nav.trials'), icon: 'science' },
-        { to: '/platform/qr-requests', label: t('nav.qrRequests'), icon: 'qr_code_2', badge: qrRequestCount },
         { to: '/platform/logs', label: t('nav.logs'), icon: 'history' },
         { to: '/platform/storage', label: t('nav.storage'), icon: 'cloud' },
         { to: '/platform/settings', label: t('nav.settings'), icon: 'settings' },

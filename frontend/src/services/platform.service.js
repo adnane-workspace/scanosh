@@ -64,21 +64,6 @@ export async function updatePlatformCafeOwnerEmail(id, email) {
   return data.data;
 }
 
-export async function listQrChangeRequests(params = {}) {
-  const { data } = await api.get('/platform/qr-requests', { params });
-  return data.data;
-}
-
-export async function reviewQrChangeRequest(id, payload) {
-  const { data } = await api.post(`/platform/qr-requests/${id}/review`, payload);
-  return data.data.request;
-}
-
-export async function unlockCafeQr(id) {
-  const { data } = await api.post(`/platform/cafes/${id}/qr/unlock`);
-  return data.data.qr;
-}
-
 export async function populateCafeContent(id) {
   const { data } = await api.post(`/platform/cafes/${id}/populate`);
   return data.data.cafe;

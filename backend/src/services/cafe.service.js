@@ -3,7 +3,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { assertUsableSlug, slugify } from '../utils/slug.js';
 import { recordActivity } from './activity.service.js';
 import { invalidatePublicMenu } from './menuCache.service.js';
-import { findPendingQrRequest, toQrStatus } from './qr.service.js';
+import { toQrStatus } from './qr.service.js';
 import { normalizeMenuUi, finalizeMenuUi } from '../utils/menuUi.js';
 import { deleteReplacedImage, normalizeImageUrl } from './storage.service.js';
 
@@ -15,7 +15,7 @@ function requireCafeId(user) {
   return user.cafeId;
 }
 
-function toCafeResponse(cafe, pendingRequest) {
+function toCafeResponse(cafe) {
   return {
     _id: cafe.id,
     name: cafe.name,
@@ -31,7 +31,7 @@ function toCafeResponse(cafe, pendingRequest) {
     isActive: cafe.isActive,
     createdAt: cafe.createdAt,
     updatedAt: cafe.updatedAt,
-    qr: toQrStatus(cafe, pendingRequest),
+    qr: toQrStatus(cafe),
   };
 }
 
@@ -43,8 +43,7 @@ export async function getMyCafe(user) {
     throw new ApiError(404, 'Cafe not found', null, 'CAFE_NOT_FOUND');
   }
 
-  const pending = await findPendingQrRequest(cafeId);
-  return toCafeResponse(cafe, pending);
+  return toCafeResponse(cafe);
 }
 
 export async function updateMyCafe(user, payload) {
@@ -55,7 +54,6 @@ export async function updateMyCafe(user, payload) {
       id: true,
       slug: true,
       qrGeneratedAt: true,
-      qrChangeAllowed: true,
       logo: true,
       cover: true,
       menuUi: true,
@@ -111,12 +109,10 @@ export async function updateMyCafe(user, payload) {
     assertUsableSlug(nextSlug);
 
     if (nextSlug !== current.slug) {
-      const slugLocked = Boolean(current.qrGeneratedAt) && !current.qrChangeAllowed;
-
-      if (slugLocked) {
+      if (current.qrGeneratedAt) {
         throw new ApiError(
           409,
-          'The public link is locked after QR generation. Request a change from the superadmin.',
+          'The public link is permanent after QR generation and cannot be changed.',
           null,
           'SLUG_LOCKED',
         );
@@ -136,9 +132,8 @@ export async function updateMyCafe(user, payload) {
   }
 
   if (Object.keys(data).length === 0) {
-    const pending = await findPendingQrRequest(cafeId);
     const cafe = await prisma.cafe.findUnique({ where: { id: cafeId } });
-    return toCafeResponse(cafe, pending);
+    return toCafeResponse(cafe);
   }
 
   const cafe = await prisma.cafe.update({
@@ -174,6 +169,5 @@ export async function updateMyCafe(user, payload) {
     },
   });
 
-  const pending = await findPendingQrRequest(cafeId);
-  return toCafeResponse(cafe, pending);
+  return toCafeResponse(cafe);
 }

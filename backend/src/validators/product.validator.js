@@ -48,6 +48,60 @@ export const productIdSchema = z.object({
   }),
 });
 
+export const suggestProductImageSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+  }),
+  body: z.preprocess(
+    (value) => (value == null || typeof value !== 'object' ? {} : value),
+    z.object({
+      overwrite: z.boolean().optional().default(false),
+    }),
+  ),
+});
+
+export const suggestProductImagesBatchSchema = z.object({
+  body: z.preprocess(
+    (value) => (value == null || typeof value !== 'object' ? {} : value),
+    z.object({
+      productIds: z.array(objectIdSchema).max(20).optional().default([]),
+      onlyMissing: z.boolean().optional().default(true),
+      overwrite: z.boolean().optional().default(false),
+      limit: z.coerce.number().int().min(1).max(20).optional().default(20),
+    }),
+  ),
+});
+
+export const listMediaLibrarySchema = z.object({
+  query: z.object({
+    section: z
+      .string()
+      .trim()
+      .optional()
+      .default('')
+      .transform((value) => {
+        if (value === 'cafe' || value === 'restaurant') return value;
+        return '';
+      }),
+    search: z.string().trim().max(120).optional().default(''),
+    limit: z.coerce.number().int().min(1).max(120).optional().default(60),
+  }),
+});
+
+export const applyMediaImageSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+  }),
+  body: z
+    .object({
+      mediaId: z.string().trim().max(80).optional(),
+      imageUrl: imageSchema.optional(),
+    })
+    .refine((data) => Boolean(data.mediaId || data.imageUrl), {
+      message: 'mediaId or imageUrl is required',
+    }),
+});
+
 export const listProductsSchema = z.object({
   query: z.object({
     page: z.coerce.number().int().min(1).optional().default(1),

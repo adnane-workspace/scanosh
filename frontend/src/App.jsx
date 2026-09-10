@@ -37,7 +37,6 @@ const PublicMenuLandingPage = lazy(() => import('./pages/PublicMenuLandingPage.j
 const MenuDeveloperPage = lazy(() => import('./pages/MenuDeveloperPage.jsx'));
 const PublicMenuSectionsPage = lazy(() => import('./pages/PublicMenuSectionsPage.jsx'));
 const PublicMenuPage = lazy(() => import('./pages/PublicMenuPage.jsx'));
-const QrRequestsPage = lazy(() => import('./pages/QrRequestsPage.jsx'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
 const TrialPage = lazy(() => import('./pages/TrialPage.jsx'));
 const TrialLeadsPage = lazy(() => import('./pages/TrialLeadsPage.jsx'));
@@ -136,7 +135,6 @@ function ProductRoutes() {
           <Route path="cafes/new" element={<CreateCafePage />} />
           <Route path="cafes/:id" element={<CafeDetailPage />} />
           <Route path="trials" element={<TrialLeadsPage />} />
-          <Route path="qr-requests" element={<QrRequestsPage />} />
           <Route path="logs" element={<ActivityLogsPage />} />
           <Route path="storage" element={<StoragePage />} />
           <Route path="settings" element={<SettingsPage />} />

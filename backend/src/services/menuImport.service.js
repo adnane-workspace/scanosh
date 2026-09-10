@@ -256,6 +256,7 @@ export async function publishMenuImport(user, id, draftMenuInput = null) {
 
   let categoriesCreated = 0;
   let productsCreated = 0;
+  const productIds = [];
 
   for (const [index, cat] of selectedCategories.entries()) {
     const sectionKey = resolveDraftSectionKey(cat.sectionKey);
@@ -295,7 +296,7 @@ export async function publishMenuImport(user, id, draftMenuInput = null) {
 
     const selectedProducts = cat.products.filter((p) => p.selected);
     for (const [pIndex, prod] of selectedProducts.entries()) {
-      await createProduct(user, {
+      const createdProduct = await createProduct(user, {
         name: String(prod.name).slice(0, 120),
         description: String(prod.description || '').slice(0, 500),
         price: Number(prod.price) || 0,
@@ -304,6 +305,7 @@ export async function publishMenuImport(user, id, draftMenuInput = null) {
         order: pIndex,
       });
       productsCreated += 1;
+      if (createdProduct?._id) productIds.push(createdProduct._id);
     }
   }
 
@@ -321,6 +323,7 @@ export async function publishMenuImport(user, id, draftMenuInput = null) {
       categoriesCreated,
       productsCreated,
       categoriesReused: selectedCategories.length - categoriesCreated,
+      productIds,
       alreadyPublished: false,
     },
   };

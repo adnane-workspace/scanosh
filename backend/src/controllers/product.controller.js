@@ -7,6 +7,14 @@ import {
   listProducts,
   updateProduct,
 } from '../services/product.service.js';
+import {
+  applyMediaImageToProduct,
+  browseMediaLibrary,
+  getProductImageCandidates,
+  getProductImageSuggestStatus,
+  suggestProductImage,
+  suggestProductImagesBatch,
+} from '../services/productImage.service.js';
 import { uploadProductImage } from '../services/storage.service.js';
 
 export const create = asyncHandler(async (req, res) => {
@@ -70,5 +78,62 @@ export const uploadImage = asyncHandler(async (req, res) => {
     success: true,
     message: 'Image uploaded',
     data: { url },
+  });
+});
+
+export const imageSuggestStatus = asyncHandler(async (_req, res) => {
+  res.status(200).json({
+    success: true,
+    data: getProductImageSuggestStatus(),
+  });
+});
+
+export const suggestImage = asyncHandler(async (req, res) => {
+  const result = await suggestProductImage(req.user, req.validated.params.id, {
+    overwrite: Boolean(req.validated.body?.overwrite),
+  });
+
+  res.status(200).json({
+    success: true,
+    message: result.skipped ? 'Product already has an image' : 'Product image suggested',
+    data: result,
+  });
+});
+
+export const suggestImagesBatch = asyncHandler(async (req, res) => {
+  const result = await suggestProductImagesBatch(req.user, req.validated.body);
+
+  res.status(200).json({
+    success: true,
+    message: 'Product images suggested',
+    data: result,
+  });
+});
+
+export const mediaLibrary = asyncHandler(async (req, res) => {
+  const result = await browseMediaLibrary(req.user, req.validated.query);
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+});
+
+export const imageCandidates = asyncHandler(async (req, res) => {
+  const result = await getProductImageCandidates(req.user, req.validated.params.id);
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+});
+
+export const applyMediaImage = asyncHandler(async (req, res) => {
+  const result = await applyMediaImageToProduct(req.user, req.validated.params.id, req.validated.body);
+
+  res.status(200).json({
+    success: true,
+    message: 'Product image updated',
+    data: result,
   });
 });

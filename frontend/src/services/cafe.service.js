@@ -15,11 +15,6 @@ export async function generateCafeQr() {
   return data.data.qr;
 }
 
-export async function requestQrChange(reason) {
-  const { data } = await api.post('/me/cafe/qr/change-requests', { reason });
-  return data.data.qr;
-}
-
 export async function uploadCafeLogo(file, kind = 'logo') {
   const formData = new FormData();
   formData.append('image', file);

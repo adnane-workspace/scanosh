@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import CafeDashboardHero from '../components/dashboard/CafeDashboardHero.jsx';
 import MenuHealth from '../components/dashboard/MenuHealth.jsx';
-import QrChangeRequestModal from '../components/dashboard/QrChangeRequestModal.jsx';
 import QrCodeModal from '../components/dashboard/QrCodeModal.jsx';
 import QuickActions from '../components/dashboard/QuickActions.jsx';
 import RecentProducts from '../components/dashboard/RecentProducts.jsx';
@@ -11,7 +10,7 @@ import StatCard from '../components/dashboard/StatCard.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useLocale } from '../hooks/useLocale.js';
-import { generateCafeQr, requestQrChange } from '../services/cafe.service.js';
+import { generateCafeQr } from '../services/cafe.service.js';
 import { getStorageReport, listPlatformCafes } from '../services/platform.service.js';
 import { updateProduct } from '../services/product.service.js';
 import { getPublicMenuUrl } from '../utils/constants.js';
@@ -26,11 +25,8 @@ export default function DashboardPage() {
   const [recentLoading, setRecentLoading] = useState(false);
   const [actionError, setActionError] = useState('');
   const [isQrOpen, setIsQrOpen] = useState(false);
-  const [isQrRequestOpen, setIsQrRequestOpen] = useState(false);
   const [qrIssuing, setQrIssuing] = useState(false);
   const [qrIssueError, setQrIssueError] = useState('');
-  const [qrRequestError, setQrRequestError] = useState('');
-  const [qrRequesting, setQrRequesting] = useState(false);
   const [qrMode, setQrMode] = useState('view');
   const [storage, setStorage] = useState(null);
   const isSuperAdmin = user?.role === 'superadmin';
@@ -39,8 +35,6 @@ export default function DashboardPage() {
     generated: false,
     locked: false,
     canGenerate: true,
-    changeAllowed: false,
-    pendingRequest: null,
   };
   const greetingName = firstName(user?.name, t('dashboard.fallbackName'));
   const cafeSlug = stats.cafe?.slug || '';
@@ -124,23 +118,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleQrRequest(reason) {
-    setQrRequesting(true);
-    setQrRequestError('');
-
-    try {
-      await requestQrChange(reason);
-      await refreshStats();
-      setIsQrRequestOpen(false);
-      return true;
-    } catch (err) {
-      setQrRequestError(getApiError(err, t, 'qr.requestError'));
-      return false;
-    } finally {
-      setQrRequesting(false);
-    }
-  }
-
   function openQr(mode) {
     setQrIssueError('');
     setQrMode(mode);
@@ -197,17 +174,7 @@ export default function DashboardPage() {
           </Link>
         </section>
       ) : (
-        <CafeDashboardHero
-          cafe={stats.cafe}
-          greetingName={greetingName}
-          menuUrl={menuUrl}
-          qr={qr}
-          onOpenQr={openQr}
-          onRequestQrChange={() => {
-            setQrRequestError('');
-            setIsQrRequestOpen(true);
-          }}
-        />
+        <CafeDashboardHero cafe={stats.cafe} greetingName={greetingName} menuUrl={menuUrl} qr={qr} onOpenQr={openQr} />
       )}
 
       {!isSuperAdmin ? (
@@ -293,7 +260,7 @@ export default function DashboardPage() {
           <div className="grid gap-5 md:grid-cols-3">
             {[
               { to: '/platform/cafes', icon: 'storefront', label: t('nav.cafes'), hint: t('dashboard.quickCafes') },
-              { to: '/platform/qr-requests', icon: 'qr_code_2', label: t('nav.qrRequests'), hint: t('dashboard.quickQr') },
+              { to: '/platform/storage', icon: 'cloud', label: t('nav.storage'), hint: t('dashboard.quickStorage') },
               { to: '/platform/logs', icon: 'history', label: t('nav.logs'), hint: t('dashboard.quickLogs') },
             ].map((item) => (
               <Link
@@ -392,27 +359,18 @@ export default function DashboardPage() {
       )}
 
       {isSuperAdmin ? null : (
-      <>
-      <QrCodeModal
-        open={isQrOpen}
-        cafeName={stats.cafe?.name}
-        menuUrl={menuUrl}
-        slug={stats.cafe?.slug}
-        needsIssue={qrMode === 'issue' && qr.canGenerate}
-        issuing={qrIssuing}
-        issueError={qrIssueError}
-        onConfirmIssue={handleConfirmIssue}
-        locked={qr.locked}
-        onClose={() => setIsQrOpen(false)}
-      />
-      <QrChangeRequestModal
-        open={isQrRequestOpen}
-        submitting={qrRequesting}
-        error={qrRequestError}
-        onSubmit={handleQrRequest}
-        onClose={() => setIsQrRequestOpen(false)}
-      />
-      </>
+        <QrCodeModal
+          open={isQrOpen}
+          cafeName={stats.cafe?.name}
+          menuUrl={menuUrl}
+          slug={stats.cafe?.slug}
+          needsIssue={qrMode === 'issue' && qr.canGenerate}
+          issuing={qrIssuing}
+          issueError={qrIssueError}
+          onConfirmIssue={handleConfirmIssue}
+          locked={qr.locked}
+          onClose={() => setIsQrOpen(false)}
+        />
       )}
     </div>
   );

@@ -2,7 +2,6 @@ import { prisma } from '../config/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
 import { buildPaginationMeta, parsePaginationQuery } from '../utils/pagination.js';
 import { recordActivity } from './activity.service.js';
-import { sendQrChangeRequestAlert } from './mail.service.js';
 
 function requireCafeId(user) {
   if (!user.cafeId) {
@@ -12,65 +11,46 @@ function requireCafeId(user) {
   return user.cafeId;
 }
 
-export function toPendingRequest(request) {
-  if (!request) {
-    return null;
-  }
+/** Permanent QR policy: one code per cafe for life. Change requests are disabled. */
+const QR_CHANGE_DISABLED = new ApiError(
+  410,
+  'QR change requests are disabled. Each account keeps one permanent QR code.',
+  null,
+  'QR_CHANGE_DISABLED',
+);
 
-  return {
-    _id: request.id,
-    reason: request.reason,
-    status: request.status,
-    createdAt: request.createdAt,
-    reviewNote: request.reviewNote || '',
-    reviewedAt: request.reviewedAt || null,
-  };
+export function toPendingRequest(_request) {
+  return null;
 }
 
-export function toQrStatus(cafe, pendingRequest) {
+export function toQrStatus(cafe) {
   const generated = Boolean(cafe.qrGeneratedAt);
-  const changeAllowed = Boolean(cafe.qrChangeAllowed);
-  const locked = generated && !changeAllowed;
 
   return {
     generated,
     generatedAt: cafe.qrGeneratedAt || null,
-    locked,
-    changeAllowed,
-    canGenerate: !generated || changeAllowed,
-    pendingRequest: toPendingRequest(pendingRequest),
+    locked: generated,
+    changeAllowed: false,
+    canGenerate: !generated,
+    pendingRequest: null,
   };
 }
 
-export async function findPendingQrRequest(cafeId) {
-  return prisma.qrChangeRequest.findFirst({
-    where: { cafeId, status: 'pending' },
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      reason: true,
-      status: true,
-      createdAt: true,
-      reviewNote: true,
-      reviewedAt: true,
-    },
-  });
+export async function findPendingQrRequest(_cafeId) {
+  return null;
 }
 
 export async function getQrStatusForCafe(cafeId) {
-  const [cafe, pending] = await Promise.all([
-    prisma.cafe.findUnique({
-      where: { id: cafeId },
-      select: { qrGeneratedAt: true, qrChangeAllowed: true },
-    }),
-    findPendingQrRequest(cafeId),
-  ]);
+  const cafe = await prisma.cafe.findUnique({
+    where: { id: cafeId },
+    select: { qrGeneratedAt: true, qrChangeAllowed: true },
+  });
 
   if (!cafe) {
     throw new ApiError(404, 'Cafe not found', null, 'CAFE_NOT_FOUND');
   }
 
-  return toQrStatus(cafe, pending);
+  return toQrStatus(cafe);
 }
 
 function toRequestResponse(request) {
@@ -114,7 +94,6 @@ export async function generateCafeQr(user) {
       name: true,
       slug: true,
       qrGeneratedAt: true,
-      qrChangeAllowed: true,
     },
   });
 
@@ -122,10 +101,13 @@ export async function generateCafeQr(user) {
     throw new ApiError(404, 'Cafe not found', null, 'CAFE_NOT_FOUND');
   }
 
-  const canGenerate = !cafe.qrGeneratedAt || cafe.qrChangeAllowed;
-
-  if (!canGenerate) {
-    throw new ApiError(409, 'The QR code has already been generated. Request a change from the superadmin.', null, 'QR_ALREADY_GENERATED');
+  if (cafe.qrGeneratedAt) {
+    throw new ApiError(
+      409,
+      'The QR code has already been generated and cannot be changed.',
+      null,
+      'QR_ALREADY_GENERATED',
+    );
   }
 
   const updated = await prisma.cafe.update({
@@ -147,278 +129,33 @@ export async function generateCafeQr(user) {
     metadata: {
       cafeName: cafe.name,
       slug: cafe.slug,
-      regenerated: Boolean(cafe.qrGeneratedAt),
+      regenerated: false,
+      permanent: true,
     },
   });
 
-  const pending = await findPendingQrRequest(cafeId);
-  return toQrStatus(updated, pending);
+  return toQrStatus(updated);
 }
 
-export async function requestQrChange(user, reason) {
-  const cafeId = requireCafeId(user);
-  const trimmed = String(reason || '').trim();
-
-  if (!trimmed) {
-    throw new ApiError(400, 'Provide a reason for the change', null, 'QR_REASON_REQUIRED');
-  }
-
-  const cafe = await prisma.cafe.findUnique({
-    where: { id: cafeId },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      qrGeneratedAt: true,
-      qrChangeAllowed: true,
-    },
-  });
-
-  if (!cafe) {
-    throw new ApiError(404, 'Cafe not found', null, 'CAFE_NOT_FOUND');
-  }
-
-  if (!cafe.qrGeneratedAt) {
-    throw new ApiError(400, 'Generate the QR code first', null, 'QR_NOT_GENERATED');
-  }
-
-  if (cafe.qrChangeAllowed) {
-    throw new ApiError(400, 'A change is already allowed. Generate the new QR code.', null, 'QR_CHANGE_ALREADY_ALLOWED');
-  }
-
-  const existing = await findPendingQrRequest(cafeId);
-
-  if (existing) {
-    throw new ApiError(409, 'A change request is already pending', null, 'QR_REQUEST_PENDING');
-  }
-
-  const request = await prisma.qrChangeRequest.create({
-    data: {
-      cafeId,
-      requesterId: user.id,
-      reason: trimmed,
-    },
-    select: {
-      id: true,
-      reason: true,
-      status: true,
-      createdAt: true,
-      reviewNote: true,
-      reviewedAt: true,
-    },
-  });
-
-  await recordActivity({
-    action: 'qr_change_requested',
-    actorId: user.id,
-    cafeId,
-    metadata: {
-      cafeName: cafe.name,
-      slug: cafe.slug,
-      reason: trimmed,
-    },
-  });
-
-  await notifySuperAdminsOfQrChange({
-    cafeName: cafe.name,
-    slug: cafe.slug,
-    requesterName: user.name,
-    requesterEmail: user.email,
-    reason: trimmed,
-  });
-
-  return toQrStatus(cafe, request);
-}
-
-async function notifySuperAdminsOfQrChange(payload) {
-  const superadmins = await prisma.user.findMany({
-    where: { role: 'superadmin' },
-    select: { email: true },
-  });
-  const recipients = [...new Set(superadmins.map((item) => item.email).filter(Boolean))];
-
-  if (recipients.length === 0) {
-    console.warn('QR change request saved but no superadmin email was found');
-    return;
-  }
-
-  const results = await Promise.allSettled(
-    recipients.map((to) => sendQrChangeRequestAlert({ to, ...payload })),
-  );
-  const failed = results.filter((item) => item.status === 'rejected');
-
-  if (failed.length > 0) {
-    console.error(
-      `QR change email failed for ${failed.length}/${recipients.length} superadmin(s)`,
-      failed[0].reason?.message || failed[0].reason,
-    );
-  }
+export async function requestQrChange() {
+  throw QR_CHANGE_DISABLED;
 }
 
 export async function listQrChangeRequests(status, query = {}) {
-  const where = {};
   const pagination = parsePaginationQuery(query);
-
-  if (status && status !== 'all') {
-    where.status = status;
-  }
-
-  const rank = { pending: 0, approved: 1, rejected: 2 };
-
-  const [requests, total, pendingCount] = await Promise.all([
-    prisma.qrChangeRequest.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: pagination.skip,
-      take: pagination.limit,
-      include: {
-        cafe: {
-          select: { id: true, name: true, slug: true },
-        },
-        requester: {
-          select: { id: true, name: true, email: true },
-        },
-        reviewer: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-    }),
-    prisma.qrChangeRequest.count({ where }),
-    prisma.qrChangeRequest.count({ where: { status: 'pending' } }),
-  ]);
-
-  const sorted = [...requests].sort((left, right) => {
-    const diff = (rank[left.status] ?? 9) - (rank[right.status] ?? 9);
-
-    if (diff !== 0) {
-      return diff;
-    }
-
-    return new Date(right.createdAt) - new Date(left.createdAt);
-  });
-
   return {
-    requests: sorted.map(toRequestResponse),
-    pendingCount,
-    pagination: buildPaginationMeta({ page: pagination.page, limit: pagination.limit, total }),
+    requests: [],
+    pendingCount: 0,
+    pagination: buildPaginationMeta({ page: pagination.page, limit: pagination.limit, total: 0 }),
   };
 }
 
-export async function reviewQrChangeRequest(requestId, { decision, note }, actor) {
-  if (decision !== 'approved' && decision !== 'rejected') {
-    throw new ApiError(400, 'Invalid decision', null, 'QR_INVALID_DECISION');
-  }
-
-  const request = await prisma.qrChangeRequest.findUnique({
-    where: { id: requestId },
-    include: {
-      cafe: {
-        select: { id: true, name: true, slug: true, qrChangeAllowed: true },
-      },
-    },
-  });
-
-  if (!request) {
-    throw new ApiError(404, 'Request not found', null, 'QR_REQUEST_NOT_FOUND');
-  }
-
-  if (request.status !== 'pending') {
-    throw new ApiError(409, 'This request has already been reviewed', null, 'QR_REQUEST_ALREADY_REVIEWED');
-  }
-
-  const reviewNote = String(note || '').trim();
-  const now = new Date();
-
-  const [updated] = await prisma.$transaction([
-    prisma.qrChangeRequest.update({
-      where: { id: requestId },
-      data: {
-        status: decision,
-        reviewerId: actor.id,
-        reviewNote,
-        reviewedAt: now,
-      },
-      include: {
-        cafe: {
-          select: { id: true, name: true, slug: true },
-        },
-        requester: {
-          select: { id: true, name: true, email: true },
-        },
-        reviewer: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-    }),
-    prisma.cafe.update({
-      where: { id: request.cafeId },
-      data: {
-        qrChangeAllowed: decision === 'approved',
-      },
-    }),
-  ]);
-
-  await recordActivity({
-    action: decision === 'approved' ? 'qr_change_approved' : 'qr_change_rejected',
-    actorId: actor.id,
-    cafeId: request.cafeId,
-    metadata: {
-      cafeName: request.cafe?.name,
-      slug: request.cafe?.slug,
-      reason: request.reason,
-      note: reviewNote,
-    },
-  });
-
-  return toRequestResponse(updated);
+export async function reviewQrChangeRequest() {
+  throw QR_CHANGE_DISABLED;
 }
 
-export async function unlockCafeQr(cafeId, actor) {
-  const cafe = await prisma.cafe.findUnique({
-    where: { id: cafeId },
-    select: { id: true, name: true, slug: true, qrGeneratedAt: true },
-  });
-
-  if (!cafe) {
-    throw new ApiError(404, 'Cafe not found', null, 'CAFE_NOT_FOUND');
-  }
-
-  if (!cafe.qrGeneratedAt) {
-    throw new ApiError(400, 'This cafe has not generated a QR code yet', null, 'QR_NOT_GENERATED');
-  }
-
-  const pending = await findPendingQrRequest(cafeId);
-
-  await prisma.$transaction(async (tx) => {
-    await tx.cafe.update({
-      where: { id: cafeId },
-      data: { qrChangeAllowed: true },
-    });
-
-    if (pending) {
-      await tx.qrChangeRequest.update({
-        where: { id: pending.id },
-        data: {
-          status: 'approved',
-          reviewerId: actor.id,
-          reviewNote: 'Déverrouillage manuel',
-          reviewedAt: new Date(),
-        },
-      });
-    }
-  });
-
-  await recordActivity({
-    action: 'qr_change_approved',
-    actorId: actor.id,
-    cafeId,
-    metadata: {
-      cafeName: cafe.name,
-      slug: cafe.slug,
-      note: 'Déverrouillage manuel',
-      manual: true,
-    },
-  });
-
-  return getQrStatusForCafe(cafeId);
+export async function unlockCafeQr() {
+  throw QR_CHANGE_DISABLED;
 }
+
+export { toRequestResponse };

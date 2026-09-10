@@ -11,7 +11,8 @@ export async function createMenuImport(file, { mergeLevel = 'paragraph' } = {}) 
   formData.append('mergeLevel', mergeLevel);
 
   const { data } = await api.post('/me/menu-imports', formData, {
-    timeout: 90000,
+    // OCR + LLM can exceed 2 minutes; keep above MENU_LLM_TIMEOUT_MS.
+    timeout: 240000,
   });
   return data.data.import;
 }

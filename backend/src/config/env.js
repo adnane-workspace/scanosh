@@ -51,6 +51,13 @@ const envSchema = z.object({
   MENU_LLM_BASE_URL: z.string().trim().optional().default('https://integrate.api.nvidia.com/v1'),
   MENU_LLM_MODEL: z.string().trim().optional().default('meta/llama-3.2-11b-vision-instruct'),
   MENU_LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(90000),
+  PRODUCT_IMAGE_SUGGEST: z.string().trim().optional().default('1'),
+  PRODUCT_IMAGE_POLLINATIONS: z.string().trim().optional().default('0'),
+  MENU_MEDIA_API_URL: z
+    .string()
+    .trim()
+    .optional()
+    .default('https://cafe-restau-images.vercel.app'),
 });
 
 const parsed = envSchema.safeParse(process.env);

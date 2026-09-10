@@ -3,14 +3,7 @@ import { useLocale } from '../../hooks/useLocale.js';
 import CloudinaryImage from '../ui/CloudinaryImage.jsx';
 import MaterialIcon from '../ui/MaterialIcon.jsx';
 
-export default function CafeDashboardHero({
-  cafe,
-  greetingName,
-  menuUrl,
-  qr,
-  onOpenQr,
-  onRequestQrChange,
-}) {
+export default function CafeDashboardHero({ cafe, greetingName, menuUrl, qr, onOpenQr }) {
   const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const cafeName = cafe?.name || t('auth.digitalMenu');
@@ -29,13 +22,7 @@ export default function CafeDashboardHero({
     }
   }
 
-  const qrLabel = qr.pendingRequest
-    ? t('dashboard.qrStatusPending')
-    : qr.changeAllowed
-      ? t('dashboard.qrStatusUnlocked')
-      : qr.generated
-        ? t('dashboard.qrStatusReady')
-        : t('dashboard.qrStatusMissing');
+  const qrLabel = qr.generated ? t('dashboard.qrStatusReady') : t('dashboard.qrStatusMissing');
 
   return (
     <section className="overflow-hidden rounded-[18px] border border-outline-variant bg-surface-container-lowest shadow-[0_1px_2px_rgba(31,37,35,0.04)]">
@@ -81,11 +68,9 @@ export default function CafeDashboardHero({
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  qr.generated && !qr.pendingRequest
+                  qr.generated
                     ? 'bg-tertiary/15 text-tertiary'
-                    : qr.pendingRequest || qr.changeAllowed
-                      ? 'bg-primary/12 text-primary'
-                      : 'bg-surface-container-high text-on-surface-variant'
+                    : 'bg-surface-container-high text-on-surface-variant'
                 }`}
               >
                 <MaterialIcon name="qr_code_2" className="text-[16px]" />
@@ -123,39 +108,13 @@ export default function CafeDashboardHero({
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-primary"
             >
               <MaterialIcon name="qr_code_scanner" className="text-[20px]" />
-              {qr.canGenerate
-                ? qr.generated
-                  ? t('dashboard.generateNewQr')
-                  : t('dashboard.generateQr')
-                : t('dashboard.viewQr')}
+              {qr.canGenerate ? t('dashboard.generateQr') : t('dashboard.viewQr')}
             </button>
-            {qr.changeAllowed ? (
-              <button
-                type="button"
-                disabled={!menuUrl}
-                onClick={() => onOpenQr('view')}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-variant px-4 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container"
-              >
-                {t('dashboard.viewQr')}
-              </button>
-            ) : null}
-            {qr.locked && !qr.pendingRequest ? (
-              <button
-                type="button"
-                onClick={onRequestQrChange}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-variant px-4 py-2.5 text-sm font-medium text-on-surface hover:bg-surface-container"
-              >
-                {t('dashboard.requestQrChange')}
-              </button>
-            ) : null}
           </div>
         </div>
 
-        {qr.pendingRequest ? (
-          <p className="mt-4 text-sm text-on-surface-variant">{t('dashboard.qrRequestPending')}</p>
-        ) : null}
-        {qr.changeAllowed ? (
-          <p className="mt-4 text-sm text-on-surface-variant">{t('dashboard.qrChangeAllowed')}</p>
+        {qr.generated ? (
+          <p className="mt-4 text-sm text-on-surface-variant">{t('dashboard.qrPermanentHint')}</p>
         ) : null}
       </div>
     </section>

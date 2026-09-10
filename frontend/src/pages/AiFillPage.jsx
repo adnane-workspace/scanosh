@@ -11,6 +11,7 @@ import {
   publishMenuImport,
   updateMenuImportDraft,
 } from '../services/menuImport.service.js';
+import { suggestProductImagesBatch } from '../services/product.service.js';
 import { getApiError } from '../utils/apiError.js';
 import { formatDate } from '../utils/format.js';
 import { DEFAULT_SECTION_DEFS, isMenuSectionKey } from '../utils/menuSections.js';
@@ -50,7 +51,7 @@ export default function AiFillPage() {
   const inputRef = useRef(null);
   const reviewRef = useRef(null);
   const [configured, setConfigured] = useState(true);
-  const [llmConfigured, setLlmConfigured] = useState(false);
+  const [, setLlmConfigured] = useState(false);
   const [mergeLevel, setMergeLevel] = useState('paragraph');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [file, setFile] = useState(null);
@@ -71,7 +72,12 @@ export default function AiFillPage() {
     DEFAULT_SECTION_DEFS.map((item) => ({ key: item.key, name: item.name })),
   );
   const [publishSummary, setPublishSummary] = useState(null);
+  const [suggestingPhotos, setSuggestingPhotos] = useState(false);
+  const [photoSummary, setPhotoSummary] = useState(null);
+  const [photoProgress, setPhotoProgress] = useState(null);
   const [collapsed, setCollapsed] = useState({});
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const photosRef = useRef(null);
 
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -174,9 +180,23 @@ export default function AiFillPage() {
     return { categories, products, review, totalProducts };
   }, [draft]);
 
-  const step = !result ? 1 : result.status === 'published' ? 3 : 2;
   const isPublished = result?.status === 'published';
-  const busy = running || saving || publishing;
+  const busy = running || saving || publishing || suggestingPhotos;
+
+  const stepStates = useMemo(() => {
+    const map = {
+      1: !result ? 'active' : 'done',
+      2: !result ? 'todo' : !isPublished ? 'active' : 'done',
+      3: !result ? 'todo' : isPublished ? 'done' : selectedCounts.products ? 'todo' : 'todo',
+      4: !isPublished ? 'todo' : photoSummary && !suggestingPhotos ? 'done' : 'active',
+    };
+    if (publishing) {
+      map[2] = 'done';
+      map[3] = 'active';
+      map[4] = 'todo';
+    }
+    return map;
+  }, [result, isPublished, selectedCounts.products, photoSummary, suggestingPhotos, publishing]);
 
   function applyImport(item) {
     setResult(item);
@@ -184,6 +204,8 @@ export default function AiFillPage() {
     setTab(item.draftMenu?.categories?.length ? 'review' : 'text');
     setSectionFilter('all');
     setPublishSummary(null);
+    setPhotoSummary(null);
+    setPhotoProgress(null);
     setSuccess('');
     setError('');
     setCollapsed({});
@@ -319,9 +341,12 @@ export default function AiFillPage() {
     setPublishing(true);
     setError('');
     setSuccess('');
+    setPhotoSummary(null);
+    setPhotoProgress(null);
     try {
       const published = await publishMenuImport(result._id, draft);
-      applyImport(published.import);
+      setResult(published.import);
+      setDraft(cloneDraft(published.import?.draftMenu || draft));
       setPublishSummary(published.summary);
       setSuccess(
         published.summary?.alreadyPublished
@@ -329,6 +354,18 @@ export default function AiFillPage() {
           : t('aiFill.publishSuccess'),
       );
       await loadHistory();
+      window.setTimeout(() => {
+        photosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+
+      const ids = Array.isArray(published.summary?.productIds)
+        ? published.summary.productIds.filter(Boolean)
+        : [];
+      if (ids.length || published.summary?.productsCreated) {
+        window.setTimeout(() => {
+          handleSuggestPhotos(published.summary);
+        }, 250);
+      }
     } catch (err) {
       setError(getApiError(err, t, 'aiFill.publishError'));
     } finally {
@@ -336,132 +373,353 @@ export default function AiFillPage() {
     }
   }
 
+  async function handleSuggestPhotos(summaryOverride = null) {
+    const summary = summaryOverride || publishSummary;
+    const productIds = Array.isArray(summary?.productIds)
+      ? summary.productIds.filter(Boolean)
+      : [];
+
+    if (!productIds.length && !summary?.productsCreated) {
+      setError(t('aiFill.suggestPhotosEmpty'));
+      return;
+    }
+
+    setSuggestingPhotos(true);
+    setError('');
+    setSuccess('');
+
+    const ids = productIds.length ? productIds : [];
+    const chunkSize = 20;
+    let updated = 0;
+    let failed = 0;
+    let skipped = 0;
+    const total = ids.length || Math.min(Number(summary?.productsCreated) || 0, 80);
+
+    setPhotoProgress({ done: 0, total: total || ids.length || 10 });
+
+    try {
+      if (ids.length) {
+        for (let i = 0; i < ids.length; i += chunkSize) {
+          const chunk = ids.slice(i, i + chunkSize);
+          const resultData = await suggestProductImagesBatch({
+            productIds: chunk,
+            onlyMissing: true,
+            limit: chunk.length,
+          });
+          updated += resultData?.summary?.updated ?? 0;
+          failed += resultData?.summary?.failed ?? 0;
+          skipped += resultData?.summary?.skipped ?? 0;
+          setPhotoProgress({ done: Math.min(i + chunk.length, ids.length), total: ids.length });
+        }
+      } else {
+        let safety = 0;
+        let batchUpdated = 0;
+        do {
+          const resultData = await suggestProductImagesBatch({
+            onlyMissing: true,
+            limit: chunkSize,
+          });
+          batchUpdated = resultData?.summary?.updated ?? 0;
+          updated += batchUpdated;
+          failed += resultData?.summary?.failed ?? 0;
+          skipped += resultData?.summary?.skipped ?? 0;
+          safety += 1;
+          setPhotoProgress({
+            done: updated + skipped,
+            total: Math.max(total, updated + skipped + failed),
+          });
+        } while (batchUpdated > 0 && safety < 6);
+      }
+
+      const photoResult = { updated, failed, skipped, total: ids.length || updated + failed + skipped };
+      setPhotoSummary(photoResult);
+      setSuccess(
+        t('aiFill.suggestPhotosSuccess', {
+          updated,
+          failed,
+        }),
+      );
+    } catch (err) {
+      setError(getApiError(err, t, 'aiFill.suggestPhotosError'));
+    } finally {
+      setSuggestingPhotos(false);
+      setPhotoProgress(null);
+    }
+  }
+
   const steps = [
     { id: 1, label: t('aiFill.stepUpload'), icon: 'photo_camera' },
     { id: 2, label: t('aiFill.stepReview'), icon: 'fact_check' },
     { id: 3, label: t('aiFill.stepPublish'), icon: 'check_circle' },
+    { id: 4, label: t('aiFill.stepPhotos'), icon: 'image' },
   ];
 
+  function startNewImport() {
+    setFile(null);
+    resetUploadState();
+    setPhotoSummary(null);
+    setPhotoProgress(null);
+    setPublishSummary(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   return (
-    <div className="relative space-y-5 pb-28">
-      {/* Hero */}
-      <section className="overflow-hidden rounded-[22px] border border-outline-variant bg-surface-container-lowest shadow-[0_1px_2px_rgba(31,37,35,0.04)]">
-        <div className="relative bg-gradient-to-br from-primary/12 via-surface-container-lowest to-surface-container px-5 py-6 sm:px-7 sm:py-7">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-2xl">
-              <p className="text-[11px] font-semibold tracking-[0.16em] text-primary uppercase">{t('aiFill.kicker')}</p>
-              <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-on-surface sm:text-[2rem]">
+    <div className={`relative mx-auto max-w-5xl space-y-4 ${result && !isPublished ? 'pb-32' : 'pb-10'}`}>
+      {/* Compact header + stepper */}
+      <header className="overflow-hidden rounded-2xl border border-outline-variant/80 bg-surface-container-lowest">
+        <div className="relative px-4 py-5 sm:px-6 sm:py-6">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.55]"
+            style={{
+              background:
+                'radial-gradient(ellipse 80% 60% at 0% 0%, color-mix(in srgb, var(--color-primary, #0d1b2a) 14%, transparent), transparent 55%), radial-gradient(ellipse 50% 40% at 100% 0%, color-mix(in srgb, var(--color-primary, #0d1b2a) 8%, transparent), transparent 50%)',
+            }}
+            aria-hidden
+          />
+          <div className="relative flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 max-w-xl">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface sm:text-[1.85rem]">
                 {t('aiFill.title')}
               </h1>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-on-surface-variant sm:text-[15px]">
-                {t('aiFill.subtitle')}
+              <p className="mt-1.5 text-sm leading-relaxed text-on-surface-variant">
+                {t('aiFill.subtitleShort')}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${configured ? 'bg-primary/10 text-primary' : 'bg-error-container text-error'}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${configured ? 'bg-primary' : 'bg-error'}`} />
-                {configured ? t('aiFill.statusReady') : t('aiFill.statusOffline')}
-              </span>
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${llmConfigured ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
-                <MaterialIcon name="psychology" className="text-[15px]" />
-                {llmConfigured ? t('aiFill.llmReadyShort') : t('aiFill.llmOfflineShort')}
-              </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {!configured ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-error-container px-2.5 py-1 text-[11px] font-semibold text-error">
+                  <span className="h-1.5 w-1.5 rounded-full bg-error" />
+                  {t('aiFill.statusOffline')}
+                </span>
+              ) : null}
+              {result ? (
+                <button
+                  type="button"
+                  onClick={startNewImport}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant bg-surface-container-lowest px-3 py-1.5 text-xs font-semibold text-on-surface transition hover:bg-surface-container"
+                >
+                  <MaterialIcon name="add_a_photo" className="text-[16px]" />
+                  {t('aiFill.startOver')}
+                </button>
+              ) : null}
             </div>
           </div>
 
-          <ol className="mt-6 grid gap-2 sm:grid-cols-3">
-            {steps.map((item) => {
-              const active = step === item.id;
-              const done = step > item.id;
-              return (
-                <li
-                  key={item.id}
-                  className={`flex items-center gap-3 rounded-2xl border px-3.5 py-3 transition-colors ${
-                    active
-                      ? 'border-primary/30 bg-surface-container-lowest shadow-sm'
-                      : done
-                        ? 'border-primary/15 bg-primary/5'
-                        : 'border-outline-variant/70 bg-surface-container/40'
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                      active || done ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant'
-                    }`}
+          <nav aria-label={t('aiFill.stepsNav')} className="relative mt-5">
+            <ol className="grid grid-cols-4 gap-2">
+              {steps.map((item) => {
+                const state = stepStates[item.id];
+                const active = state === 'active';
+                const done = state === 'done';
+                return (
+                  <li
+                    key={item.id}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition-all duration-300 ${
+                      active ? 'bg-primary/8' : ''
+                    } ${state === 'todo' ? 'opacity-40' : 'opacity-100'}`}
                   >
-                    <MaterialIcon name={done && !active ? 'check' : item.icon} className="text-[18px]" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold tracking-wide text-on-surface-variant uppercase">
-                      {t('aiFill.stepLabel', { n: item.id })}
-                    </p>
-                    <p className={`truncate text-sm font-semibold ${active ? 'text-on-surface' : 'text-on-surface/80'}`}>
+                    <span
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-all duration-300 ${
+                        active
+                          ? 'scale-105 bg-primary text-on-primary shadow-[0_6px_16px_rgba(13,27,42,0.22)]'
+                          : done
+                            ? 'bg-primary/15 text-primary'
+                            : 'bg-surface-container-high text-on-surface-variant'
+                      }`}
+                    >
+                      <MaterialIcon
+                        name={done && !active ? 'check' : item.icon}
+                        className="text-[18px]"
+                      />
+                    </span>
+                    <span
+                      className={`text-center text-[10px] font-semibold leading-tight sm:text-[11px] ${
+                        active ? 'text-on-surface' : 'text-on-surface-variant'
+                      }`}
+                    >
                       {item.label}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
         </div>
-      </section>
+      </header>
 
-      {/* Upload */}
-      <section className="rounded-[22px] border border-outline-variant bg-surface-container-lowest p-5 sm:p-6">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-on-surface">{t('aiFill.uploadTitle')}</h2>
-            <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.uploadHint')}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowAdvanced((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
-          >
-            <MaterialIcon name="tune" className="text-[16px]" />
-            {t('aiFill.advanced')}
-            <MaterialIcon name={showAdvanced ? 'expand_less' : 'expand_more'} className="text-[16px]" />
-          </button>
-        </div>
-
+      {(error || success) && (
         <div
-          role="button"
-          tabIndex={0}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') inputRef.current?.click();
-          }}
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
-          className={`relative flex min-h-[12rem] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[1.35rem] border-2 border-dashed px-4 py-8 text-center transition-all ${
-            dragOver
-              ? 'border-primary bg-primary/8 scale-[1.01]'
-              : previewUrl
-                ? 'border-outline-variant bg-surface-container/30'
-                : 'border-outline-variant bg-surface-container/40 hover:border-primary/40 hover:bg-surface-container'
+          role={error ? 'alert' : 'status'}
+          className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+            error
+              ? 'border-error/20 bg-error-container text-error'
+              : 'border-primary/20 bg-primary/10 text-primary'
           }`}
         >
-          {previewUrl ? (
-            <div className="flex w-full max-w-lg flex-col items-center gap-3">
-              <img src={previewUrl} alt="" className="max-h-52 w-auto rounded-2xl object-contain shadow-sm" />
-              <div>
-                <p className="font-semibold text-on-surface">{file?.name}</p>
-                <p className="mt-0.5 text-sm text-on-surface-variant">{t('aiFill.changeImage')}</p>
+          <MaterialIcon name={error ? 'error' : 'check_circle'} className="mt-0.5 shrink-0 text-[20px]" />
+          <p className="min-w-0 flex-1 leading-relaxed">{error || success}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setError('');
+              setSuccess('');
+            }}
+            className="shrink-0 rounded-full p-1 opacity-70 hover:opacity-100"
+            aria-label={t('common.close')}
+          >
+            <MaterialIcon name="close" className="text-[18px]" />
+          </button>
+        </div>
+      )}
+
+      {/* Stage 1 — Upload (full when no result, compact when reviewing) */}
+      {!result ? (
+        <section className="animate-[fadeIn_0.35s_ease] rounded-2xl border border-outline-variant/80 bg-surface-container-lowest p-4 sm:p-6">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="font-display text-lg font-semibold text-on-surface">{t('aiFill.uploadTitle')}</h2>
+              <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.uploadHint')}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
+            >
+              <MaterialIcon name="tune" className="text-[15px]" />
+              {t('aiFill.advanced')}
+            </button>
+          </div>
+
+          <div
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') inputRef.current?.click();
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            onClick={() => inputRef.current?.click()}
+            className={`relative flex min-h-[15rem] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed px-4 py-10 text-center transition-all duration-200 ${
+              dragOver
+                ? 'scale-[1.01] border-primary bg-primary/8'
+                : previewUrl
+                  ? 'border-outline-variant bg-surface-container/25'
+                  : 'border-outline-variant bg-surface-container/30 hover:border-primary/45 hover:bg-primary/[0.04]'
+            }`}
+          >
+            {previewUrl ? (
+              <div className="flex w-full max-w-md flex-col items-center gap-3">
+                <img
+                  src={previewUrl}
+                  alt=""
+                  className="max-h-56 w-auto rounded-xl object-contain shadow-[0_12px_28px_rgba(13,27,42,0.12)]"
+                />
+                <div>
+                  <p className="truncate text-sm font-semibold text-on-surface">{file?.name}</p>
+                  <p className="mt-0.5 text-xs text-on-surface-variant">{t('aiFill.changeImage')}</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <span className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+                  <MaterialIcon name="add_a_photo" className="text-[32px]" />
+                </span>
+                <p className="text-base font-semibold text-on-surface">{t('aiFill.dropTitle')}</p>
+                <p className="mt-1.5 max-w-sm text-sm text-on-surface-variant">{t('aiFill.dropHint')}</p>
+              </>
+            )}
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={onPickFile}
+            />
+          </div>
+
+          {showAdvanced ? (
+            <label className="mt-4 block max-w-xs text-sm">
+              <span className="mb-1.5 block font-medium text-on-surface">{t('aiFill.mergeLevel')}</span>
+              <select
+                value={mergeLevel}
+                onChange={(event) => setMergeLevel(event.target.value)}
+                className="h-11 w-full rounded-xl border border-outline-variant bg-background px-3 text-on-surface outline-none focus:border-primary"
+              >
+                {MERGE_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {t(`aiFill.merge.${level}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-on-surface-variant">{t('aiFill.privacyNote')}</p>
+            <button
+              type="button"
+              disabled={running || !configured || !file}
+              onClick={handleRun}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-8 text-sm font-semibold text-on-primary shadow-[0_10px_24px_rgba(13,27,42,0.18)] transition hover:brightness-105 disabled:opacity-45"
+            >
+              <MaterialIcon
+                name={running ? 'progress_activity' : 'auto_awesome'}
+                className={running ? 'animate-spin text-[20px]' : 'text-[20px]'}
+              />
+              {running ? t('aiFill.running') : t('aiFill.run')}
+            </button>
+          </div>
+
+          {running ? (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <div className="flex items-center gap-3 text-sm text-primary">
+                <MaterialIcon name="progress_activity" className="animate-spin text-[20px]" />
+                <div className="min-w-0">
+                  <p className="font-semibold">{t('aiFill.runningTitle')}</p>
+                  <p className="text-primary/75">{t('aiFill.runningHint')}</p>
+                </div>
+              </div>
+              <div className="mt-3 h-1 overflow-hidden rounded-full bg-primary/15">
+                <div className="h-full w-1/2 animate-pulse rounded-full bg-primary/60" />
               </div>
             </div>
-          ) : (
-            <>
-              <span className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <MaterialIcon name="add_a_photo" className="text-[28px]" />
-              </span>
-              <p className="font-semibold text-on-surface">{t('aiFill.dropTitle')}</p>
-              <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.dropHint')}</p>
-            </>
+          ) : null}
+        </section>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-outline-variant/70 bg-surface-container/40 px-3 py-2.5 sm:px-4">
+          {(previewUrl || result.sourceImageUrl) && (
+            <div className="h-12 w-12 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest">
+              {previewUrl ? (
+                <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <CloudinaryImage
+                  src={result.sourceImageUrl}
+                  alt=""
+                  preset="productCard"
+                  className="h-full w-full object-cover"
+                />
+              )}
+            </div>
           )}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-on-surface">{t('aiFill.sourcePhoto')}</p>
+            <p className="truncate text-xs text-on-surface-variant">
+              {file?.name || t('aiFill.sourcePhotoHint')}
+            </p>
+          </div>
+          {!isPublished ? (
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="rounded-full px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10"
+            >
+              {t('aiFill.changeImageShort')}
+            </button>
+          ) : null}
           <input
             ref={inputRef}
             type="file"
@@ -470,96 +728,180 @@ export default function AiFillPage() {
             onChange={onPickFile}
           />
         </div>
+      )}
 
-        {showAdvanced ? (
-          <label className="mt-4 block max-w-xs text-sm">
-            <span className="mb-1.5 block font-medium text-on-surface">{t('aiFill.mergeLevel')}</span>
-            <select
-              value={mergeLevel}
-              onChange={(event) => setMergeLevel(event.target.value)}
-              className="h-11 w-full rounded-xl border border-outline-variant bg-background px-3 text-on-surface outline-none focus:border-primary"
-            >
-              {MERGE_LEVELS.map((level) => (
-                <option key={level} value={level}>
-                  {t(`aiFill.merge.${level}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-on-surface-variant">{t('aiFill.privacyNote')}</p>
-          <button
-            type="button"
-            disabled={running || !configured || !file}
-            onClick={handleRun}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-7 text-sm font-semibold text-on-primary shadow-[0_10px_24px_rgba(13,27,42,0.16)] transition hover:brightness-105 disabled:opacity-50"
-          >
-            <MaterialIcon
-              name={running ? 'progress_activity' : 'auto_awesome'}
-              className={running ? 'animate-spin text-[20px]' : 'text-[20px]'}
-            />
-            {running ? t('aiFill.running') : t('aiFill.run')}
-          </button>
-        </div>
-
-        {running ? (
-          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
-            <MaterialIcon name="progress_activity" className="animate-spin text-[20px]" />
-            <div>
-              <p className="font-semibold">{t('aiFill.runningTitle')}</p>
-              <p className="text-primary/80">{t('aiFill.runningHint')}</p>
-            </div>
-          </div>
-        ) : null}
-
-        {error ? (
-          <p role="alert" className="mt-4 rounded-2xl border border-error/20 bg-error-container px-4 py-3 text-sm text-error">
-            {error}
-          </p>
-        ) : null}
-        {success ? (
-          <p className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">{success}</p>
-        ) : null}
-
-        {publishSummary ? (
-          <div className="mt-4 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-surface-container-lowest px-5 py-4">
-            <div className="flex items-start gap-3">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary">
-                <MaterialIcon name="celebration" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-on-surface">{t('aiFill.publishSummaryTitle')}</p>
-                <p className="mt-1 text-sm text-on-surface-variant">
-                  {t('aiFill.publishSummaryBody', {
-                    categories: publishSummary.categoriesCreated,
-                    products: publishSummary.productsCreated,
-                  })}
+      {/* Stage 4 — Photos (after publish, shown before review for focus) */}
+      {isPublished ? (
+        <section
+          ref={photosRef}
+          className="animate-[fadeIn_0.4s_ease] overflow-hidden rounded-2xl border border-primary/20 bg-surface-container-lowest"
+        >
+          <div className="bg-gradient-to-br from-primary/10 via-transparent to-transparent px-4 py-5 sm:px-6 sm:py-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="max-w-xl">
+                <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
+                  {t('aiFill.stepLabel', { n: 4 })}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link to="/app/products" className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-xs font-semibold text-on-primary">
-                    {t('aiFill.goProducts')}
-                  </Link>
-                  <Link to="/app/categories" className="inline-flex h-9 items-center rounded-full border border-outline-variant bg-surface-container-lowest px-4 text-xs font-semibold text-on-surface">
-                    {t('aiFill.goCategories')}
-                  </Link>
+                <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">
+                  {t('aiFill.photosTitle')}
+                </h2>
+                <p className="mt-1.5 text-sm text-on-surface-variant">{t('aiFill.photosHint')}</p>
+              </div>
+              {publishSummary ? (
+                <div className="rounded-xl border border-outline-variant/60 bg-surface-container-lowest/80 px-3 py-2 text-xs text-on-surface-variant">
+                  <p className="font-semibold text-on-surface">{t('aiFill.publishSummaryTitle')}</p>
+                  <p className="mt-0.5">
+                    {t('aiFill.publishSummaryBody', {
+                      categories: publishSummary.categoriesCreated,
+                      products: publishSummary.productsCreated,
+                    })}
+                  </p>
                 </div>
+              ) : null}
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest/90 px-4 py-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <MaterialIcon
+                    name={
+                      suggestingPhotos
+                        ? 'progress_activity'
+                        : photoSummary
+                          ? 'verified'
+                          : 'auto_awesome'
+                    }
+                    className={suggestingPhotos ? 'animate-spin text-[24px]' : 'text-[24px]'}
+                  />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-on-surface">
+                    {photoSummary
+                      ? t('aiFill.photosDoneTitle')
+                      : suggestingPhotos
+                        ? t('aiFill.suggestingPhotos')
+                        : t('aiFill.photosReadyTitle')}
+                  </p>
+                  <p className="mt-0.5 text-xs text-on-surface-variant">
+                    {photoSummary
+                      ? t('aiFill.suggestPhotosSuccess', {
+                          updated: photoSummary.updated,
+                          failed: photoSummary.failed,
+                        })
+                      : photoProgress
+                        ? t('aiFill.photosProgress', {
+                            done: photoProgress.done,
+                            total: photoProgress.total,
+                          })
+                        : t('aiFill.photosReadyHint', {
+                            count:
+                              publishSummary?.productsCreated ||
+                              publishSummary?.productIds?.length ||
+                              '—',
+                          })}
+                  </p>
+                </div>
+              </div>
+
+              {photoProgress ? (
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-container-high">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.round((photoProgress.done / Math.max(photoProgress.total, 1)) * 100),
+                      )}%`,
+                    }}
+                  />
+                </div>
+              ) : null}
+
+              {photoSummary ? (
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <div className="rounded-xl bg-primary/8 px-3 py-2.5 text-center">
+                    <p className="text-lg font-bold text-primary">{photoSummary.updated}</p>
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase">
+                      {t('aiFill.statGenerated')}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-surface-container px-3 py-2.5 text-center">
+                    <p className="text-lg font-bold text-on-surface">{photoSummary.failed}</p>
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase">
+                      {t('aiFill.statMissing')}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-surface-container px-3 py-2.5 text-center">
+                    <p className="text-lg font-bold text-on-surface">{photoSummary.skipped || 0}</p>
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase">
+                      {t('aiFill.statSkipped')}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {!photoSummary ? (
+                  <button
+                    type="button"
+                    disabled={suggestingPhotos}
+                    onClick={() => handleSuggestPhotos()}
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary disabled:opacity-50"
+                  >
+                    <MaterialIcon
+                      name={suggestingPhotos ? 'progress_activity' : 'auto_awesome'}
+                      className={suggestingPhotos ? 'animate-spin text-[18px]' : 'text-[18px]'}
+                    />
+                    {suggestingPhotos ? t('aiFill.suggestingPhotos') : t('aiFill.generatePhotos')}
+                  </button>
+                ) : (
+                  <>
+                    <Link
+                      to="/app/products"
+                      className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary"
+                    >
+                      <MaterialIcon name="photo_library" className="text-[18px]" />
+                      {t('aiFill.goPickPhotos')}
+                    </Link>
+                    <button
+                      type="button"
+                      disabled={suggestingPhotos}
+                      onClick={() => handleSuggestPhotos()}
+                      className="inline-flex h-11 items-center gap-2 rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface disabled:opacity-50"
+                    >
+                      <MaterialIcon name="refresh" className="text-[18px]" />
+                      {t('aiFill.generatePhotosAgain')}
+                    </button>
+                  </>
+                )}
+                <Link
+                  to="/app/products"
+                  className="inline-flex h-11 items-center rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface"
+                >
+                  {t('aiFill.goProducts')}
+                </Link>
               </div>
             </div>
           </div>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
 
-      {/* Review */}
-      <section ref={reviewRef} className="rounded-[22px] border border-outline-variant bg-surface-container-lowest p-5 sm:p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-on-surface">{t('aiFill.reviewTitle')}</h2>
-            <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.reviewHint')}</p>
-          </div>
-          {result ? (
-            <div className="flex flex-wrap items-center gap-2">
+      {/* Stage 2 — Review */}
+      {result ? (
+        <section
+          ref={reviewRef}
+          className="animate-[fadeIn_0.35s_ease] rounded-2xl border border-outline-variant/80 bg-surface-container-lowest p-4 sm:p-6"
+        >
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-lg font-semibold text-on-surface">
+                {isPublished ? t('aiFill.reviewTitlePublished') : t('aiFill.reviewTitle')}
+              </h2>
+              <p className="mt-1 text-sm text-on-surface-variant">
+                {isPublished ? t('aiFill.reviewHintPublished') : t('aiFill.reviewHint')}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 rounded-full bg-surface-container p-1">
               {[
                 { id: 'review', label: t('aiFill.tabReview'), icon: 'fact_check' },
                 { id: 'text', label: t('aiFill.tabText'), icon: 'notes' },
@@ -569,349 +911,375 @@ export default function AiFillPage() {
                   key={item.id}
                   type="button"
                   onClick={() => setTab(item.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                     tab === item.id
-                      ? 'bg-primary text-on-primary'
-                      : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
+                      ? 'bg-surface-container-lowest text-on-surface shadow-sm'
+                      : 'text-on-surface-variant hover:text-on-surface'
                   }`}
                 >
                   <MaterialIcon name={item.icon} className="text-[15px]" />
-                  {item.label}
+                  <span className="hidden sm:inline">{item.label}</span>
                 </button>
               ))}
             </div>
-          ) : null}
-        </div>
-
-        {!result ? (
-          <div className="flex min-h-[14rem] flex-col items-center justify-center rounded-[1.25rem] border border-dashed border-outline-variant bg-surface-container/30 px-6 text-center">
-            <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-container-high text-on-surface-variant">
-              <MaterialIcon name="restaurant_menu" className="text-[26px]" />
-            </span>
-            <p className="max-w-md text-sm leading-relaxed text-on-surface-variant">{t('aiFill.emptyResult')}</p>
           </div>
-        ) : (
-          <>
-            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl bg-surface-container/50 px-3 py-2.5">
-              {result.sourceImageUrl ? (
-                <div className="h-12 w-12 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest">
-                  <CloudinaryImage src={result.sourceImageUrl} alt="" preset="productCard" className="h-full w-full object-cover" />
-                </div>
-              ) : null}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-on-surface">
-                  {selectedCounts.products}/{selectedCounts.totalProducts} {t('aiFill.selectedProducts')}
-                </p>
-                <p className="text-xs text-on-surface-variant">
-                  {selectedCounts.categories} {t('aiFill.categoriesSelected')}
-                  {selectedCounts.review ? ` · ${selectedCounts.review} ${t('aiFill.toReview')}` : ''}
-                  {draft.meta?.parser ? ` · ${draft.meta.parser}` : ''}
-                </p>
-              </div>
-              {!isPublished && tab === 'review' ? (
-                <div className="flex gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setAllSelected(true)}
-                    className="rounded-full px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10"
-                  >
-                    {t('aiFill.selectAll')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAllSelected(false)}
-                    className="rounded-full px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface-container-high"
-                  >
-                    {t('aiFill.deselectAll')}
-                  </button>
-                </div>
-              ) : null}
-            </div>
 
-            {String(draft.meta?.parser || '').includes('llm-fallback') || draft.meta?.llmError ? (
-              <p className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
-                {t('aiFill.llmFallbackWarning')}
-                {draft.meta?.llmError ? ` (${draft.meta.llmError})` : ''}
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-surface-container/60 px-3 py-2.5">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-on-surface">
+                {selectedCounts.products}/{selectedCounts.totalProducts} {t('aiFill.selectedProducts')}
               </p>
+              <p className="text-xs text-on-surface-variant">
+                {selectedCounts.categories} {t('aiFill.categoriesSelected')}
+                {selectedCounts.review ? ` · ${selectedCounts.review} ${t('aiFill.toReview')}` : ''}
+              </p>
+            </div>
+            {!isPublished && tab === 'review' ? (
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => setAllSelected(true)}
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10"
+                >
+                  {t('aiFill.selectAll')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllSelected(false)}
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface-container-high"
+                >
+                  {t('aiFill.deselectAll')}
+                </button>
+              </div>
             ) : null}
+          </div>
 
-            {tab === 'review' ? (
-              <div className="space-y-3">
-                {draft.categories?.length ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {[
-                      { id: 'all', label: t('aiFill.sectionAll'), count: sectionCounts.all },
-                      ...sectionOptions.map((section) => ({
-                        id: section.key,
-                        label: section.name,
-                        count: sectionCounts[section.key] || 0,
-                      })),
-                    ].map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setSectionFilter(item.id)}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                          sectionFilter === item.id
-                            ? 'bg-primary text-on-primary'
-                            : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+          {String(draft.meta?.parser || '').includes('llm-fallback') || draft.meta?.llmError ? (
+            <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+              {t('aiFill.llmFallbackWarning')}
+              {draft.meta?.llmError ? ` (${draft.meta.llmError})` : ''}
+            </p>
+          ) : null}
+
+          {tab === 'review' ? (
+            <div className="space-y-3">
+              {draft.categories?.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'all', label: t('aiFill.sectionAll'), count: sectionCounts.all },
+                    ...sectionOptions.map((section) => ({
+                      id: section.key,
+                      label: section.name,
+                      count: sectionCounts[section.key] || 0,
+                    })),
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSectionFilter(item.id)}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        sectionFilter === item.id
+                          ? 'bg-primary text-on-primary'
+                          : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                      }`}
+                    >
+                      {item.label}
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                          sectionFilter === item.id ? 'bg-white/20' : 'bg-surface-container-lowest'
                         }`}
                       >
-                        {item.label}
-                        <span
-                          className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                            sectionFilter === item.id ? 'bg-white/20' : 'bg-surface-container-lowest'
-                          }`}
+                        {item.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              {!draft.categories?.length ? (
+                <p className="rounded-xl bg-surface-container/40 px-4 py-8 text-center text-sm text-on-surface-variant">
+                  {t('aiFill.noDraft')}
+                </p>
+              ) : !visibleCategories.length ? (
+                <p className="rounded-xl bg-surface-container/40 px-4 py-8 text-center text-sm text-on-surface-variant">
+                  {t('aiFill.noSectionMatch')}
+                </p>
+              ) : (
+                visibleCategories.map((cat) => {
+                  const isCollapsed = Boolean(collapsed[cat.id]);
+                  const productCount = cat.products?.length || 0;
+                  const selectedInCat = (cat.products || []).filter((p) => p.selected).length;
+                  const sectionKey = isMenuSectionKey(cat.sectionKey)
+                    ? cat.sectionKey
+                    : defaultSectionKey;
+                  return (
+                    <div
+                      key={cat.id}
+                      className={`overflow-hidden rounded-xl border transition-opacity ${
+                        cat.selected
+                          ? 'border-outline-variant/80 bg-background'
+                          : 'border-dashed border-outline-variant opacity-50'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center gap-2 bg-surface-container/50 px-3 py-2 sm:px-3.5">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(cat.selected)}
+                          disabled={isPublished}
+                          onChange={(event) =>
+                            updateCategory(cat.id, { selected: event.target.checked })
+                          }
+                          className="h-4 w-4 accent-[var(--color-primary,#0d1b2a)]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleCollapsed(cat.id)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high"
+                          aria-label={t('aiFill.toggleCategory')}
                         >
-                          {item.count}
+                          <MaterialIcon name={isCollapsed ? 'expand_more' : 'expand_less'} />
+                        </button>
+                        <input
+                          value={cat.name}
+                          disabled={isPublished}
+                          onChange={(event) => updateCategory(cat.id, { name: event.target.value })}
+                          className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-on-surface outline-none focus:border-outline-variant focus:bg-surface-container-lowest disabled:opacity-70"
+                        />
+                        <select
+                          value={sectionKey}
+                          disabled={isPublished}
+                          onChange={(event) =>
+                            updateCategory(cat.id, { sectionKey: event.target.value })
+                          }
+                          aria-label={t('aiFill.sectionLabel')}
+                          className="h-8 max-w-[9.5rem] rounded-full border border-outline-variant bg-surface-container-lowest px-2.5 text-[11px] font-semibold text-on-surface outline-none focus:border-primary disabled:opacity-70"
+                        >
+                          {sectionOptions.map((section) => (
+                            <option key={section.key} value={section.key}>
+                              {section.name}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="rounded-full bg-surface-container-lowest px-2 py-1 text-[11px] font-semibold text-on-surface-variant">
+                          {selectedInCat}/{productCount}
                         </span>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
+                      </div>
 
-                {!draft.categories?.length ? (
-                  <p className="rounded-2xl bg-surface-container/40 px-4 py-6 text-center text-sm text-on-surface-variant">
-                    {t('aiFill.noDraft')}
-                  </p>
-                ) : !visibleCategories.length ? (
-                  <p className="rounded-2xl bg-surface-container/40 px-4 py-6 text-center text-sm text-on-surface-variant">
-                    {t('aiFill.noSectionMatch')}
-                  </p>
-                ) : (
-                  visibleCategories.map((cat) => {
-                    const isCollapsed = Boolean(collapsed[cat.id]);
-                    const productCount = cat.products?.length || 0;
-                    const sectionKey = isMenuSectionKey(cat.sectionKey)
-                      ? cat.sectionKey
-                      : defaultSectionKey;
-                    return (
-                      <div
-                        key={cat.id}
-                        className={`overflow-hidden rounded-2xl border transition-opacity ${
-                          cat.selected ? 'border-outline-variant bg-background' : 'border-dashed border-outline-variant opacity-55'
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant/70 bg-surface-container/40 px-3 py-2.5 sm:px-4">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(cat.selected)}
-                            disabled={isPublished}
-                            onChange={(event) => updateCategory(cat.id, { selected: event.target.checked })}
-                            className="h-4 w-4 accent-[var(--color-primary,#0d1b2a)]"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => toggleCollapsed(cat.id)}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high"
-                            aria-label={t('aiFill.toggleCategory')}
-                          >
-                            <MaterialIcon name={isCollapsed ? 'expand_more' : 'expand_less'} />
-                          </button>
-                          <input
-                            value={cat.name}
-                            disabled={isPublished}
-                            onChange={(event) => updateCategory(cat.id, { name: event.target.value })}
-                            className="min-w-0 flex-1 rounded-xl border border-transparent bg-transparent px-2 py-1.5 text-sm font-semibold text-on-surface outline-none focus:border-outline-variant focus:bg-surface-container-lowest disabled:opacity-70"
-                          />
-                          <select
-                            value={sectionKey}
-                            disabled={isPublished}
-                            onChange={(event) =>
-                              updateCategory(cat.id, { sectionKey: event.target.value })
-                            }
-                            aria-label={t('aiFill.sectionLabel')}
-                            className="h-8 max-w-[10rem] rounded-full border border-outline-variant bg-surface-container-lowest px-2.5 text-[11px] font-semibold text-on-surface outline-none focus:border-primary disabled:opacity-70"
-                          >
-                            {sectionOptions.map((section) => (
-                              <option key={section.key} value={section.key}>
-                                {section.name}
-                              </option>
-                            ))}
-                          </select>
-                          <span className="rounded-full bg-surface-container-lowest px-2.5 py-1 text-[11px] font-semibold text-on-surface-variant">
-                            {productCount} {t('aiFill.productsShort')}
-                          </span>
-                        </div>
-
-                        {!isCollapsed ? (
-                          <ul className="divide-y divide-outline-variant/60">
-                            {(cat.products || []).map((prod) => (
-                              <li
-                                key={prod.id}
-                                className={`px-3 py-3 sm:px-4 ${prod.needsReview ? 'bg-amber-500/[0.06]' : ''} ${prod.selected ? '' : 'opacity-45'}`}
-                              >
-                                <div className="flex items-start gap-3">
-                                  <input
-                                    type="checkbox"
-                                    className="mt-2.5 h-4 w-4 accent-[var(--color-primary,#0d1b2a)]"
-                                    checked={Boolean(prod.selected)}
-                                    disabled={isPublished || !cat.selected}
-                                    onChange={(event) =>
-                                      updateProduct(cat.id, prod.id, { selected: event.target.checked })
-                                    }
-                                  />
-                                  <div className="min-w-0 flex-1 space-y-2">
-                                    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_7.5rem]">
-                                      <input
-                                        value={prod.name}
-                                        disabled={isPublished}
-                                        onChange={(event) =>
-                                          updateProduct(cat.id, prod.id, { name: event.target.value })
-                                        }
-                                        placeholder={t('aiFill.productName')}
-                                        className="h-10 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 text-sm text-on-surface outline-none focus:border-primary disabled:opacity-70"
-                                      />
-                                      <div className="relative">
-                                        <input
-                                          type="number"
-                                          min="0"
-                                          step="0.01"
-                                          value={prod.price}
-                                          disabled={isPublished}
-                                          onChange={(event) =>
-                                            updateProduct(cat.id, prod.id, { price: event.target.value })
-                                          }
-                                          className="h-10 w-full rounded-xl border border-outline-variant bg-surface-container-lowest pe-10 ps-3 text-sm text-on-surface outline-none focus:border-primary disabled:opacity-70"
-                                        />
-                                        <span className="pointer-events-none absolute inset-e-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-on-surface-variant">
-                                          {t('aiFill.currency')}
-                                        </span>
-                                      </div>
-                                    </div>
+                      {!isCollapsed ? (
+                        <ul className="divide-y divide-outline-variant/50">
+                          {(cat.products || []).map((prod) => (
+                            <li
+                              key={prod.id}
+                              className={`px-3 py-2.5 sm:px-3.5 ${prod.needsReview ? 'bg-amber-500/[0.05]' : ''} ${prod.selected ? '' : 'opacity-40'}`}
+                            >
+                              <div className="flex items-start gap-2.5">
+                                <input
+                                  type="checkbox"
+                                  className="mt-2.5 h-4 w-4 accent-[var(--color-primary,#0d1b2a)]"
+                                  checked={Boolean(prod.selected)}
+                                  disabled={isPublished || !cat.selected}
+                                  onChange={(event) =>
+                                    updateProduct(cat.id, prod.id, {
+                                      selected: event.target.checked,
+                                    })
+                                  }
+                                />
+                                <div className="min-w-0 flex-1 space-y-1.5">
+                                  <div className="grid gap-1.5 sm:grid-cols-[minmax(0,1fr)_6.75rem]">
                                     <input
-                                      value={prod.description || ''}
+                                      value={prod.name}
                                       disabled={isPublished}
                                       onChange={(event) =>
-                                        updateProduct(cat.id, prod.id, { description: event.target.value })
+                                        updateProduct(cat.id, prod.id, {
+                                          name: event.target.value,
+                                        })
                                       }
-                                      placeholder={t('aiFill.productDescription')}
-                                      className="h-9 w-full rounded-xl border border-outline-variant/80 bg-transparent px-3 text-xs text-on-surface-variant outline-none focus:border-primary disabled:opacity-70"
+                                      placeholder={t('aiFill.productName')}
+                                      className="h-9 rounded-lg border border-outline-variant/80 bg-surface-container-lowest px-2.5 text-sm text-on-surface outline-none focus:border-primary disabled:opacity-70"
                                     />
-                                    {prod.needsReview ? (
-                                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
-                                        <MaterialIcon name="warning" className="text-[13px]" />
-                                        {t('aiFill.needsReview')}
+                                    <div className="relative">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={prod.price}
+                                        disabled={isPublished}
+                                        onChange={(event) =>
+                                          updateProduct(cat.id, prod.id, {
+                                            price: event.target.value,
+                                          })
+                                        }
+                                        className="h-9 w-full rounded-lg border border-outline-variant/80 bg-surface-container-lowest pe-9 ps-2.5 text-sm text-on-surface outline-none focus:border-primary disabled:opacity-70"
+                                      />
+                                      <span className="pointer-events-none absolute inset-e-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-on-surface-variant">
+                                        {t('aiFill.currency')}
                                       </span>
-                                    ) : null}
+                                    </div>
                                   </div>
-                                  {!isPublished ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => removeProduct(cat.id, prod.id)}
-                                      className="mt-1 inline-flex h-9 w-9 items-center justify-center rounded-xl text-on-surface-variant hover:bg-error-container hover:text-error"
-                                      aria-label={t('aiFill.removeProduct')}
-                                    >
-                                      <MaterialIcon name="delete" className="text-[18px]" />
-                                    </button>
+                                  <input
+                                    value={prod.description || ''}
+                                    disabled={isPublished}
+                                    onChange={(event) =>
+                                      updateProduct(cat.id, prod.id, {
+                                        description: event.target.value,
+                                      })
+                                    }
+                                    placeholder={t('aiFill.productDescription')}
+                                    className="h-8 w-full rounded-lg border border-transparent bg-transparent px-2.5 text-xs text-on-surface-variant outline-none hover:border-outline-variant/60 focus:border-primary disabled:opacity-70"
+                                  />
+                                  {prod.needsReview ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                                      <MaterialIcon name="warning" className="text-[12px]" />
+                                      {t('aiFill.needsReview')}
+                                    </span>
                                   ) : null}
                                 </div>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
-                      </div>
-                    );
-                  })
-                )}
-
-                {isPublished ? (
-                  <p className="rounded-2xl bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
-                    {t('aiFill.alreadyPublished')}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-
-            {tab === 'text' ? (
-              <pre className="max-h-[28rem] overflow-auto whitespace-pre-wrap rounded-2xl bg-surface-container/50 p-4 text-sm leading-relaxed text-on-surface">
-                {result.rawText || t('aiFill.noText')}
-              </pre>
-            ) : null}
-
-            {tab === 'blocks' ? (
-              <ul className="max-h-[28rem] space-y-2 overflow-auto">
-                {(result.rawBlocks || []).map((block, index) => (
-                  <li
-                    key={`${index}-${String(block?.text || '').slice(0, 12)}`}
-                    className="rounded-xl border border-outline-variant bg-surface-container/40 px-3 py-2"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm text-on-surface">{block?.text || '—'}</p>
-                      {typeof block?.confidence === 'number' ? (
-                        <span className="shrink-0 text-xs font-medium text-on-surface-variant">
-                          {Math.round(block.confidence * 100)}%
-                        </span>
+                                {!isPublished ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeProduct(cat.id, prod.id)}
+                                    className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-error-container hover:text-error"
+                                    aria-label={t('aiFill.removeProduct')}
+                                  >
+                                    <MaterialIcon name="close" className="text-[16px]" />
+                                  </button>
+                                ) : null}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
                       ) : null}
                     </div>
-                  </li>
-                ))}
-                {!result.rawBlocks?.length ? (
-                  <li className="text-sm text-on-surface-variant">{t('aiFill.noBlocks')}</li>
-                ) : null}
-              </ul>
-            ) : null}
-          </>
-        )}
-      </section>
+                  );
+                })
+              )}
+            </div>
+          ) : null}
 
-      {/* History */}
-      <section className="rounded-[22px] border border-outline-variant bg-surface-container-lowest p-5 sm:p-6">
-        <h2 className="font-display text-lg font-semibold text-on-surface">{t('aiFill.historyTitle')}</h2>
-        <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.historyHint')}</p>
+          {tab === 'text' ? (
+            <pre className="max-h-[28rem] overflow-auto whitespace-pre-wrap rounded-xl bg-surface-container/50 p-4 text-sm leading-relaxed text-on-surface">
+              {result.rawText || t('aiFill.noText')}
+            </pre>
+          ) : null}
 
-        {historyLoading ? (
-          <p className="mt-4 text-sm text-on-surface-variant">{t('common.loading')}</p>
-        ) : history.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-outline-variant px-4 py-8 text-center text-sm text-on-surface-variant">
-            {t('aiFill.historyEmpty')}
-          </div>
-        ) : (
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-            {history.map((item) => {
-              const meta = statusMeta(item.status, t);
-              const active = result?._id === item._id;
-              return (
-                <li key={item._id}>
-                  <button
-                    type="button"
-                    onClick={() => applyImport(item)}
-                    className={`flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-start transition-colors ${
-                      active
-                        ? 'border-primary/30 bg-primary/5'
-                        : 'border-outline-variant bg-surface-container/30 hover:bg-surface-container'
-                    }`}
-                  >
-                    <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${toneClass(meta.tone)}`}>
-                      <MaterialIcon name={meta.icon} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-on-surface">
-                        {item.draftMenu?.meta?.productCount
-                          ? t('aiFill.historyProducts', { count: item.draftMenu.meta.productCount })
-                          : item.rawText?.slice(0, 60) || item.errorMessage || t('aiFill.untitledImport')}
+          {tab === 'blocks' ? (
+            <ul className="max-h-[28rem] space-y-2 overflow-auto">
+              {(result.rawBlocks || []).map((block, index) => (
+                <li
+                  key={`${index}-${String(block?.text || '').slice(0, 12)}`}
+                  className="rounded-xl border border-outline-variant/70 bg-surface-container/30 px-3 py-2"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm text-on-surface">{block?.text || '—'}</p>
+                    {typeof block?.confidence === 'number' ? (
+                      <span className="shrink-0 text-xs font-medium text-on-surface-variant">
+                        {Math.round(block.confidence * 100)}%
                       </span>
-                      <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-on-surface-variant">
-                        <span>{formatDate(item.createdAt, locale)}</span>
-                        <span className={`rounded-full px-2 py-0.5 font-semibold ${toneClass(meta.tone)}`}>{meta.label}</span>
-                      </span>
-                    </span>
-                    <MaterialIcon name="chevron_right" className="text-on-surface-variant rtl:rotate-180" />
-                  </button>
+                    ) : null}
+                  </div>
                 </li>
-              );
-            })}
-          </ul>
-        )}
+              ))}
+              {!result.rawBlocks?.length ? (
+                <li className="text-sm text-on-surface-variant">{t('aiFill.noBlocks')}</li>
+              ) : null}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* History — collapsed by default after first use */}
+      <section className="rounded-2xl border border-outline-variant/70 bg-surface-container-lowest">
+        <button
+          type="button"
+          onClick={() => setHistoryOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-start sm:px-5"
+        >
+          <div>
+            <h2 className="font-display text-base font-semibold text-on-surface">
+              {t('aiFill.historyTitle')}
+            </h2>
+            <p className="mt-0.5 text-xs text-on-surface-variant">
+              {historyLoading
+                ? t('common.loading')
+                : t('aiFill.historyCount', { count: history.length })}
+            </p>
+          </div>
+          <MaterialIcon
+            name={historyOpen ? 'expand_less' : 'expand_more'}
+            className="text-on-surface-variant"
+          />
+        </button>
+
+        {historyOpen ? (
+          <div className="border-t border-outline-variant/50 px-4 pb-4 sm:px-5">
+            {history.length === 0 ? (
+              <p className="py-6 text-center text-sm text-on-surface-variant">{t('aiFill.historyEmpty')}</p>
+            ) : (
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                {history.map((item) => {
+                  const meta = statusMeta(item.status, t);
+                  const active = result?._id === item._id;
+                  return (
+                    <li key={item._id}>
+                      <button
+                        type="button"
+                        onClick={() => applyImport(item)}
+                        className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start transition-colors ${
+                          active
+                            ? 'border-primary/30 bg-primary/5'
+                            : 'border-outline-variant/70 bg-surface-container/20 hover:bg-surface-container/60'
+                        }`}
+                      >
+                        <span
+                          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${toneClass(meta.tone)}`}
+                        >
+                          <MaterialIcon name={meta.icon} className="text-[18px]" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-on-surface">
+                            {item.draftMenu?.meta?.productCount
+                              ? t('aiFill.historyProducts', {
+                                  count: item.draftMenu.meta.productCount,
+                                })
+                              : item.rawText?.slice(0, 48) ||
+                                item.errorMessage ||
+                                t('aiFill.untitledImport')}
+                          </span>
+                          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-on-surface-variant">
+                            <span>{formatDate(item.createdAt, locale)}</span>
+                            <span className={`rounded-full px-1.5 py-0.5 font-semibold ${toneClass(meta.tone)}`}>
+                              {meta.label}
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        ) : null}
       </section>
 
-      {/* Sticky actions */}
+      {/* Sticky publish bar */}
       {result && !isPublished && tab === 'review' ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
-          <div className="pointer-events-auto mx-auto flex max-w-4xl flex-col gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest/95 p-3 shadow-[0_-8px_30px_rgba(13,27,42,0.12)] backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-4">
-            <p className="px-1 text-sm text-on-surface-variant">
-              <span className="font-semibold text-on-surface">{selectedCounts.products}</span> {t('aiFill.readyToPublish')}
-            </p>
+          <div className="pointer-events-auto mx-auto flex max-w-5xl flex-col gap-2.5 rounded-2xl border border-outline-variant/80 bg-surface-container-lowest/95 p-3 shadow-[0_-12px_40px_rgba(13,27,42,0.14)] backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-4">
+            <div className="flex items-center gap-3 px-1">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
+                {selectedCounts.products}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-on-surface">{t('aiFill.readyToPublish')}</p>
+                <p className="text-[11px] text-on-surface-variant">
+                  {selectedCounts.categories} {t('aiFill.categoriesSelected')}
+                  {selectedCounts.review
+                    ? ` · ${selectedCounts.review} ${t('aiFill.toReview')}`
+                    : ''}
+                </p>
+              </div>
+            </div>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -926,7 +1294,7 @@ export default function AiFillPage() {
                 type="button"
                 disabled={busy || !selectedCounts.products}
                 onClick={handlePublish}
-                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary disabled:opacity-60 sm:flex-none"
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary shadow-[0_8px_20px_rgba(13,27,42,0.2)] disabled:opacity-60 sm:flex-none"
               >
                 <MaterialIcon
                   name={publishing ? 'progress_activity' : 'check_circle'}
@@ -938,6 +1306,13 @@ export default function AiFillPage() {
           </div>
         </div>
       ) : null}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

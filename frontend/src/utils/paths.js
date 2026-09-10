@@ -38,7 +38,7 @@ export function landingSectionId(pathname) {
   return 'accueil';
 }
 
-const PLATFORM_PREFIXES = ['cafes', 'qr-requests', 'logs', 'storage'];
+const PLATFORM_PREFIXES = ['cafes', 'logs', 'storage', 'trials'];
 const APP_PREFIXES = ['products', 'categories'];
 
 export function mapLegacyDashboardPath(pathname, user) {

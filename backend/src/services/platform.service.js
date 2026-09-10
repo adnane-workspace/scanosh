@@ -5,7 +5,7 @@ import { buildPaginationMeta, paginatedResult, parsePaginationQuery } from '../u
 import { assertUsableSlug, slugify } from '../utils/slug.js';
 import { recordActivity } from './activity.service.js';
 import { invalidatePublicMenu } from './menuCache.service.js';
-import { findPendingQrRequest, toQrStatus } from './qr.service.js';
+import { toQrStatus } from './qr.service.js';
 import { deleteCloudinaryImage } from './storage.service.js';
 import { ensureDefaultSections } from './category.service.js';
 
@@ -28,8 +28,6 @@ function toPlatformCafe(cafe, counts) {
     categoryCount: counts.categoryCount,
     createdAt: cafe.createdAt,
     qrGeneratedAt: cafe.qrGeneratedAt || null,
-    qrChangeAllowed: Boolean(cafe.qrChangeAllowed),
-    pendingQrChange: Boolean(counts.pendingQrChange),
     trialRole: cafe.trialRole || 'none',
     ...ownerFromUsers(cafe.users),
   };
@@ -105,13 +103,12 @@ export async function createPlatformCafe({ ownerName, email, password, cafeName,
 }
 
 export async function getPlatformOverview() {
-  const [cafeCount, activeCafeCount, pendingQrCount] = await Promise.all([
+  const [cafeCount, activeCafeCount] = await Promise.all([
     prisma.cafe.count(),
     prisma.cafe.count({ where: { isActive: true } }),
-    prisma.qrChangeRequest.count({ where: { status: 'pending' } }),
   ]);
 
-  return { cafeCount, activeCafeCount, pendingQrCount };
+  return { cafeCount, activeCafeCount, pendingQrCount: 0 };
 }
 
 export async function listPlatformCafeOptions() {
@@ -175,7 +172,6 @@ export async function listPlatformCafes(query = {}) {
         isActive: true,
         createdAt: true,
         qrGeneratedAt: true,
-        qrChangeAllowed: true,
         trialRole: true,
         ...ownerSelect,
       },
@@ -189,7 +185,7 @@ export async function listPlatformCafes(query = {}) {
     return paginatedResult([], buildPaginationMeta({ page, limit, total }));
   }
 
-  const [productGroups, categoryGroups, pendingQrRequests] = await Promise.all([
+  const [productGroups, categoryGroups] = await Promise.all([
     prisma.product.groupBy({
       by: ['cafeId'],
       where: { cafeId: { in: cafeIds } },
@@ -200,21 +196,15 @@ export async function listPlatformCafes(query = {}) {
       where: { cafeId: { in: cafeIds } },
       _count: { _all: true },
     }),
-    prisma.qrChangeRequest.findMany({
-      where: { cafeId: { in: cafeIds }, status: 'pending' },
-      select: { cafeId: true },
-    }),
   ]);
 
   const productCountByCafe = new Map(productGroups.map((item) => [item.cafeId, item._count._all]));
   const categoryCountByCafe = new Map(categoryGroups.map((item) => [item.cafeId, item._count._all]));
-  const pendingQrByCafe = new Set(pendingQrRequests.map((item) => item.cafeId));
 
   const items = cafes.map((cafe) =>
     toPlatformCafe(cafe, {
       productCount: productCountByCafe.get(cafe.id) || 0,
       categoryCount: categoryCountByCafe.get(cafe.id) || 0,
-      pendingQrChange: pendingQrByCafe.has(cafe.id),
     }),
   );
 
@@ -258,7 +248,6 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
       isActive: true,
       createdAt: true,
       qrGeneratedAt: true,
-      qrChangeAllowed: true,
       trialRole: true,
       ...ownerSelect,
     },
@@ -312,14 +301,13 @@ export async function getPlatformCafe(cafeId) {
     throw new ApiError(404, 'Cafe not found', null, 'CAFE_NOT_FOUND');
   }
 
-  const [productCount, categoryCount, pendingQr] = await Promise.all([
+  const [productCount, categoryCount] = await Promise.all([
     prisma.product.count({ where: { cafeId } }),
     prisma.category.count({ where: { cafeId } }),
-    findPendingQrRequest(cafeId),
   ]);
 
   return {
-    ...toPlatformCafe(cafe, { productCount, categoryCount, pendingQrChange: Boolean(pendingQr) }),
+    ...toPlatformCafe(cafe, { productCount, categoryCount }),
     description: cafe.description || '',
     logo: cafe.logo || '',
     cover: cafe.cover || '',
@@ -328,7 +316,7 @@ export async function getPlatformCafe(cafeId) {
     latitude: cafe.latitude,
     longitude: cafe.longitude,
     updatedAt: cafe.updatedAt,
-    qr: toQrStatus(cafe, pendingQr),
+    qr: toQrStatus(cafe),
   };
 }
 

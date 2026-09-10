@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AdminProductCard from '../components/dashboard/AdminProductCard.jsx';
+import MediaImagePickerModal from '../components/dashboard/MediaImagePickerModal.jsx';
 import ProductFormModal from '../components/dashboard/ProductFormModal.jsx';
 import Field from '../components/ui/Field.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
@@ -11,6 +12,7 @@ import {
   createProduct,
   deleteProduct,
   getProducts,
+  suggestProductImagesBatch,
   updateProduct,
   uploadProductImage,
 } from '../services/product.service.js';
@@ -39,6 +41,9 @@ export default function ProductsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [togglingId, setTogglingId] = useState(null);
+  const [pickerProduct, setPickerProduct] = useState(null);
+  const [suggestingBatch, setSuggestingBatch] = useState(false);
+  const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
   const [search, setSearch] = useState('');
@@ -270,6 +275,7 @@ export default function ProductsPage() {
 
   async function handleToggleAvailable(product) {
     setError('');
+    setSuccess('');
     setTogglingId(product._id);
 
     try {
@@ -286,6 +292,49 @@ export default function ProductsPage() {
     }
   }
 
+  function handleSuggestImage(product) {
+    setError('');
+    setSuccess('');
+    setPickerProduct(product);
+  }
+
+  function handlePickerApplied(updatedProduct) {
+    if (updatedProduct?._id) {
+      setProducts((current) =>
+        current.map((item) => (item._id === updatedProduct._id ? updatedProduct : item)),
+      );
+    }
+    setSuccess(t('products.pickImageApplied'));
+  }
+
+  async function handleSuggestMissingBatch() {
+    setError('');
+    setSuccess('');
+    setSuggestingBatch(true);
+    try {
+      const result = await suggestProductImagesBatch({
+        onlyMissing: true,
+        limit: 20,
+      });
+      await loadData(true);
+      setSuccess(
+        t('products.suggestBatchSuccess', {
+          updated: result?.summary?.updated ?? 0,
+          failed: result?.summary?.failed ?? 0,
+        }),
+      );
+    } catch (err) {
+      setError(getApiError(err, t, 'products.suggestImageError'));
+    } finally {
+      setSuggestingBatch(false);
+    }
+  }
+
+  const missingPhotos = useMemo(
+    () => products.filter((item) => !item.image).length,
+    [products],
+  );
+
   return (
     <div className="flex w-full flex-col">
       <div className="mb-stack-lg flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -293,19 +342,40 @@ export default function ProductsPage() {
           <h1 className="font-display text-display-md font-bold text-on-surface">{t('products.title')}</h1>
           <p className="mt-1 text-on-surface-variant">{t('products.subtitle')}</p>
         </div>
-        <button
-          type="button"
-          onClick={openCreateForm}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-label-lg font-semibold tracking-[0.05em] text-on-primary shadow-md transition-all hover:bg-primary/90"
-        >
-          <MaterialIcon name="add" />
-          {t('products.add')}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {missingPhotos > 0 ? (
+            <button
+              type="button"
+              disabled={suggestingBatch || loading}
+              onClick={handleSuggestMissingBatch}
+              className="inline-flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container-lowest px-5 py-3 text-label-lg font-semibold tracking-[0.05em] text-on-surface transition hover:bg-surface-container disabled:opacity-50"
+            >
+              <MaterialIcon
+                name={suggestingBatch ? 'progress_activity' : 'auto_awesome'}
+                className={suggestingBatch ? 'animate-spin' : ''}
+              />
+              {suggestingBatch ? t('products.suggestingBatch') : t('products.suggestMissingPhotos')}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={openCreateForm}
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-label-lg font-semibold tracking-[0.05em] text-on-primary shadow-md transition-all hover:bg-primary/90"
+          >
+            <MaterialIcon name="add" />
+            {t('products.add')}
+          </button>
+        </div>
       </div>
 
       {error ? (
         <p className="mb-stack-lg rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-error">
           {error}
+        </p>
+      ) : null}
+      {success ? (
+        <p className="mb-stack-lg rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
+          {success}
         </p>
       ) : null}
 
@@ -360,9 +430,11 @@ export default function ProductsPage() {
               key={product._id}
               product={product}
               toggling={togglingId === product._id}
+              suggesting={false}
               onEdit={startEdit}
               onDelete={handleDelete}
               onToggleAvailable={handleToggleAvailable}
+              onSuggestImage={handleSuggestImage}
             />
           ))}
         </div>
@@ -374,6 +446,13 @@ export default function ProductsPage() {
         total={pagination.total}
         onPageChange={setPage}
         disabled={loading}
+      />
+
+      <MediaImagePickerModal
+        open={Boolean(pickerProduct)}
+        product={pickerProduct}
+        onClose={() => setPickerProduct(null)}
+        onApplied={handlePickerApplied}
       />
 
       <ProductFormModal

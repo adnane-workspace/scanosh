@@ -41,7 +41,6 @@ const headerSubtitleKeys = {
   '/platform/cafes': 'header.cafes',
   '/platform/cafes/new': 'header.cafeNew',
   '/platform/trials': 'header.trials',
-  '/platform/qr-requests': 'header.qrRequests',
   '/platform/logs': 'header.logs',
   '/platform/storage': 'header.storage',
 };
@@ -141,7 +140,6 @@ export default function DashboardLayout() {
     navigate('/login', { replace: true });
   }
 
-  const qrRequestCount = platformOverview.pendingQrCount || 0;
   const subtitleKey = headerSubtitleKeys[location.pathname];
   const headerSubtitle = subtitleKey
     ? t(subtitleKey)
@@ -176,7 +174,6 @@ export default function DashboardLayout() {
           <Sidebar
             cafe={stats.cafe}
             role={user?.role}
-            qrRequestCount={qrRequestCount}
             onLogout={handleLogout}
             onNavigate={() => setIsSidebarOpen(false)}
           />

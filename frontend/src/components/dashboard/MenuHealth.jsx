@@ -61,14 +61,7 @@ export default function MenuHealth({ stats, qr, loading }) {
     });
   }
 
-  if (qr?.pendingRequest) {
-    alerts.push({
-      id: 'qr-pending',
-      icon: 'hourglass_top',
-      title: t('dashboard.healthQrPending'),
-      hint: t('dashboard.qrRequestPending'),
-    });
-  } else if (qr && !qr.generated) {
+  if (qr && !qr.generated) {
     alerts.push({
       id: 'qr',
       icon: 'qr_code_2',

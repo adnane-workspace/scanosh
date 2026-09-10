@@ -189,13 +189,7 @@ export default function CafesPage() {
                     {t('platform.menuStats', { categories: cafe.categoryCount, products: cafe.productCount })}
                   </td>
                   <td className="px-4 py-3 text-on-surface-variant">
-                    {cafe.pendingQrChange
-                      ? t('qr.statusPending')
-                      : cafe.qrChangeAllowed
-                        ? t('qr.statusUnlocked')
-                        : cafe.qrGeneratedAt
-                          ? t('qr.statusGenerated')
-                          : t('qr.statusNotGenerated')}
+                    {cafe.qrGeneratedAt ? t('qr.statusGenerated') : t('qr.statusNotGenerated')}
                   </td>
                   <td className="px-4 py-3 text-on-surface-variant">{formatDate(cafe.createdAt, locale)}</td>
                   <td className="px-4 py-3">
