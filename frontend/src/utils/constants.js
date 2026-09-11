@@ -76,6 +76,10 @@ export function getDocumentOrigin() {
   return getSiteOrigin();
 }
 
+export const DEMO_MENU_SLUG = String(import.meta.env.VITE_DEMO_MENU_SLUG || 'bbb')
+  .trim()
+  .toLowerCase() || 'bbb';
+
 export function getPublicMenuUrl(slug) {
   if (!slug) {
     return '';

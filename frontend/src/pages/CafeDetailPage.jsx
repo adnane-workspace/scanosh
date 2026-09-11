@@ -6,7 +6,7 @@ import CloudinaryImage from '../components/ui/CloudinaryImage.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useLocale } from '../hooks/useLocale.js';
 import { useToast } from '../hooks/useToast.js';
-import { deletePlatformCafe, getPlatformCafe, populateCafeContent, resetPlatformCafePassword, resetTrialCafe, updatePlatformCafe, updatePlatformCafeOwnerEmail } from '../services/platform.service.js';
+import { deletePlatformCafe, getPlatformCafe, resetPlatformCafePassword, updatePlatformCafe, updatePlatformCafeOwnerEmail } from '../services/platform.service.js';
 import { getApiError } from '../utils/apiError.js';
 import { formatDate } from '../utils/format.js';
 import { hasCoordinates, mapsHref } from '../utils/location.js';
@@ -44,7 +44,6 @@ export default function CafeDetailPage() {
   const [emailSaving, setEmailSaving] = useState(false);
   const [deleteName, setDeleteName] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const [trialBusy, setTrialBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,72 +165,6 @@ export default function CafeDetailPage() {
     }
   }
 
-  async function handleTrialRole(trialRole) {
-    if (!cafe) {
-      return;
-    }
-
-    setTrialBusy(true);
-    setError('');
-
-    try {
-      const updated = await updatePlatformCafe(cafe._id, { trialRole });
-      setCafe((current) => ({ ...current, ...updated }));
-      toast.success(
-        trialRole === 'playground'
-          ? t('platform.trialSetPlayground')
-          : trialRole === 'template'
-            ? t('platform.trialSetTemplate')
-            : t('platform.trialCleared'),
-      );
-      await refreshPlatformOverview?.();
-    } catch (err) {
-      setError(getApiError(err, t, 'platform.updateError'));
-    } finally {
-      setTrialBusy(false);
-    }
-  }
-
-  async function handleResetTrial() {
-    if (!cafe) {
-      return;
-    }
-
-    setTrialBusy(true);
-    setError('');
-
-    try {
-      const updated = await resetTrialCafe(cafe._id);
-      setCafe(updated);
-      toast.success(t('platform.trialResetDone'));
-      await refreshPlatformOverview?.();
-    } catch (err) {
-      setError(getApiError(err, t, 'platform.trialResetError'));
-    } finally {
-      setTrialBusy(false);
-    }
-  }
-
-  async function handlePopulate() {
-    if (!cafe || !window.confirm(t('platform.populateConfirm'))) {
-      return;
-    }
-
-    setTrialBusy(true);
-    setError('');
-
-    try {
-      const updated = await populateCafeContent(cafe._id);
-      setCafe(updated);
-      toast.success(t('platform.populateSuccess'));
-      await refreshPlatformOverview?.();
-    } catch (err) {
-      setError(getApiError(err, t, 'platform.populateError'));
-    } finally {
-      setTrialBusy(false);
-    }
-  }
-
   async function handleDelete() {
     if (!cafe) {
       return;
@@ -345,65 +278,6 @@ export default function CafeDetailPage() {
             <h2 className="text-lg font-semibold text-on-surface">{t('qr.platformTitle')}</h2>
             <p className="text-sm text-on-surface-variant">{t('qr.platformHint')}</p>
             <p className="font-semibold text-on-surface">{qrStatusLabel()}</p>
-          </div>
-
-          <div className="space-y-3 border-t border-outline-variant/30 pt-5">
-            <h2 className="text-lg font-semibold text-on-surface">{t('platform.trialTitle')}</h2>
-            <p className="text-sm text-on-surface-variant">{t('platform.trialHint')}</p>
-            <p className="font-semibold text-on-surface">
-              {cafe.trialRole === 'playground'
-                ? t('platform.trialRolePlayground')
-                : cafe.trialRole === 'template'
-                  ? t('platform.trialRoleTemplate')
-                  : t('platform.trialRoleNone')}
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                disabled={trialBusy}
-                onClick={() => handleTrialRole('playground')}
-                className="rounded-xl bg-surface-container-high px-5 py-2.5 text-sm font-semibold text-on-surface disabled:opacity-60"
-              >
-                {t('platform.trialMarkPlayground')}
-              </button>
-              <button
-                type="button"
-                disabled={trialBusy}
-                onClick={() => handleTrialRole('template')}
-                className="rounded-xl bg-surface-container-high px-5 py-2.5 text-sm font-semibold text-on-surface disabled:opacity-60"
-              >
-                {t('platform.trialMarkTemplate')}
-              </button>
-              {cafe.trialRole !== 'none' ? (
-                <button
-                  type="button"
-                  disabled={trialBusy}
-                  onClick={() => handleTrialRole('none')}
-                  className="rounded-xl bg-surface-container-high px-5 py-2.5 text-sm font-semibold text-on-surface disabled:opacity-60"
-                >
-                  {t('platform.trialClearRole')}
-                </button>
-              ) : null}
-              {cafe.trialRole === 'playground' ? (
-                <button
-                  type="button"
-                  disabled={trialBusy}
-                  onClick={handleResetTrial}
-                  className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary disabled:opacity-60"
-                >
-                  {trialBusy ? t('common.saving') : t('platform.trialReset')}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={trialBusy}
-                  onClick={handlePopulate}
-                  className="rounded-xl bg-primary/10 px-5 py-2.5 text-sm font-semibold text-primary hover:bg-primary/20 disabled:opacity-60"
-                >
-                  {trialBusy ? t('common.saving') : t('platform.populateAction')}
-                </button>
-              )}
-            </div>
           </div>
 
           <div className="space-y-3 border-t border-outline-variant/30 pt-5">

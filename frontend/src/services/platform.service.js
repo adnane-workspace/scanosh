@@ -64,16 +64,6 @@ export async function updatePlatformCafeOwnerEmail(id, email) {
   return data.data;
 }
 
-export async function populateCafeContent(id) {
-  const { data } = await api.post(`/platform/cafes/${id}/populate`);
-  return data.data.cafe;
-}
-
-export async function resetTrialCafe(id) {
-  const { data } = await api.post(`/platform/cafes/${id}/reset-trial`);
-  return data.data.cafe;
-}
-
 export async function listTrialLeads(params = {}) {
   const { data } = await api.get('/platform/trial-leads', { params });
   return {

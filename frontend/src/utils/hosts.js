@@ -3,7 +3,7 @@ import { isReservedSubdomain } from './reservedSubdomains.js';
 export const DEFAULT_ROOT_DOMAIN = 'scanosh.com';
 
 const APP_SUBDOMAINS = new Set(['app', 'platform']);
-const APP_PATH_RE = /^\/(login|register|essai|forgot-password|app|platform)(\/|$)/;
+const APP_PATH_RE = /^\/(login|register|essai|demo|forgot-password|app|platform)(\/|$)/;
 
 export function getRootDomain() {
   const fromEnv = import.meta.env?.VITE_ROOT_DOMAIN;

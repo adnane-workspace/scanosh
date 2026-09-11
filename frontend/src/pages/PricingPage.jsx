@@ -1,4 +1,5 @@
 import AppLink from '../components/common/AppLink.jsx';
+import DemoMenuLink from '../components/common/DemoMenuLink.jsx';
 import DocumentHead from '../components/seo/DocumentHead.jsx';
 import SeoBreadcrumbs from '../components/seo/SeoBreadcrumbs.jsx';
 import SeoCta from '../components/seo/SeoCta.jsx';
@@ -42,12 +43,11 @@ export default function PricingPage() {
             >
               {t('landing.ctaStart')}
             </AppLink>
-            <AppLink
-              to="/essai"
+            <DemoMenuLink
               className="inline-flex rounded-xl border border-outline-variant px-5 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container"
             >
               {t('landing.ctaTrial')}
-            </AppLink>
+            </DemoMenuLink>
           </div>
         </div>
 

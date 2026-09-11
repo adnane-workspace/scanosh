@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import AppLink from '../components/common/AppLink.jsx';
+import DemoMenuLink from '../components/common/DemoMenuLink.jsx';
 import MarketingLink from '../components/common/MarketingLink.jsx';
 import AsciiWave from '../components/landing/AsciiWave.jsx';
 import BrandLogo from '../components/ui/BrandLogo.jsx';
@@ -189,8 +190,7 @@ export default function MarketingLayout({ children }) {
               >
                 {t('landing.ctaLogin')}
               </AppLink>
-              <AppLink
-                to="/essai"
+              <DemoMenuLink
                 className={`inline-flex max-w-[9.5rem] items-center justify-center truncate rounded-full font-medium transition-all duration-500 sm:max-w-none ${
                   onDarkNav
                     ? 'h-9 bg-[#e0e1dd] px-3.5 text-xs text-[#0d1b2a] hover:bg-white sm:h-11 sm:px-6 sm:text-sm'
@@ -200,7 +200,7 @@ export default function MarketingLayout({ children }) {
                 }`}
               >
                 {t('landing.ctaTrial')}
-              </AppLink>
+              </DemoMenuLink>
               <button
                 type="button"
                 className={`inline-flex h-9 w-9 items-center justify-center rounded-xl xl:hidden ${
@@ -344,13 +344,12 @@ export default function MarketingLayout({ children }) {
               >
                 {t('landing.ctaLogin')}
               </AppLink>
-              <AppLink
-                to="/essai"
+              <DemoMenuLink
                 className="inline-flex h-11 items-center justify-center rounded-full bg-[#e0e1dd] text-sm font-semibold text-[#0d1b2a] transition-colors hover:bg-white"
                 onClick={() => setMenuOpen(false)}
               >
                 {t('landing.ctaTrial')}
-              </AppLink>
+              </DemoMenuLink>
             </div>
           </div>
         </aside>

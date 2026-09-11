@@ -178,11 +178,6 @@ export default function CafesPage() {
                       {cafe.name}
                     </Link>
                     <p className="text-on-surface-variant">{cafe.slug}</p>
-                    {cafe.trialRole === 'playground' || cafe.trialRole === 'template' ? (
-                      <p className="mt-1 text-xs font-semibold text-primary">
-                        {cafe.trialRole === 'playground' ? t('platform.trialRolePlayground') : t('platform.trialRoleTemplate')}
-                      </p>
-                    ) : null}
                   </td>
                     <td className="px-4 py-3 text-on-surface-variant">{cafe.ownerEmail || t('common.none')}</td>
                   <td className="px-4 py-3 text-on-surface-variant">

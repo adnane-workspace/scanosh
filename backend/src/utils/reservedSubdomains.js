@@ -15,6 +15,7 @@ export const RESERVED_SUBDOMAINS = new Set([
   'login',
   'register',
   'essai',
+  'demo',
   'ftp',
   'smtp',
   'imap',

@@ -12,7 +12,7 @@ import {
   updateCafeOwnerEmail,
   updateCafeStatus,
 } from '../controllers/platform.controller.js';
-import { getTrialLeads, populateCafeContent, resetCafeTrial } from '../controllers/trial.controller.js';
+import { getTrialLeads } from '../controllers/trial.controller.js';
 import { listQrRequests, reviewQrRequest, unlockQr } from '../controllers/qr.controller.js';
 import { authenticate, requireSuperAdmin } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validate.js';
@@ -46,8 +46,6 @@ platformRouter.patch('/cafes/:id', validate(updatePlatformCafeSchema), updateCaf
 platformRouter.delete('/cafes/:id', validate(platformCafeIdSchema), deleteCafe);
 platformRouter.post('/cafes/:id/password', validate(resetPlatformCafePasswordSchema), resetCafePassword);
 platformRouter.post('/cafes/:id/email', validate(updatePlatformCafeEmailSchema), updateCafeOwnerEmail);
-platformRouter.post('/cafes/:id/reset-trial', validate(platformCafeIdSchema), resetCafeTrial);
-platformRouter.post('/cafes/:id/populate', validate(platformCafeIdSchema), populateCafeContent);
 platformRouter.post('/cafes/:id/qr/unlock', validate(platformCafeIdSchema), unlockQr);
 
 export { platformRouter };

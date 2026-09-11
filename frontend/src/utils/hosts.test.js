@@ -120,8 +120,8 @@ test('getAppHref points marketing visitors at the app origin', () => {
     'https://app.scanosh.com/register',
   );
   assert.equal(
-    getAppHref('/essai', { hostname: 'www.scanosh.com', protocol: 'https:', rootDomain: root }),
-    'https://app.scanosh.com/essai',
+    getAppHref('/demo', { hostname: 'www.scanosh.com', protocol: 'https:', rootDomain: root }),
+    'https://app.scanosh.com/demo',
   );
 });
 

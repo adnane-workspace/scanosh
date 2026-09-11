@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import AppLink from '../common/AppLink.jsx';
+import DemoMenuLink from '../common/DemoMenuLink.jsx';
 import MaterialIcon from '../ui/MaterialIcon.jsx';
 import { useLocale } from '../../hooks/useLocale.js';
 import HeroQrMark from './HeroQrMark.jsx';
@@ -67,12 +68,11 @@ export default function LandingHero() {
               <span className="text-center">{t('landing.ctaStart')}</span>
               <MaterialIcon name="arrow_forward" className="shrink-0 text-[18px] transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
             </AppLink>
-            <AppLink
-              to="/essai"
+            <DemoMenuLink
               className="inline-flex h-auto min-h-12 w-full items-center justify-center rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md hover:bg-white/15 sm:w-auto sm:px-7 sm:text-base"
             >
               {t('landing.ctaTrial')}
-            </AppLink>
+            </DemoMenuLink>
           </div>
         </div>
 
