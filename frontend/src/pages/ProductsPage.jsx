@@ -32,6 +32,7 @@ const emptyForm = {
 export default function ProductsPage() {
   const { t } = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
+  const reviewMode = searchParams.get('review') === '1';
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -49,6 +50,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
+  const [missingOnly, setMissingOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const skipFilterDebounceRef = useRef(true);
@@ -61,7 +63,7 @@ export default function ProductsPage() {
       setError('');
 
       try {
-        const params = { page, limit: 20 };
+        const params = { page, limit: reviewMode ? 50 : 20 };
 
         if (search.trim()) {
           params.search = search.trim();
@@ -79,7 +81,11 @@ export default function ProductsPage() {
           getProducts(params),
           listCategoryOptions(),
         ]);
-        setProducts(productResult.items);
+        let items = productResult.items || [];
+        if (missingOnly) {
+          items = items.filter((item) => !item.image);
+        }
+        setProducts(items);
         setPagination(productResult.pagination);
         setCategories(categoryItems);
       } catch (err) {
@@ -90,12 +96,12 @@ export default function ProductsPage() {
         }
       }
     },
-    [availabilityFilter, categoryFilter, page, search, t],
+    [availabilityFilter, categoryFilter, missingOnly, page, reviewMode, search, t],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [search, categoryFilter, availabilityFilter]);
+  }, [search, categoryFilter, availabilityFilter, missingOnly]);
 
   useEffect(() => {
     if (skipFilterDebounceRef.current) {
@@ -335,15 +341,25 @@ export default function ProductsPage() {
     [products],
   );
 
+  function dismissReviewMode() {
+    const next = new URLSearchParams(searchParams);
+    next.delete('review');
+    setSearchParams(next, { replace: true });
+  }
+
   return (
     <div className="flex w-full flex-col">
       <div className="mb-stack-lg flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-display-md font-bold text-on-surface">{t('products.title')}</h1>
-          <p className="mt-1 text-on-surface-variant">{t('products.subtitle')}</p>
+          <h1 className="font-display text-display-md font-bold text-on-surface">
+            {reviewMode ? t('products.reviewTitle') : t('products.title')}
+          </h1>
+          <p className="mt-1 text-on-surface-variant">
+            {reviewMode ? t('products.reviewSubtitle') : t('products.subtitle')}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {missingPhotos > 0 ? (
+          {missingPhotos > 0 || reviewMode ? (
             <button
               type="button"
               disabled={suggestingBatch || loading}
@@ -367,6 +383,35 @@ export default function ProductsPage() {
           </button>
         </div>
       </div>
+
+      {reviewMode ? (
+        <div className="mb-stack-lg flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/8 px-4 py-3.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-on-surface">{t('products.reviewBannerTitle')}</p>
+            <p className="mt-0.5 text-xs text-on-surface-variant">{t('products.reviewBannerHint')}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setMissingOnly((value) => !value)}
+              className={`inline-flex h-9 items-center rounded-full px-3 text-xs font-semibold ${
+                missingOnly
+                  ? 'bg-primary text-on-primary'
+                  : 'border border-outline-variant bg-surface-container-lowest text-on-surface'
+              }`}
+            >
+              {t('products.filterMissingPhotos')}
+            </button>
+            <button
+              type="button"
+              onClick={dismissReviewMode}
+              className="inline-flex h-9 items-center rounded-full border border-outline-variant bg-surface-container-lowest px-3 text-xs font-semibold text-on-surface"
+            >
+              {t('products.reviewDone')}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {error ? (
         <p className="mb-stack-lg rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-error">

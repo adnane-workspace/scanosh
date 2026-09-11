@@ -65,9 +65,16 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
   const selectedProductId = searchParams.get('product');
   const paths = getMenuPaths(slug);
   const activeSections = useMemo(() => getActiveSections(menu), [menu]);
-  const sectionKey = fixedSectionKey || (isMenuSectionKey(sectionKeyParam) ? sectionKeyParam : null);
+  // UUID category ids also match the section-key pattern — treat them as flat catalog ids.
+  const sectionKey =
+    fixedSectionKey ||
+    (sectionKeyParam && !isLegacyCategoryId(sectionKeyParam) && isMenuSectionKey(sectionKeyParam)
+      ? sectionKeyParam
+      : null);
   const isSectionMode = Boolean(sectionKey);
-  const flatCategoryId = isSectionMode ? null : categoryId;
+  const flatCategoryId = isSectionMode
+    ? null
+    : categoryId || (isLegacyCategoryId(sectionKeyParam) ? sectionKeyParam : null);
 
   const section = useMemo(
     () => (isSectionMode ? findSectionByKey(menu, sectionKey) : null),

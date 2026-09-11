@@ -206,9 +206,14 @@ export default function PublicMenuSectionsPage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {activeSections.map((section) => (
-              <SectionCard key={section.key} section={section} to={paths.section(section.key)} />
-            ))}
+            {activeSections.map((section) => {
+              const firstCategory = section.children?.[0];
+              const to = firstCategory?.id
+                ? paths.sectionCategory(section.key, firstCategory.id)
+                : paths.section(section.key);
+
+              return <SectionCard key={section.key} section={section} to={to} />;
+            })}
           </div>
         </div>
       </div>

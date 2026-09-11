@@ -12,7 +12,12 @@ Règles:
 - Pour chaque catégorie, choisis sectionKey:
   - "cafe" : cafés, thés, jus, boissons, petit-déjeuner, pâtisseries, viennoiseries
   - "restaurant" : entrées, plats, salades salées, sandwiches repas, pizzas, desserts de restaurant
-- Pour chaque produit: name, description ("" si absente), price (nombre, 0 si inconnu), needsReview (true si doute sur le nom/prix).
+- Pour chaque produit: name, description, price (nombre, 0 si inconnu), needsReview (true si doute sur le nom/prix).
+- DESCRIPTION (important) :
+  - Si le menu donne ingrédients, composition, accompagnement, taille, ou une ligne sous le nom → mets-les dans "description".
+  - Ne mets PAS ces infos dans "name" (le name reste court : nom du plat/boisson).
+  - Laisse description "" SEULEMENT si aucune info secondaire n'apparaît dans le texte OCR.
+  - Max 500 caractères, conserve la langue d'origine.
 - Ignore logos, adresses, téléphones, slogans, QR, horaires, URLs, noms de restaurant.
 - Ne crée JAMAIS une catégorie pour une adresse, un site web, ou le mot "MENU" seul.
 - Ne invente pas de plats absents du texte. Ne nomme pas un produit "Article 1".
@@ -24,14 +29,14 @@ Règles:
       "name": "Boissons",
       "sectionKey": "cafe",
       "products": [
-        { "name": "Café", "description": "", "price": 12, "needsReview": false }
+        { "name": "Café latte", "description": "espresso, lait chauffé, mousse légère", "price": 18, "needsReview": false }
       ]
     },
     {
       "name": "Plats",
       "sectionKey": "restaurant",
       "products": [
-        { "name": "Tajine", "description": "", "price": 65, "needsReview": false }
+        { "name": "Tajine poulet", "description": "olives, citron confit, semoule", "price": 65, "needsReview": false }
       ]
     }
   ]
@@ -56,32 +61,50 @@ export function isMenuLlmConfigured() {
   return Boolean(resolveLlmConfig().apiKey);
 }
 
+function repairJsonText(text) {
+  let value = String(text || '').trim();
+  if (!value) return value;
+  // Trailing commas before } or ]
+  value = value.replace(/,\s*([}\]])/g, '$1');
+  // Smart quotes
+  value = value.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
+  return value;
+}
+
 function extractJsonObject(raw) {
   const text = String(raw || '').trim();
   if (!text) return null;
 
-  try {
-    return JSON.parse(text);
-  } catch {
-    // ignore
-  }
+  const candidates = [];
+
+  candidates.push(text);
 
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced?.[1]) {
-    try {
-      return JSON.parse(fenced[1].trim());
-    } catch {
-      // ignore
-    }
-  }
+  if (fenced?.[1]) candidates.push(fenced[1].trim());
 
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start >= 0 && end > start) {
+    candidates.push(text.slice(start, end + 1));
+  }
+
+  // Truncated JSON: close open braces/brackets best-effort
+  if (start >= 0 && end < start) {
+    let partial = text.slice(start);
+    const opens = (partial.match(/\{/g) || []).length - (partial.match(/\}/g) || []).length;
+    const openArr = (partial.match(/\[/g) || []).length - (partial.match(/\]/g) || []).length;
+    partial += ']'.repeat(Math.max(0, openArr));
+    partial += '}'.repeat(Math.max(0, opens));
+    candidates.push(partial);
+  }
+
+  for (const candidate of candidates) {
+    const repaired = repairJsonText(candidate);
     try {
-      return JSON.parse(text.slice(start, end + 1));
+      const parsed = JSON.parse(repaired);
+      if (parsed && typeof parsed === 'object') return parsed;
     } catch {
-      return null;
+      // try next
     }
   }
 
@@ -125,9 +148,16 @@ export async function extractDraftMenuWithLlm({ text, blocks } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  let response;
-  try {
-    response = await fetch(`${baseUrl}/chat/completions`, {
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    {
+      role: 'user',
+      content: `Texte OCR du menu:\n\n${ocrText}\n\nRetourne UNIQUEMENT le JSON du menu structuré (pas de markdown). Les noms de pizza/plats doivent être dans "name", pas dans "description".`,
+    },
+  ];
+
+  async function callLlm(useJsonFormat) {
+    return fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -137,17 +167,20 @@ export async function extractDraftMenuWithLlm({ text, blocks } = {}) {
       body: JSON.stringify({
         model,
         temperature: 0.1,
-        max_tokens: 4096,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          {
-            role: 'user',
-            content: `Texte OCR du menu:\n\n${ocrText}\n\nRetourne le JSON du menu structuré.`,
-          },
-        ],
+        max_tokens: 8192,
+        ...(useJsonFormat ? { response_format: { type: 'json_object' } } : {}),
+        messages,
       }),
       signal: controller.signal,
     });
+  }
+
+  let response;
+  try {
+    response = await callLlm(true);
+    if (response.status === 400) {
+      response = await callLlm(false);
+    }
   } catch (error) {
     if (error?.name === 'AbortError') {
       throw new ApiError(504, 'Menu LLM timed out', null, 'MENU_LLM_TIMEOUT');

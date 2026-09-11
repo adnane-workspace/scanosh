@@ -5,7 +5,6 @@ import MenuHealth from '../components/dashboard/MenuHealth.jsx';
 import QrCodeModal from '../components/dashboard/QrCodeModal.jsx';
 import QuickActions from '../components/dashboard/QuickActions.jsx';
 import RecentProducts from '../components/dashboard/RecentProducts.jsx';
-import SetupChecklist, { readSetupFlag, writeSetupFlag } from '../components/dashboard/SetupChecklist.jsx';
 import StatCard from '../components/dashboard/StatCard.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import { useAuth } from '../hooks/useAuth.js';
@@ -37,9 +36,6 @@ export default function DashboardPage() {
     canGenerate: true,
   };
   const greetingName = firstName(user?.name, t('dashboard.fallbackName'));
-  const cafeSlug = stats.cafe?.slug || '';
-  const [previewSeen, setPreviewSeen] = useState(false);
-  const [setupDismissed, setSetupDismissed] = useState(false);
 
   useEffect(() => {
     if (!isSuperAdmin) {
@@ -95,15 +91,6 @@ export default function DashboardPage() {
     };
   }, [isSuperAdmin]);
 
-  useEffect(() => {
-    if (!cafeSlug) {
-      return;
-    }
-
-    setPreviewSeen(readSetupFlag('preview', cafeSlug));
-    setSetupDismissed(readSetupFlag('dismissed', cafeSlug));
-  }, [cafeSlug]);
-
   async function handleConfirmIssue() {
     setQrIssuing(true);
     setQrIssueError('');
@@ -137,12 +124,6 @@ export default function DashboardPage() {
 
   const availableRatio =
     stats.totalProducts > 0 ? Math.round((stats.availableProducts / stats.totalProducts) * 100) : 0;
-  const setupComplete =
-    (stats.totalCategories || 0) > 0 &&
-    (stats.totalProducts || 0) > 0 &&
-    Boolean(stats.cafe?.logo) &&
-    Boolean(qr.generated) &&
-    previewSeen;
 
   return (
     <div className="flex w-full flex-col gap-6 lg:gap-8">
@@ -176,26 +157,6 @@ export default function DashboardPage() {
       ) : (
         <CafeDashboardHero cafe={stats.cafe} greetingName={greetingName} menuUrl={menuUrl} qr={qr} onOpenQr={openQr} />
       )}
-
-      {!isSuperAdmin ? (
-        <SetupChecklist
-          stats={stats}
-          qr={qr}
-          menuUrl={menuUrl}
-          previewSeen={previewSeen}
-          dismissed={setupDismissed}
-          loading={loading}
-          onOpenQr={openQr}
-          onPreview={() => {
-            writeSetupFlag('preview', cafeSlug);
-            setPreviewSeen(true);
-          }}
-          onDismiss={() => {
-            writeSetupFlag('dismissed', cafeSlug);
-            setSetupDismissed(true);
-          }}
-        />
-      ) : null}
 
       <div className="grid w-full grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {isSuperAdmin ? (
@@ -346,14 +307,14 @@ export default function DashboardPage() {
       <>
       <QuickActions menuUrl={menuUrl} hasCategory={(stats.totalCategories || 0) > 0} />
       <div className="grid w-full grid-cols-1 gap-5 xl:grid-cols-3 xl:gap-6">
-        <div className={setupComplete || setupDismissed ? 'xl:col-span-2' : 'xl:col-span-3'}>
+        <div className="xl:col-span-2">
           <RecentProducts
             products={stats.recentProducts}
             loading={loading}
             onToggleAvailable={handleToggleAvailable}
           />
         </div>
-        {setupComplete || setupDismissed ? <MenuHealth stats={stats} qr={qr} loading={loading} /> : null}
+        <MenuHealth stats={stats} qr={qr} loading={loading} />
       </div>
       </>
       )}

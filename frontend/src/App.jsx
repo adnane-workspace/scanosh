@@ -163,22 +163,15 @@ function MarketingRoutes() {
   );
 }
 
-function SectionMenuPage({ sectionKey }) {
-  return <PublicMenuPage fixedSectionKey={sectionKey} />;
-}
-
 function UnifiedPublicMenuRoutes() {
   return (
     <Route element={<PublicLayout />}>
       <Route path="/menu/:slug" element={<PublicMenuLandingPage />} />
       <Route path="/menu/:slug/developer" element={<MenuDeveloperPage />} />
       <Route path="/menu/:slug/sections" element={<PublicMenuSectionsPage />} />
-      <Route path="/menu/:slug/restaurant/:categoryId" element={<SectionMenuPage sectionKey="restaurant" />} />
-      <Route path="/menu/:slug/restaurant" element={<SectionMenuPage sectionKey="restaurant" />} />
-      <Route path="/menu/:slug/cafe/:categoryId" element={<SectionMenuPage sectionKey="cafe" />} />
-      <Route path="/menu/:slug/cafe" element={<SectionMenuPage sectionKey="cafe" />} />
       <Route path="/menu/:slug/categories" element={<PublicMenuPage />} />
-      <Route path="/menu/:slug/:categoryId" element={<PublicMenuPage />} />
+      <Route path="/menu/:slug/:sectionKey/:categoryId" element={<PublicMenuPage />} />
+      <Route path="/menu/:slug/:sectionKey" element={<PublicMenuPage />} />
     </Route>
   );
 }
@@ -199,12 +192,9 @@ function MenuTenantRoutes({ slug }) {
           <Route path="/" element={<PublicMenuLandingPage />} />
           <Route path="/developer" element={<MenuDeveloperPage />} />
           <Route path="/sections" element={<PublicMenuSectionsPage />} />
-          <Route path="/restaurant/:categoryId" element={<SectionMenuPage sectionKey="restaurant" />} />
-          <Route path="/restaurant" element={<SectionMenuPage sectionKey="restaurant" />} />
-          <Route path="/cafe/:categoryId" element={<SectionMenuPage sectionKey="cafe" />} />
-          <Route path="/cafe" element={<SectionMenuPage sectionKey="cafe" />} />
           <Route path="/categories" element={<PublicMenuPage />} />
-          <Route path="/:categoryId" element={<PublicMenuPage />} />
+          <Route path="/:sectionKey/:categoryId" element={<PublicMenuPage />} />
+          <Route path="/:sectionKey" element={<PublicMenuPage />} />
         </Route>
         <Route path="/menu/:slug" element={<TenantLegacyMenuRedirect />} />
         <Route path="/menu/:slug/categories" element={<TenantLegacyMenuRedirect />} />

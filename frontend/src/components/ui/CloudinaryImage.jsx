@@ -15,6 +15,7 @@ export default function CloudinaryImage({
   height,
   decoding = 'async',
   onError,
+  hintUrl,
 }) {
   if (!src) {
     return null;
@@ -44,10 +45,13 @@ export default function CloudinaryImage({
     config.lazy = lazy;
   }
 
-  const srcWidths = config.widths || [600];
+  const srcWidths = config.widths || [800];
   const transform = {
     crop: config.crop,
     gravity: config.gravity,
+    quality: config.quality,
+    sharpen: config.sharpen,
+    hintUrl,
   };
   const fallbackWidth = srcWidths[Math.min(1, srcWidths.length - 1)] || srcWidths[0];
   const optimized = getOptimizedCloudinaryUrl(src, { ...transform, width: fallbackWidth });
@@ -67,6 +71,7 @@ export default function CloudinaryImage({
       width={width}
       height={height}
       onError={onError}
+      style={{ imageRendering: 'auto' }}
     />
   );
 }

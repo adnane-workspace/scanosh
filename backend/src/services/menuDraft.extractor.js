@@ -159,13 +159,38 @@ function parsePrice(raw) {
 }
 
 function stripPrice(line) {
-  const match = line.match(PRICE_RE);
-  if (!match) {
-    return { name: normalizeSpaces(line), price: null, hasPrice: false };
+  const text = normalizeSpaces(line);
+  if (!text) {
+    return { name: '', price: null, hasPrice: false };
   }
-  const price = parsePrice(match[1]);
-  const name = normalizeSpaces(line.slice(0, match.index));
-  return { name, price, hasPrice: true };
+
+  // Trailing price: "Margherita 45" / "Café 12 DH"
+  const trailing = text.match(PRICE_RE);
+  if (trailing) {
+    const price = parsePrice(trailing[1]);
+    const name = normalizeSpaces(text.slice(0, trailing.index));
+    return { name, price, hasPrice: true };
+  }
+
+  // Leading price: "45 Margherita" / "70 Blanco"
+  const leading = text.match(
+    /^(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:dh|mad|dhs|€|\$|د\.?\s*م\.?|درهم)?\s+(.+)$/iu,
+  );
+  if (leading) {
+    return {
+      name: normalizeSpaces(leading[2]),
+      price: parsePrice(leading[1]),
+      hasPrice: true,
+    };
+  }
+
+  // Price-only line
+  if (/^\d{1,4}(?:[.,]\d{1,2})?\s*(?:dh|mad|dhs|€|\$|د\.?\s*م\.?|درهم)?$/iu.test(text)) {
+    const only = text.match(/(\d{1,4}(?:[.,]\d{1,2})?)/);
+    return { name: '', price: parsePrice(only?.[1]), hasPrice: true };
+  }
+
+  return { name: text, price: null, hasPrice: false };
 }
 
 function looksLikeCategory(line, { hasPrice }) {
@@ -238,6 +263,38 @@ function newProduct({ name, description, price, confidence, catIndex, prodIndex 
   };
 }
 
+function isPlaceholderName(name) {
+  return /^article\s*\d+$/i.test(normalizeSpaces(name));
+}
+
+function looksLikeProductName(text) {
+  const value = normalizeSpaces(text);
+  if (!value || value.length > 60) return false;
+  if (/[.!?]/.test(value)) return false;
+  const words = value.split(/\s+/);
+  return words.length >= 1 && words.length <= 6;
+}
+
+/**
+ * Repair common OCR ordering issues: price then name → Article N + description.
+ */
+function repairDraftProducts(categories) {
+  for (const cat of categories) {
+    for (const prod of cat.products || []) {
+      if (isPlaceholderName(prod.name) && looksLikeProductName(prod.description)) {
+        prod.name = normalizeSpaces(prod.description).slice(0, 120);
+        prod.description = '';
+        prod.needsReview = true;
+        prod.selected = true;
+      } else if (isPlaceholderName(prod.name)) {
+        prod.needsReview = true;
+      }
+    }
+    cat.sectionKey = guessSectionKey(cat.name, cat.products);
+  }
+  return categories;
+}
+
 /**
  * @param {{ text?: string, blocks?: unknown[] }} input
  */
@@ -245,7 +302,9 @@ export function extractDraftMenu(input = {}) {
   const lines = linesFromOcr(input);
   const categories = [];
   let current = null;
+  let pendingName = '';
   let pendingDescription = '';
+  let pendingPrice = null;
 
   const ensureCategory = (name) => {
     if (!current) {
@@ -255,38 +314,112 @@ export function extractDraftMenu(input = {}) {
     return current;
   };
 
+  const pushProduct = ({ name, description, price, confidence }) => {
+    const cat = ensureCategory('Menu importé');
+    const productName = normalizeSpaces(name);
+    cat.products.push(
+      newProduct({
+        name: productName || `Article ${cat.products.length + 1}`,
+        description: normalizeSpaces(description || ''),
+        price,
+        confidence,
+        catIndex: categories.indexOf(cat),
+        prodIndex: cat.products.length,
+      }),
+    );
+  };
+
+  const flushPending = () => {
+    if (pendingName && pendingPrice != null) {
+      pushProduct({
+        name: pendingName,
+        description: pendingDescription,
+        price: pendingPrice,
+        confidence: null,
+      });
+    }
+    pendingName = '';
+    pendingDescription = '';
+    pendingPrice = null;
+  };
+
   for (const line of lines) {
     const { name, price, hasPrice } = stripPrice(line.text);
 
     if (!name && !hasPrice) continue;
 
     if (looksLikeCategory(line.text, { hasPrice })) {
+      flushPending();
       current = newCategory(name || line.text, categories.length);
       categories.push(current);
-      pendingDescription = '';
       continue;
     }
 
-    if (hasPrice) {
-      const cat = ensureCategory('Menu importé');
-      const productName = name || `Article ${cat.products.length + 1}`;
-      cat.products.push(
-        newProduct({
-          name: productName,
+    // "Margherita 45" or "45 Margherita" handled via stripPrice (price at end)
+    if (hasPrice && name) {
+      pushProduct({
+        name,
+        description: pendingDescription || pendingName,
+        price,
+        confidence: line.confidence,
+      });
+      pendingName = '';
+      pendingDescription = '';
+      pendingPrice = null;
+      continue;
+    }
+
+    // Price alone (common OCR: name and price on separate lines)
+    if (hasPrice && !name) {
+      if (pendingName) {
+        pushProduct({
+          name: pendingName,
           description: pendingDescription,
           price,
           confidence: line.confidence,
-          catIndex: categories.indexOf(cat),
-          prodIndex: cat.products.length,
-        }),
-      );
-      pendingDescription = '';
+        });
+        pendingName = '';
+        pendingDescription = '';
+        pendingPrice = null;
+      } else if (current?.products?.length) {
+        const last = current.products[current.products.length - 1];
+        // If last product already has a price and is a placeholder waiting for a name, keep price pending
+        if (isPlaceholderName(last.name) && !last.description) {
+          pendingPrice = price;
+        } else {
+          pendingPrice = price;
+        }
+      } else {
+        pendingPrice = price;
+      }
       continue;
     }
 
-    // Continuation / description without price: attach to last product if recent, else hold
+    // Name / text without price
+    if (pendingPrice != null) {
+      pushProduct({
+        name,
+        description: pendingDescription || pendingName,
+        price: pendingPrice,
+        confidence: line.confidence,
+      });
+      pendingName = '';
+      pendingDescription = '';
+      pendingPrice = null;
+      continue;
+    }
+
     if (current?.products?.length) {
       const last = current.products[current.products.length - 1];
+      // Price came first → placeholder Article N: next text is the real name
+      if (isPlaceholderName(last.name) && !last.description && looksLikeProductName(name)) {
+        last.name = name.slice(0, 120);
+        last.selected = true;
+        last.needsReview = Boolean(
+          last.price === 0 || (typeof line.confidence === 'number' && line.confidence < 0.55),
+        );
+        continue;
+      }
       if (!last.description && name.length <= 500) {
         last.description = name;
         if (typeof line.confidence === 'number' && line.confidence < 0.55) {
@@ -296,35 +429,21 @@ export function extractDraftMenu(input = {}) {
       }
     }
 
-    pendingDescription = name;
-  }
-
-  if (!categories.length) {
-    const fallback = newCategory('Menu importé', 0);
-    for (const line of lines.slice(0, 40)) {
-      const { name, price, hasPrice } = stripPrice(line.text);
-      if (!name) continue;
-      fallback.products.push(
-        newProduct({
-          name,
-          description: '',
-          price: hasPrice ? price : 0,
-          confidence: line.confidence,
-          catIndex: 0,
-          prodIndex: fallback.products.length,
-        }),
-      );
+    if (pendingName) {
+      pendingDescription = pendingDescription
+        ? `${pendingDescription} ${pendingName}`.trim()
+        : pendingName;
     }
-    if (fallback.products.length) categories.push(fallback);
+    pendingName = name;
   }
 
-  // Drop empty unselected noise categories
+  flushPending();
+  repairDraftProducts(categories);
+
   const cleaned = categories
     .map((cat, catIndex) => ({
       ...cat,
       id: `cat-${catIndex}`,
-      // Re-score after products are filled (early guess had empty products)
-      sectionKey: guessSectionKey(cat.name, cat.products),
       products: cat.products.map((prod, prodIndex) => ({
         ...prod,
         id: `prod-${catIndex}-${prodIndex}`,
@@ -337,7 +456,7 @@ export function extractDraftMenu(input = {}) {
   return {
     categories: cleaned,
     meta: {
-      parser: 'heuristic-v1',
+      parser: 'heuristic-v2',
       lineCount: lines.length,
       categoryCount: cleaned.length,
       productCount,
@@ -357,7 +476,13 @@ export function normalizeDraftMenu(draft) {
       if (!name) return null;
       const products = (Array.isArray(cat?.products) ? cat.products : [])
         .map((prod, prodIndex) => {
-          const prodName = normalizeSpaces(prod?.name).slice(0, 120);
+          let prodName = normalizeSpaces(prod?.name).slice(0, 120);
+          let description = normalizeSpaces(prod?.description || '').slice(0, 500);
+          // Fix inverted OCR: "Article 1" + description "Pepperoni"
+          if (isPlaceholderName(prodName) && looksLikeProductName(description)) {
+            prodName = description.slice(0, 120);
+            description = '';
+          }
           if (!prodName) return null;
           let price = Number(prod?.price);
           if (!Number.isFinite(price) || price < 0) price = 0;
@@ -365,10 +490,11 @@ export function normalizeDraftMenu(draft) {
           return {
             id: String(prod?.id || `prod-${catIndex}-${prodIndex}`),
             name: prodName,
-            description: normalizeSpaces(prod?.description || '').slice(0, 500),
+            description,
             price,
             selected: prod?.selected !== false,
-            needsReview: Boolean(prod?.needsReview),
+            needsReview:
+              Boolean(prod?.needsReview) || isPlaceholderName(prodName) || !(price > 0),
             confidence: typeof prod?.confidence === 'number' ? prod.confidence : null,
           };
         })

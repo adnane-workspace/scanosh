@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import CloudinaryImage from '../components/ui/CloudinaryImage.jsx';
 import { useLocale } from '../hooks/useLocale.js';
@@ -48,6 +48,7 @@ function toneClass(tone) {
 
 export default function AiFillPage() {
   const { t, locale } = useLocale();
+  const navigate = useNavigate();
   const inputRef = useRef(null);
   const reviewRef = useRef(null);
   const [configured, setConfigured] = useState(true);
@@ -439,6 +440,10 @@ export default function AiFillPage() {
           failed,
         }),
       );
+      // After photos: go edit the full product list (new + existing).
+      window.setTimeout(() => {
+        navigate('/app/products?review=1');
+      }, 900);
     } catch (err) {
       setError(getApiError(err, t, 'aiFill.suggestPhotosError'));
     } finally {
@@ -842,26 +847,35 @@ export default function AiFillPage() {
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {!photoSummary ? (
-                  <button
-                    type="button"
-                    disabled={suggestingPhotos}
-                    onClick={() => handleSuggestPhotos()}
-                    className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary disabled:opacity-50"
-                  >
-                    <MaterialIcon
-                      name={suggestingPhotos ? 'progress_activity' : 'auto_awesome'}
-                      className={suggestingPhotos ? 'animate-spin text-[18px]' : 'text-[18px]'}
-                    />
-                    {suggestingPhotos ? t('aiFill.suggestingPhotos') : t('aiFill.generatePhotos')}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      disabled={suggestingPhotos}
+                      onClick={() => handleSuggestPhotos()}
+                      className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary disabled:opacity-50"
+                    >
+                      <MaterialIcon
+                        name={suggestingPhotos ? 'progress_activity' : 'auto_awesome'}
+                        className={suggestingPhotos ? 'animate-spin text-[18px]' : 'text-[18px]'}
+                      />
+                      {suggestingPhotos ? t('aiFill.suggestingPhotos') : t('aiFill.generatePhotos')}
+                    </button>
+                    <Link
+                      to="/app/products?review=1"
+                      className="inline-flex h-11 items-center gap-2 rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface"
+                    >
+                      <MaterialIcon name="edit_note" className="text-[18px]" />
+                      {t('aiFill.goReviewAll')}
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link
-                      to="/app/products"
+                      to="/app/products?review=1"
                       className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary"
                     >
-                      <MaterialIcon name="photo_library" className="text-[18px]" />
-                      {t('aiFill.goPickPhotos')}
+                      <MaterialIcon name="edit_note" className="text-[18px]" />
+                      {t('aiFill.goReviewAll')}
                     </Link>
                     <button
                       type="button"
@@ -874,13 +888,10 @@ export default function AiFillPage() {
                     </button>
                   </>
                 )}
-                <Link
-                  to="/app/products"
-                  className="inline-flex h-11 items-center rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface"
-                >
-                  {t('aiFill.goProducts')}
-                </Link>
               </div>
+              {photoSummary ? (
+                <p className="mt-3 text-xs text-on-surface-variant">{t('aiFill.redirectHint')}</p>
+              ) : null}
             </div>
           </div>
         </section>
@@ -1116,7 +1127,7 @@ export default function AiFillPage() {
                                       </span>
                                     </div>
                                   </div>
-                                  <input
+                                  <textarea
                                     value={prod.description || ''}
                                     disabled={isPublished}
                                     onChange={(event) =>
@@ -1124,8 +1135,10 @@ export default function AiFillPage() {
                                         description: event.target.value,
                                       })
                                     }
+                                    rows={2}
+                                    maxLength={500}
                                     placeholder={t('aiFill.productDescription')}
-                                    className="h-8 w-full rounded-lg border border-transparent bg-transparent px-2.5 text-xs text-on-surface-variant outline-none hover:border-outline-variant/60 focus:border-primary disabled:opacity-70"
+                                    className="w-full resize-y rounded-lg border border-outline-variant/80 bg-surface-container-lowest px-2.5 py-2 text-xs text-on-surface outline-none placeholder:text-on-surface-variant/50 focus:border-primary disabled:opacity-70"
                                   />
                                   {prod.needsReview ? (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">

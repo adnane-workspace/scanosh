@@ -78,7 +78,9 @@ export default function Field({
           name={name}
           aria-invalid={invalid || undefined}
           {...controlProps}
-          className={`w-full min-w-0 bg-transparent text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${padding}`}
+          className={`w-full min-w-0 bg-transparent text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${
+            as === 'textarea' ? 'min-h-[5.5rem] resize-y' : ''
+          } ${padding}`}
         />
         {children}
       </div>

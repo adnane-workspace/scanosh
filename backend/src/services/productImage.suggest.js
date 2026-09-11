@@ -2,9 +2,10 @@ import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
 
 const RESULT_TTL_MS = 6 * 60 * 60 * 1000;
-const LIBRARY_TTL_MS = 30 * 60 * 1000;
+const LIBRARY_TTL_MS = 5 * 60 * 1000;
 const RESULT_CACHE_MAX = 500;
 const MATCH_MIN_SCORE = 86;
+const LIBRARY_BROWSE_MAX = 500;
 
 const resultCache = new Map();
 let libraryState = {
@@ -60,6 +61,7 @@ const FR_TO_EN = [
   [/tiramisu/gi, 'tiramisu'],
   [/brownie/gi, 'brownie'],
   [/cheesecake/gi, 'cheesecake'],
+  [/margaritta|margarita/gi, 'margherita'],
   [/shawarma|chawarma/gi, 'shawarma'],
   [/kefta|kofta/gi, 'meatball'],
 ];
@@ -213,15 +215,16 @@ function rebuildIndex(items) {
   };
 }
 
-async function ensureLibraryLoaded() {
-  if (libraryState.expiresAt > Date.now() && libraryState.items.length) {
+async function ensureLibraryLoaded({ force = false } = {}) {
+  if (!force && libraryState.expiresAt > Date.now() && libraryState.items.length) {
     return libraryState;
   }
 
   const url = new URL(`${menuMediaBaseUrl()}/library`);
   const response = await fetch(url, {
     headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(20000),
+    cache: 'no-store',
   });
 
   if (!response.ok) {
@@ -232,6 +235,15 @@ async function ensureLibraryLoaded() {
   const items = Array.isArray(data?.items) ? data.items : [];
   rebuildIndex(items);
   return libraryState;
+}
+
+export function invalidateMediaLibraryCache() {
+  libraryState = {
+    expiresAt: 0,
+    items: [],
+    byId: new Map(),
+    inverted: new Map(),
+  };
 }
 
 function toCandidate(item, source = 'menu-media') {
@@ -252,23 +264,36 @@ function scoreCandidate(queryNorm, queryTokens, item) {
   if (title === queryNorm) return 100;
   if (title.includes(queryNorm) || queryNorm.includes(title)) return 92;
 
+  // Any query token found as substring in title (e.g. "pizza" → "pizza margherita")
+  if (queryTokens.length) {
+    const titleHits = queryTokens.filter((token) => title.includes(token));
+    if (titleHits.length === queryTokens.length) return 90;
+    if (titleHits.length >= 1 && titleHits.length / queryTokens.length >= 0.5) {
+      return 70 + Math.round((titleHits.length / queryTokens.length) * 15);
+    }
+  }
+
   if (!queryTokens.length || !item.tokens?.length) return 0;
 
   const itemSet = new Set(item.tokens);
   const hits = queryTokens.filter((token) => itemSet.has(token));
   if (!hits.length) return 0;
 
-  // Require all meaningful query tokens for a confident match.
-  if (hits.length === queryTokens.length) {
-    return 90;
-  }
-
-  // Otherwise only accept if majority of query tokens match and at least 2 hits.
-  if (hits.length >= 2 && hits.length / queryTokens.length >= 0.75) {
-    return 86;
-  }
+  if (hits.length === queryTokens.length) return 90;
+  if (hits.length >= 2 && hits.length / queryTokens.length >= 0.75) return 86;
+  if (hits.length === 1 && queryTokens.length === 1) return 80;
 
   return 0;
+}
+
+function applySectionBias(score, item, preferCafe) {
+  if (!score) return 0;
+  let next = score;
+  if (item.section === 'cafe' && preferCafe) next += 2;
+  if (item.section === 'restaurant' && !preferCafe) next += 2;
+  if (item.section && preferCafe && item.section !== 'cafe') next -= 8;
+  if (item.section && !preferCafe && item.section !== 'restaurant') next -= 8;
+  return next;
 }
 
 function matchInIndex(productName, sectionKey) {
@@ -298,10 +323,7 @@ function matchInIndex(productName, sectionKey) {
     let score = scoreCandidate(queryNorm, queryTokens, item);
     if (!score) continue;
 
-    if (item.section === 'cafe' && preferCafe) score += 2;
-    if (item.section === 'restaurant' && !preferCafe) score += 2;
-    if (item.section && preferCafe && item.section !== 'cafe') score -= 8;
-    if (item.section && !preferCafe && item.section !== 'restaurant') score -= 8;
+    score = applySectionBias(score, item, preferCafe);
 
     if (score > bestScore) {
       bestScore = score;
@@ -398,9 +420,15 @@ function itemToPickerCard(item, score = null) {
 
 /**
  * Browse Menu Media library for the picker UI.
+ * Returns the full filtered set (up to LIBRARY_BROWSE_MAX) so Scanosh mirrors the API catalog.
  */
-export async function listMediaLibrary({ section = '', search = '', limit = 60 } = {}) {
-  await ensureLibraryLoaded();
+export async function listMediaLibrary({
+  section = '',
+  search = '',
+  limit = LIBRARY_BROWSE_MAX,
+  refresh = false,
+} = {}) {
+  await ensureLibraryLoaded({ force: Boolean(refresh) });
   const q = normalizeSearchName(search);
   const tokens = tokenize(search);
   const sectionFilter = section === 'cafe' || section === 'restaurant' ? section : '';
@@ -411,52 +439,64 @@ export async function listMediaLibrary({ section = '', search = '', limit = 60 }
   }
 
   if (q) {
-    items = items
+    const ranked = items
       .map((item) => ({
         item,
         score: scoreCandidate(q, tokens, item),
       }))
-      .filter((row) => row.score > 0 || (q && (itemIncludes(row.item, q))))
-      .sort((a, b) => b.score - a.score)
-      .map((row) => row.item);
-  } else {
-    items = [...items].sort((a, b) => String(a.title).localeCompare(String(b.title)));
+      .filter((row) => row.score > 0)
+      .sort((a, b) => b.score - a.score || String(a.item.title).localeCompare(String(b.item.title)));
+
+    const max = Math.min(Math.max(Number(limit) || LIBRARY_BROWSE_MAX, 1), LIBRARY_BROWSE_MAX);
+    return {
+      total: libraryState.items.length,
+      count: ranked.length,
+      items: ranked.slice(0, max).map((row) => itemToPickerCard(row.item, row.score)),
+    };
   }
 
-  const max = Math.min(Math.max(Number(limit) || 60, 1), 120);
+  items = [...items].sort((a, b) => String(a.title).localeCompare(String(b.title)));
+
+  const max = Math.min(Math.max(Number(limit) || LIBRARY_BROWSE_MAX, 1), LIBRARY_BROWSE_MAX);
   return {
+    total: libraryState.items.length,
     count: items.length,
     items: items.slice(0, max).map((item) => itemToPickerCard(item)),
   };
 }
 
-function itemIncludes(item, q) {
-  return String(item.normalizedTitle || '').includes(q);
-}
-
 /**
  * Ranked candidates for a product (for manual picker).
+ * Only real text matches — never inflate score with section alone.
  */
 export async function listImageCandidatesForName(productName, { sectionKey = null, limit = 24 } = {}) {
   await ensureLibraryLoaded();
   const queryNorm = normalizeSearchName(productName);
   const queryTokens = tokenize(productName);
   const preferCafe = looksLikeCafe(productName, sectionKey);
+  const PICKER_MIN_SCORE = 50;
 
   const scored = libraryState.items
     .map((item) => {
       let score = scoreCandidate(queryNorm, queryTokens, item);
       if (!score && queryNorm && item.normalizedTitle?.includes(queryNorm)) score = 70;
-      if (!score && queryTokens.length) {
-        const hits = queryTokens.filter((token) => item.tokens?.includes(token)).length;
-        if (hits) score = Math.round((hits / queryTokens.length) * 60);
+      // Soft typo help: margaritta ≈ margherita
+      if (!score && queryTokens.length === 1 && queryTokens[0].length >= 5) {
+        const token = queryTokens[0];
+        for (const titleToken of item.tokens || []) {
+          if (titleToken.startsWith(token.slice(0, 4)) || token.startsWith(titleToken.slice(0, 4))) {
+            if (Math.abs(titleToken.length - token.length) <= 2) {
+              score = 62;
+              break;
+            }
+          }
+        }
       }
-      if (item.section === 'cafe' && preferCafe) score += 2;
-      if (item.section === 'restaurant' && !preferCafe) score += 2;
+      score = applySectionBias(score, item, preferCafe);
       return { item, score };
     })
-    .filter((row) => row.score > 0)
-    .sort((a, b) => b.score - a.score);
+    .filter((row) => row.score >= PICKER_MIN_SCORE)
+    .sort((a, b) => b.score - a.score || String(a.item.title).localeCompare(String(b.item.title)));
 
   const max = Math.min(Math.max(Number(limit) || 24, 1), 48);
   return {

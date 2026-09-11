@@ -9,6 +9,8 @@ export default function CategoryFormModal({
   form,
   parentOptions = [],
   showParentSelect = true,
+  parentLabel = '',
+  parentPlaceholder = '',
   sectionLabel = '',
   saving,
   uploading,
@@ -62,10 +64,18 @@ export default function CategoryFormModal({
             </p>
           ) : null}
           {showParentSelect ? (
-            <Field as="select" name="parentId" label={t('categoryForm.parent')} icon="account_tree" value={form.parentId || ''} onChange={onChange}>
-              <option value="">{t('categoryForm.parentRoot')}</option>
+            <Field
+              as="select"
+              name="parentId"
+              label={parentLabel || t('categoryForm.parent')}
+              icon="account_tree"
+              value={form.parentId || ''}
+              onChange={onChange}
+              required
+            >
+              <option value="">{parentPlaceholder || t('categoryForm.selectSection')}</option>
               {parentOptions.map((category) => (
-                <option key={category._id} value={category._id} depth={category.depth}>
+                <option key={category._id} value={category._id}>
                   {category.name}
                 </option>
               ))}

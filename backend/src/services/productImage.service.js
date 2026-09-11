@@ -142,18 +142,22 @@ export async function getProductImageCandidates(user, productId) {
   const cafeId = requireCafeId(user);
   const product = await loadProductWithSection(cafeId, productId);
   const sectionKey = resolveSectionKey(product);
-  const ranked = await listImageCandidatesForName(product.name, { sectionKey, limit: 24 });
+  // Refresh catalog first so suggestions + browse see the latest Menu Media photos.
   const browse = await listMediaLibrary({
     section: sectionKey === 'cafe' || sectionKey === 'restaurant' ? sectionKey : '',
-    search: product.name,
-    limit: 48,
+    search: '',
+    limit: 500,
+    refresh: true,
   });
+  const ranked = await listImageCandidatesForName(product.name, { sectionKey, limit: 24 });
 
   return {
     product: toProductResponse(product),
     sectionKey,
     suggested: ranked.items,
     library: browse.items,
+    libraryTotal: browse.total,
+    libraryCount: browse.count,
   };
 }
 

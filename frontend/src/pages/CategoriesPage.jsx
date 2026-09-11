@@ -7,9 +7,7 @@ import {
 } from '../services/category.service.js';
 import { getApiError } from '../utils/apiError.js';
 import {
-  descendantIdSet,
   siblingCategories,
-  walkPreOrder,
 } from '../utils/categoryTree.js';
 import { categoryIcon } from '../utils/format.js';
 import { normalizeMenuUi, normalizeSectionVisibility } from '../utils/menuUi.js';
@@ -79,7 +77,7 @@ function CategoryIdentity({ category, parentName, t }) {
 
 function CategoryActions({ category, canAddChild, onEdit, onDelete, onAddChild, hideAddChild = false, t }) {
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
       {canAddChild && !hideAddChild ? (
         <button
           type="button"
@@ -167,16 +165,6 @@ export default function CategoriesPage() {
     [categories],
   );
 
-  const parentOptions = useMemo(() => {
-    const blocked = editingId ? descendantIdSet(categories, editingId) : new Set();
-
-    if (editingId) {
-      blocked.add(editingId);
-    }
-
-    return walkPreOrder(categories).filter((category) => !blocked.has(category._id));
-  }, [categories, editingId]);
-
   function nextSiblingOrder(parentId) {
     const siblings = siblingCategories(categories, parentId || null);
     return siblings.reduce((max, category) => Math.max(max, Number(category.order) || 0), 0) + 1;
@@ -242,6 +230,11 @@ export default function CategoriesPage() {
 
     if (!form.name.trim()) {
       setFormError(t('validation.nameRequired'));
+      return;
+    }
+
+    if (!editingSectionKey && !form.parentId) {
+      setFormError(t('categoryForm.selectSection'));
       return;
     }
 
@@ -521,9 +514,23 @@ export default function CategoriesPage() {
             : 'border-outline-variant bg-surface-container-lowest'
         } ${dragId === category._id ? 'opacity-50 shadow-lg' : 'hover:border-outline'}`}
       >
-        <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
+        <div
+          className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4"
+          role="button"
+          tabIndex={0}
+          onClick={() => startEdit(category)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              startEdit(category);
+            }
+          }}
+        >
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <span className="hidden cursor-grab text-on-surface-variant md:inline-flex active:cursor-grabbing">
+            <span
+              className="hidden cursor-grab text-on-surface-variant md:inline-flex active:cursor-grabbing"
+              onClick={(event) => event.stopPropagation()}
+            >
               <MaterialIcon name="drag_handle" className="text-[20px]" />
             </span>
             {isChild && !category.sectionKey ? (
@@ -554,7 +561,7 @@ export default function CategoriesPage() {
                 </span>
               ) : null}
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center" onClick={(event) => event.stopPropagation()}>
               <div className="flex md:hidden">
                 <button
                   type="button"
@@ -720,14 +727,20 @@ export default function CategoriesPage() {
         open={isFormOpen}
         editing={Boolean(editingId)}
         form={form}
-        parentOptions={parentOptions}
-        showParentSelect={false}
+        parentOptions={sectionRoots.map((section) => ({
+          _id: section._id,
+          name: section.name,
+          depth: 0,
+        }))}
+        showParentSelect={!editingSectionKey}
+        parentLabel={t('categoryForm.section')}
+        parentPlaceholder={t('categoryForm.selectSection')}
         sectionLabel={
           editingSectionKey
-            ? t('categories.sectionFixedLabel', { name: categoryById.get(editingId)?.name || editingSectionKey })
-            : form.parentId
-              ? t('categories.inside', { name: categoryById.get(form.parentId)?.name || '' })
-              : ''
+            ? t('categories.sectionFixedLabel', {
+                name: categoryById.get(editingId)?.name || editingSectionKey,
+              })
+            : ''
         }
         saving={saving}
         uploading={uploading}

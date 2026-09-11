@@ -84,7 +84,12 @@ export const listMediaLibrarySchema = z.object({
         return '';
       }),
     search: z.string().trim().max(120).optional().default(''),
-    limit: z.coerce.number().int().min(1).max(120).optional().default(60),
+    limit: z.coerce.number().int().min(1).max(500).optional().default(500),
+    refresh: z
+      .union([z.boolean(), z.string()])
+      .optional()
+      .default(false)
+      .transform((value) => value === true || value === '1' || value === 'true'),
   }),
 });
 

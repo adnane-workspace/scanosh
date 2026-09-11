@@ -93,11 +93,14 @@ export default function ProductFormModal({
             as="textarea"
             name="description"
             label={t('productForm.description')}
+            icon="notes"
             value={form.description}
             onChange={onChange}
-            rows={3}
+            rows={4}
+            maxLength={500}
             placeholder={t('productForm.descriptionPlaceholder')}
             className="md:col-span-2"
+            hint={t('productForm.descriptionHint')}
           />
           <div className="md:col-span-2">
             <p className="text-sm font-medium text-on-surface">{t('productForm.photo')}</p>

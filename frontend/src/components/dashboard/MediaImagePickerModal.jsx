@@ -13,6 +13,8 @@ export default function MediaImagePickerModal({ open, product, onClose, onApplie
   const [section, setSection] = useState('');
   const [suggested, setSuggested] = useState([]);
   const [library, setLibrary] = useState([]);
+  const [libraryCount, setLibraryCount] = useState(0);
+  const [libraryTotal, setLibraryTotal] = useState(0);
 
   const title = product?.name || '';
 
@@ -21,7 +23,7 @@ export default function MediaImagePickerModal({ open, product, onClose, onApplie
 
     let cancelled = false;
     setError('');
-    setSearch(product.name || '');
+    setSearch('');
     setLoading(true);
 
     (async () => {
@@ -30,6 +32,8 @@ export default function MediaImagePickerModal({ open, product, onClose, onApplie
         if (cancelled) return;
         setSuggested(Array.isArray(data?.suggested) ? data.suggested : []);
         setLibrary(Array.isArray(data?.library) ? data.library : []);
+        setLibraryCount(Number(data?.libraryCount) || data?.library?.length || 0);
+        setLibraryTotal(Number(data?.libraryTotal) || 0);
         if (data?.sectionKey === 'cafe' || data?.sectionKey === 'restaurant') {
           setSection(data.sectionKey);
         }
@@ -43,24 +47,41 @@ export default function MediaImagePickerModal({ open, product, onClose, onApplie
     return () => {
       cancelled = true;
     };
-  }, [open, product?._id, product?.name, t]);
+  }, [open, product?._id, t]);
 
-  async function handleSearch(event) {
-    event?.preventDefault?.();
+  async function loadLibrary({ nextSection = section, nextSearch = search, refresh = false } = {}) {
     setLoading(true);
     setError('');
     try {
       const data = await listMediaLibrary({
-        section,
-        search: search.trim(),
-        limit: 60,
+        section: nextSection,
+        search: String(nextSearch || '').trim(),
+        limit: 500,
+        refresh: refresh ? 1 : undefined,
       });
       setLibrary(Array.isArray(data?.items) ? data.items : []);
+      setLibraryCount(Number(data?.count) || data?.items?.length || 0);
+      setLibraryTotal(Number(data?.total) || 0);
+      // After an explicit search, drop stale auto-suggestions so results aren't polluted.
+      if (String(nextSearch || '').trim()) {
+        setSuggested([]);
+      }
     } catch (err) {
       setError(getApiError(err, t, 'products.pickImageError'));
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSearch(event) {
+    event?.preventDefault?.();
+    await loadLibrary({ refresh: true });
+  }
+
+  async function handleSectionChange(event) {
+    const next = event.target.value;
+    setSection(next);
+    await loadLibrary({ nextSection: next, refresh: false });
   }
 
   async function handlePick(item) {
@@ -117,15 +138,32 @@ export default function MediaImagePickerModal({ open, product, onClose, onApplie
             <p className="mt-1 truncate text-sm text-on-surface-variant">
               {t('products.pickImageHint', { name: title })}
             </p>
+            {libraryCount ? (
+              <p className="mt-1 text-xs text-on-surface-variant">
+                {t('products.pickImageCount', { shown: gallery.length, total: libraryTotal || libraryCount })}
+              </p>
+            ) : null}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high"
-            aria-label={t('common.close')}
-          >
-            <MaterialIcon name="close" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => loadLibrary({ refresh: true })}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50"
+              aria-label={t('products.pickImageRefresh')}
+              title={t('products.pickImageRefresh')}
+            >
+              <MaterialIcon name={loading ? 'progress_activity' : 'refresh'} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high"
+              aria-label={t('common.close')}
+            >
+              <MaterialIcon name="close" />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSearch} className="flex flex-wrap items-center gap-2 border-b border-outline-variant/30 px-5 py-3">
@@ -137,7 +175,7 @@ export default function MediaImagePickerModal({ open, product, onClose, onApplie
           />
           <select
             value={section}
-            onChange={(event) => setSection(event.target.value)}
+            onChange={handleSectionChange}
             className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
           >
             <option value="">{t('products.pickImageSectionAll')}</option>

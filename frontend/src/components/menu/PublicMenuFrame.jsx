@@ -1,8 +1,14 @@
+import { useEffect } from 'react';
 import CloudinaryImage from '../ui/CloudinaryImage.jsx';
 import { useMenuBackdropTheme } from '../../hooks/useMenuBackdropTheme.js';
+import { setRuntimeCloudinaryCloudName } from '../../utils/cloudinary.js';
 
 export default function PublicMenuFrame({ cafe, className = '', children }) {
   const { customColor, customImage, theme, isDark } = useMenuBackdropTheme(cafe);
+
+  useEffect(() => {
+    setRuntimeCloudinaryCloudName(cafe?.logo || customImage || '');
+  }, [cafe?.logo, customImage]);
 
   const style = {
     ...theme,
