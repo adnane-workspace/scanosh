@@ -6,6 +6,7 @@ import {
   getMenuImportStatus,
   listMenuImports,
   publishMenuImport,
+  suggestMenuImportImages,
   updateMenuImportDraft,
 } from '../services/menuImport.service.js';
 
@@ -63,6 +64,20 @@ export const updateDraft = asyncHandler(async (req, res) => {
     success: true,
     message: 'Draft updated',
     data: { import: item },
+  });
+});
+
+export const suggestImages = asyncHandler(async (req, res) => {
+  const result = await suggestMenuImportImages(req.user, req.validated.params.id, {
+    draftMenuInput: req.validated.body?.draftMenu,
+    stage: req.validated.body?.stage || 'auto',
+    overwrite: Boolean(req.validated.body?.overwrite),
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Draft product images suggested',
+    data: result,
   });
 });
 

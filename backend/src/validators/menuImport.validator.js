@@ -19,6 +19,8 @@ const draftProductSchema = z.object({
   selected: z.boolean().optional().default(true),
   needsReview: z.boolean().optional().default(false),
   confidence: z.number().min(0).max(1).nullable().optional(),
+  image: z.string().trim().max(2048).optional().default(''),
+  imageSource: z.string().trim().max(40).optional().default(''),
 });
 
 const draftSectionKeySchema = z.preprocess(
@@ -64,6 +66,20 @@ export const updateMenuImportDraftSchema = z.object({
   body: z.object({
     draftMenu: draftMenuSchema,
   }),
+});
+
+export const suggestMenuImportImagesSchema = z.object({
+  params: z.object({
+    id: uuidSchema,
+  }),
+  body: z.preprocess(
+    (value) => (value == null || typeof value !== 'object' ? {} : value),
+    z.object({
+      draftMenu: draftMenuSchema.optional(),
+      stage: z.enum(['auto', 'library', 'flux']).optional().default('auto'),
+      overwrite: z.boolean().optional().default(false),
+    }),
+  ),
 });
 
 export const publishMenuImportSchema = z.object({

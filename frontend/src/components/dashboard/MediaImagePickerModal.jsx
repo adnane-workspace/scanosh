@@ -19,24 +19,41 @@ export default function MediaImagePickerModal({ open, product, onClose, onApplie
   const title = product?.name || '';
 
   useEffect(() => {
-    if (!open || !product?._id) return undefined;
+    if (!open || !product) return undefined;
 
     let cancelled = false;
     setError('');
-    setSearch('');
+    setSearch(product._id ? '' : String(product.name || ''));
     setLoading(true);
 
     (async () => {
       try {
-        const data = await getProductImageCandidates(product._id);
-        if (cancelled) return;
-        setSuggested(Array.isArray(data?.suggested) ? data.suggested : []);
-        setLibrary(Array.isArray(data?.library) ? data.library : []);
-        setLibraryCount(Number(data?.libraryCount) || data?.library?.length || 0);
-        setLibraryTotal(Number(data?.libraryTotal) || 0);
-        if (data?.sectionKey === 'cafe' || data?.sectionKey === 'restaurant') {
-          setSection(data.sectionKey);
+        if (product._id) {
+          const data = await getProductImageCandidates(product._id);
+          if (cancelled) return;
+          setSuggested(Array.isArray(data?.suggested) ? data.suggested : []);
+          setLibrary(Array.isArray(data?.library) ? data.library : []);
+          setLibraryCount(Number(data?.libraryCount) || data?.library?.length || 0);
+          setLibraryTotal(Number(data?.libraryTotal) || 0);
+          if (data?.sectionKey === 'cafe' || data?.sectionKey === 'restaurant') {
+            setSection(data.sectionKey);
+          }
+          return;
         }
+
+        const sectionKey =
+          product.sectionKey === 'cafe' || product.sectionKey === 'restaurant' ? product.sectionKey : '';
+        setSection(sectionKey);
+        const data = await listMediaLibrary({
+          section: sectionKey,
+          search: String(product.name || '').trim(),
+          limit: 500,
+        });
+        if (cancelled) return;
+        setSuggested([]);
+        setLibrary(Array.isArray(data?.items) ? data.items : []);
+        setLibraryCount(Number(data?.count) || data?.items?.length || 0);
+        setLibraryTotal(Number(data?.total) || 0);
       } catch (err) {
         if (!cancelled) setError(getApiError(err, t, 'products.pickImageError'));
       } finally {
@@ -47,7 +64,7 @@ export default function MediaImagePickerModal({ open, product, onClose, onApplie
     return () => {
       cancelled = true;
     };
-  }, [open, product?._id, t]);
+  }, [open, product?._id, product?.name, product?.sectionKey, t]);
 
   async function loadLibrary({ nextSection = section, nextSearch = search, refresh = false } = {}) {
     setLoading(true);
@@ -85,10 +102,15 @@ export default function MediaImagePickerModal({ open, product, onClose, onApplie
   }
 
   async function handlePick(item) {
-    if (!product?._id || !item?.id) return;
-    setApplyingId(item.id);
+    if (!item?.image) return;
+    setApplyingId(item.id || item.image);
     setError('');
     try {
+      if (!product?._id) {
+        onApplied?.(null, item);
+        onClose?.();
+        return;
+      }
       const result = await applyMediaImage(product._id, {
         mediaId: item.id,
         imageUrl: item.image,

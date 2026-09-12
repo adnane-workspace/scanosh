@@ -97,6 +97,32 @@ export async function uploadImageFromUrl(imageUrl, options = {}) {
   }
 }
 
+/** Upload a base64 image (Flux / NIM) into our Cloudinary folder. */
+export async function uploadImageFromBase64(base64, options = {}) {
+  const raw = String(base64 || '').trim();
+  if (!raw) {
+    throw new ApiError(400, 'Image data is required', null, 'IMAGE_REQUIRED');
+  }
+
+  const dataUri = raw.startsWith('data:') ? raw : `data:image/jpeg;base64,${raw}`;
+
+  try {
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder: resolveUploadFolder(options.folder || 'products'),
+      resource_type: 'image',
+      timeout: 60000,
+    });
+    if (!result?.secure_url) {
+      throw new ApiError(500, 'Image upload failed', null, 'IMAGE_UPLOAD_FAILED');
+    }
+    return result.secure_url;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    const reason = error?.message || 'Image upload failed';
+    throw new ApiError(500, `Image upload failed: ${reason}`, null, 'IMAGE_UPLOAD_FAILED');
+  }
+}
+
 export async function deleteCloudinaryImage(url) {
   if (!isAppCloudinaryAsset(url, env.CLOUDINARY_FOLDER)) {
     return false;

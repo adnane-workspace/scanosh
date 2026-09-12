@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import MediaImagePickerModal from '../components/dashboard/MediaImagePickerModal.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import CloudinaryImage from '../components/ui/CloudinaryImage.jsx';
 import { useLocale } from '../hooks/useLocale.js';
@@ -9,9 +10,10 @@ import {
   getMenuImportStatus,
   listMenuImports,
   publishMenuImport,
+  suggestMenuImportImages,
   updateMenuImportDraft,
 } from '../services/menuImport.service.js';
-import { suggestProductImagesBatch } from '../services/product.service.js';
+import { uploadProductImage } from '../services/product.service.js';
 import { getApiError } from '../utils/apiError.js';
 import { formatDate } from '../utils/format.js';
 import { DEFAULT_SECTION_DEFS, isMenuSectionKey } from '../utils/menuSections.js';
@@ -48,7 +50,6 @@ function toneClass(tone) {
 
 export default function AiFillPage() {
   const { t, locale } = useLocale();
-  const navigate = useNavigate();
   const inputRef = useRef(null);
   const reviewRef = useRef(null);
   const [configured, setConfigured] = useState(true);
@@ -79,6 +80,10 @@ export default function AiFillPage() {
   const [collapsed, setCollapsed] = useState({});
   const [historyOpen, setHistoryOpen] = useState(false);
   const photosRef = useRef(null);
+  const productImageInputRef = useRef(null);
+  const [imageTarget, setImageTarget] = useState(null);
+  const [pickerProduct, setPickerProduct] = useState(null);
+  const [uploadingImageId, setUploadingImageId] = useState('');
 
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -170,15 +175,17 @@ export default function AiFillPage() {
     let products = 0;
     let review = 0;
     let totalProducts = 0;
+    let withPhoto = 0;
     for (const cat of draft.categories || []) {
       const all = cat.products || [];
       totalProducts += all.length;
       const selectedProducts = all.filter((p) => p.selected);
       if (cat.selected && selectedProducts.length) categories += 1;
       products += selectedProducts.length;
+      withPhoto += selectedProducts.filter((p) => p.image).length;
       review += all.filter((p) => p.needsReview && p.selected).length;
     }
-    return { categories, products, review, totalProducts };
+    return { categories, products, review, totalProducts, withPhoto };
   }, [draft]);
 
   const isPublished = result?.status === 'published';
@@ -187,26 +194,37 @@ export default function AiFillPage() {
   const stepStates = useMemo(() => {
     const map = {
       1: !result ? 'active' : 'done',
-      2: !result ? 'todo' : !isPublished ? 'active' : 'done',
-      3: !result ? 'todo' : isPublished ? 'done' : selectedCounts.products ? 'todo' : 'todo',
-      4: !isPublished ? 'todo' : photoSummary && !suggestingPhotos ? 'done' : 'active',
+      2: !result ? 'todo' : isPublished ? 'done' : suggestingPhotos ? 'done' : 'active',
+      3: !result ? 'todo' : isPublished ? 'done' : suggestingPhotos || photoSummary ? 'active' : 'todo',
+      4: !result ? 'todo' : isPublished ? 'done' : photoSummary ? 'todo' : 'todo',
     };
-    if (publishing) {
+    if (suggestingPhotos) {
       map[2] = 'done';
       map[3] = 'active';
       map[4] = 'todo';
     }
+    if (publishing) {
+      map[2] = 'done';
+      map[3] = 'done';
+      map[4] = 'active';
+    }
+    if (photoSummary && !isPublished && !suggestingPhotos) {
+      map[3] = 'done';
+      map[4] = 'active';
+    }
     return map;
-  }, [result, isPublished, selectedCounts.products, photoSummary, suggestingPhotos, publishing]);
+  }, [result, isPublished, photoSummary, suggestingPhotos, publishing]);
 
-  function applyImport(item) {
+  function applyImport(item, { resetPhotos = true } = {}) {
     setResult(item);
     setDraft(cloneDraft(item.draftMenu || emptyDraft()));
     setTab(item.draftMenu?.categories?.length ? 'review' : 'text');
     setSectionFilter('all');
     setPublishSummary(null);
-    setPhotoSummary(null);
-    setPhotoProgress(null);
+    if (resetPhotos) {
+      setPhotoSummary(null);
+      setPhotoProgress(null);
+    }
     setSuccess('');
     setError('');
     setCollapsed({});
@@ -288,6 +306,37 @@ export default function AiFillPage() {
     }));
   }
 
+  function openProductImageUpload(catId, prodId) {
+    if (isPublished) return;
+    setImageTarget({ catId, prodId });
+    window.setTimeout(() => productImageInputRef.current?.click(), 0);
+  }
+
+  async function handleProductImageFile(event) {
+    const fileNext = event.target.files?.[0];
+    event.target.value = '';
+    if (!fileNext || !imageTarget) return;
+    if (!fileNext.type.startsWith('image/')) {
+      setError(t('aiFill.invalidImage'));
+      return;
+    }
+
+    setUploadingImageId(imageTarget.prodId);
+    setError('');
+    try {
+      const url = await uploadProductImage(fileNext);
+      updateProduct(imageTarget.catId, imageTarget.prodId, {
+        image: url,
+        imageSource: 'upload',
+      });
+    } catch (err) {
+      setError(getApiError(err, t, 'products.suggestImageError'));
+    } finally {
+      setUploadingImageId('');
+      setImageTarget(null);
+    }
+  }
+
   function removeProduct(catId, prodId) {
     setDraft((prev) => ({
       ...prev,
@@ -322,7 +371,7 @@ export default function AiFillPage() {
     setError('');
     try {
       const item = await updateMenuImportDraft(result._id, draft);
-      applyImport(item);
+      applyImport(item, { resetPhotos: false });
       setSuccess(t('aiFill.draftSaved'));
       await loadHistory();
     } catch (err) {
@@ -342,8 +391,6 @@ export default function AiFillPage() {
     setPublishing(true);
     setError('');
     setSuccess('');
-    setPhotoSummary(null);
-    setPhotoProgress(null);
     try {
       const published = await publishMenuImport(result._id, draft);
       setResult(published.import);
@@ -355,18 +402,6 @@ export default function AiFillPage() {
           : t('aiFill.publishSuccess'),
       );
       await loadHistory();
-      window.setTimeout(() => {
-        photosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 120);
-
-      const ids = Array.isArray(published.summary?.productIds)
-        ? published.summary.productIds.filter(Boolean)
-        : [];
-      if (ids.length || published.summary?.productsCreated) {
-        window.setTimeout(() => {
-          handleSuggestPhotos(published.summary);
-        }, 250);
-      }
     } catch (err) {
       setError(getApiError(err, t, 'aiFill.publishError'));
     } finally {
@@ -374,13 +409,9 @@ export default function AiFillPage() {
     }
   }
 
-  async function handleSuggestPhotos(summaryOverride = null) {
-    const summary = summaryOverride || publishSummary;
-    const productIds = Array.isArray(summary?.productIds)
-      ? summary.productIds.filter(Boolean)
-      : [];
-
-    if (!productIds.length && !summary?.productsCreated) {
+  async function handleSuggestPhotos({ overwrite = false } = {}) {
+    if (!result?._id || isPublished) return;
+    if (!selectedCounts.products) {
       setError(t('aiFill.suggestPhotosEmpty'));
       return;
     }
@@ -389,61 +420,76 @@ export default function AiFillPage() {
     setError('');
     setSuccess('');
 
-    const ids = productIds.length ? productIds : [];
-    const chunkSize = 20;
+    const total = selectedCounts.products;
+    setPhotoProgress({ done: 0, total, stage: 'library' });
+    window.setTimeout(() => {
+      photosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+
     let updated = 0;
     let failed = 0;
     let skipped = 0;
-    const total = ids.length || Math.min(Number(summary?.productsCreated) || 0, 80);
-
-    setPhotoProgress({ done: 0, total: total || ids.length || 10 });
+    let fromLibrary = 0;
+    let fromFlux = 0;
+    let latestDraft = draft;
 
     try {
-      if (ids.length) {
-        for (let i = 0; i < ids.length; i += chunkSize) {
-          const chunk = ids.slice(i, i + chunkSize);
-          const resultData = await suggestProductImagesBatch({
-            productIds: chunk,
-            onlyMissing: true,
-            limit: chunk.length,
-          });
-          updated += resultData?.summary?.updated ?? 0;
-          failed += resultData?.summary?.failed ?? 0;
-          skipped += resultData?.summary?.skipped ?? 0;
-          setPhotoProgress({ done: Math.min(i + chunk.length, ids.length), total: ids.length });
-        }
-      } else {
-        let safety = 0;
-        let batchUpdated = 0;
-        do {
-          const resultData = await suggestProductImagesBatch({
-            onlyMissing: true,
-            limit: chunkSize,
-          });
-          batchUpdated = resultData?.summary?.updated ?? 0;
-          updated += batchUpdated;
-          failed += resultData?.summary?.failed ?? 0;
-          skipped += resultData?.summary?.skipped ?? 0;
-          safety += 1;
-          setPhotoProgress({
-            done: updated + skipped,
-            total: Math.max(total, updated + skipped + failed),
-          });
-        } while (batchUpdated > 0 && safety < 6);
-      }
+      const library = await suggestMenuImportImages(result._id, {
+        draftMenu: latestDraft,
+        stage: 'library',
+        overwrite,
+      });
+      latestDraft = cloneDraft(library.import?.draftMenu || latestDraft);
+      setResult(library.import);
+      setDraft(latestDraft);
+      updated += library.summary?.updated ?? 0;
+      skipped += library.summary?.skipped ?? 0;
+      fromLibrary += library.summary?.fromLibrary ?? 0;
+      setPhotoProgress({
+        done: fromLibrary,
+        total,
+        stage: 'flux',
+      });
 
-      const photoResult = { updated, failed, skipped, total: ids.length || updated + failed + skipped };
+      let safety = 0;
+      let fluxUpdated = 0;
+      do {
+        const flux = await suggestMenuImportImages(result._id, {
+          draftMenu: latestDraft,
+          stage: 'flux',
+          overwrite: false,
+        });
+        latestDraft = cloneDraft(flux.import?.draftMenu || latestDraft);
+        setResult(flux.import);
+        setDraft(latestDraft);
+        fluxUpdated = flux.summary?.updated ?? 0;
+        updated += fluxUpdated;
+        failed += flux.summary?.failed ?? 0;
+        fromFlux += flux.summary?.fromFlux ?? 0;
+        safety += 1;
+        setPhotoProgress({
+          done: Math.min(total, fromLibrary + fromFlux),
+          total,
+          stage: 'flux',
+        });
+      } while (fluxUpdated > 0 && safety < 6);
+
+      const stillMissing = Math.max(0, total - fromLibrary - fromFlux - skipped);
+      const photoResult = {
+        updated,
+        failed: failed || stillMissing,
+        skipped,
+        fromLibrary,
+        fromFlux,
+        total,
+      };
       setPhotoSummary(photoResult);
       setSuccess(
         t('aiFill.suggestPhotosSuccess', {
-          updated,
-          failed,
+          updated: fromLibrary + fromFlux,
+          failed: photoResult.failed,
         }),
       );
-      // After photos: go edit the full product list (new + existing).
-      window.setTimeout(() => {
-        navigate('/app/products?review=1');
-      }, 900);
     } catch (err) {
       setError(getApiError(err, t, 'aiFill.suggestPhotosError'));
     } finally {
@@ -455,8 +501,8 @@ export default function AiFillPage() {
   const steps = [
     { id: 1, label: t('aiFill.stepUpload'), icon: 'photo_camera' },
     { id: 2, label: t('aiFill.stepReview'), icon: 'fact_check' },
-    { id: 3, label: t('aiFill.stepPublish'), icon: 'check_circle' },
-    { id: 4, label: t('aiFill.stepPhotos'), icon: 'image' },
+    { id: 3, label: t('aiFill.stepPhotos'), icon: 'image' },
+    { id: 4, label: t('aiFill.stepPublish'), icon: 'check_circle' },
   ];
 
   function startNewImport() {
@@ -469,7 +515,7 @@ export default function AiFillPage() {
   }
 
   return (
-    <div className={`relative mx-auto max-w-5xl space-y-4 ${result && !isPublished ? 'pb-32' : 'pb-10'}`}>
+    <div className={`relative mx-auto max-w-5xl space-y-4 ${result && !isPublished ? 'pb-56' : 'pb-10'}`}>
       {/* Compact header + stepper */}
       <header className="overflow-hidden rounded-2xl border border-outline-variant/80 bg-surface-container-lowest">
         <div className="relative px-4 py-5 sm:px-6 sm:py-6">
@@ -735,17 +781,18 @@ export default function AiFillPage() {
         </div>
       )}
 
-      {/* Stage 4 — Photos (after publish, shown before review for focus) */}
-      {isPublished ? (
+      <div className="flex flex-col gap-4">
+      {/* Stage 3 — Photos (before publish, visually after review) */}
+      {result ? (
         <section
           ref={photosRef}
-          className="animate-[fadeIn_0.4s_ease] overflow-hidden rounded-2xl border border-primary/20 bg-surface-container-lowest"
+          className="order-2 animate-[fadeIn_0.4s_ease] overflow-hidden rounded-2xl border border-primary/20 bg-surface-container-lowest"
         >
           <div className="bg-gradient-to-br from-primary/10 via-transparent to-transparent px-4 py-5 sm:px-6 sm:py-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="max-w-xl">
                 <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
-                  {t('aiFill.stepLabel', { n: 4 })}
+                  {t('aiFill.stepLabel', { n: 3 })}
                 </p>
                 <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">
                   {t('aiFill.photosTitle')}
@@ -784,7 +831,9 @@ export default function AiFillPage() {
                     {photoSummary
                       ? t('aiFill.photosDoneTitle')
                       : suggestingPhotos
-                        ? t('aiFill.suggestingPhotos')
+                        ? photoProgress?.stage === 'flux'
+                          ? t('aiFill.photosStageFlux')
+                          : t('aiFill.photosStageLibrary')
                         : t('aiFill.photosReadyTitle')}
                   </p>
                   <p className="mt-0.5 text-xs text-on-surface-variant">
@@ -799,10 +848,7 @@ export default function AiFillPage() {
                             total: photoProgress.total,
                           })
                         : t('aiFill.photosReadyHint', {
-                            count:
-                              publishSummary?.productsCreated ||
-                              publishSummary?.productIds?.length ||
-                              '—',
+                            count: selectedCounts.products || '—',
                           })}
                   </p>
                 </div>
@@ -823,11 +869,17 @@ export default function AiFillPage() {
               ) : null}
 
               {photoSummary ? (
-                <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <div className="rounded-xl bg-primary/8 px-3 py-2.5 text-center">
-                    <p className="text-lg font-bold text-primary">{photoSummary.updated}</p>
+                    <p className="text-lg font-bold text-primary">{photoSummary.fromLibrary ?? 0}</p>
                     <p className="text-[10px] font-semibold text-on-surface-variant uppercase">
-                      {t('aiFill.statGenerated')}
+                      {t('aiFill.statLibrary')}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-primary/8 px-3 py-2.5 text-center">
+                    <p className="text-lg font-bold text-primary">{photoSummary.fromFlux ?? 0}</p>
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase">
+                      {t('aiFill.statFlux')}
                     </p>
                   </div>
                   <div className="rounded-xl bg-surface-container px-3 py-2.5 text-center">
@@ -846,51 +898,48 @@ export default function AiFillPage() {
               ) : null}
 
               <div className="mt-4 flex flex-wrap gap-2">
-                {!photoSummary ? (
+                {!isPublished ? (
                   <>
                     <button
                       type="button"
-                      disabled={suggestingPhotos}
-                      onClick={() => handleSuggestPhotos()}
+                      disabled={suggestingPhotos || !selectedCounts.products}
+                      onClick={() => handleSuggestPhotos({ overwrite: Boolean(photoSummary) })}
                       className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary disabled:opacity-50"
                     >
                       <MaterialIcon
                         name={suggestingPhotos ? 'progress_activity' : 'auto_awesome'}
                         className={suggestingPhotos ? 'animate-spin text-[18px]' : 'text-[18px]'}
                       />
-                      {suggestingPhotos ? t('aiFill.suggestingPhotos') : t('aiFill.generatePhotos')}
+                      {suggestingPhotos
+                        ? t('aiFill.suggestingPhotos')
+                        : photoSummary
+                          ? t('aiFill.generatePhotosAgain')
+                          : t('aiFill.generatePhotos')}
                     </button>
-                    <Link
-                      to="/app/products?review=1"
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface"
-                    >
-                      <MaterialIcon name="edit_note" className="text-[18px]" />
-                      {t('aiFill.goReviewAll')}
-                    </Link>
+                    {photoSummary ? (
+                      <button
+                        type="button"
+                        disabled={busy || !selectedCounts.products}
+                        onClick={handlePublish}
+                        className="inline-flex h-11 items-center gap-2 rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface disabled:opacity-50"
+                      >
+                        <MaterialIcon name="check_circle" className="text-[18px]" />
+                        {t('aiFill.confirmPublishAfterPhotos')}
+                      </button>
+                    ) : null}
                   </>
                 ) : (
-                  <>
-                    <Link
-                      to="/app/products?review=1"
-                      className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary"
-                    >
-                      <MaterialIcon name="edit_note" className="text-[18px]" />
-                      {t('aiFill.goReviewAll')}
-                    </Link>
-                    <button
-                      type="button"
-                      disabled={suggestingPhotos}
-                      onClick={() => handleSuggestPhotos()}
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface disabled:opacity-50"
-                    >
-                      <MaterialIcon name="refresh" className="text-[18px]" />
-                      {t('aiFill.generatePhotosAgain')}
-                    </button>
-                  </>
+                  <Link
+                    to="/app/products?review=1"
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary"
+                  >
+                    <MaterialIcon name="edit_note" className="text-[18px]" />
+                    {t('aiFill.goReviewAll')}
+                  </Link>
                 )}
               </div>
-              {photoSummary ? (
-                <p className="mt-3 text-xs text-on-surface-variant">{t('aiFill.redirectHint')}</p>
+              {photoSummary && !isPublished ? (
+                <p className="mt-3 text-xs text-on-surface-variant">{t('aiFill.photosPublishHint')}</p>
               ) : null}
             </div>
           </div>
@@ -901,7 +950,7 @@ export default function AiFillPage() {
       {result ? (
         <section
           ref={reviewRef}
-          className="animate-[fadeIn_0.35s_ease] rounded-2xl border border-outline-variant/80 bg-surface-container-lowest p-4 sm:p-6"
+          className="order-1 animate-[fadeIn_0.35s_ease] rounded-2xl border border-outline-variant/80 bg-surface-container-lowest p-4 sm:p-6"
         >
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1077,26 +1126,98 @@ export default function AiFillPage() {
                       </div>
 
                       {!isCollapsed ? (
-                        <ul className="divide-y divide-outline-variant/50">
-                          {(cat.products || []).map((prod) => (
-                            <li
-                              key={prod.id}
-                              className={`px-3 py-2.5 sm:px-3.5 ${prod.needsReview ? 'bg-amber-500/[0.05]' : ''} ${prod.selected ? '' : 'opacity-40'}`}
-                            >
-                              <div className="flex items-start gap-2.5">
-                                <input
-                                  type="checkbox"
-                                  className="mt-2.5 h-4 w-4 accent-[var(--color-primary,#0d1b2a)]"
-                                  checked={Boolean(prod.selected)}
-                                  disabled={isPublished || !cat.selected}
-                                  onChange={(event) =>
-                                    updateProduct(cat.id, prod.id, {
-                                      selected: event.target.checked,
-                                    })
-                                  }
-                                />
-                                <div className="min-w-0 flex-1 space-y-1.5">
-                                  <div className="grid gap-1.5 sm:grid-cols-[minmax(0,1fr)_6.75rem]">
+                        <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
+                          {(cat.products || []).map((prod) => {
+                            const uploading = uploadingImageId === prod.id;
+                            return (
+                              <article
+                                key={prod.id}
+                                className={`flex flex-col overflow-hidden rounded-2xl border bg-surface-container-lowest shadow-sm ${
+                                  prod.selected
+                                    ? 'border-outline-variant/80'
+                                    : 'border-dashed border-outline-variant opacity-55'
+                                } ${prod.needsReview ? 'ring-1 ring-amber-400/40' : ''}`}
+                              >
+                                <div className="relative aspect-[4/3] bg-surface-container">
+                                  {prod.image ? (
+                                    <CloudinaryImage
+                                      src={prod.image}
+                                      alt=""
+                                      preset="productCard"
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-on-surface-variant/50">
+                                      <MaterialIcon name="image" className="text-[32px]" />
+                                      <span className="text-[11px] font-medium">{t('aiFill.changePhoto')}</span>
+                                    </div>
+                                  )}
+                                  {uploading ? (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-surface/70 text-sm font-semibold text-on-surface">
+                                      <MaterialIcon name="progress_activity" className="me-2 animate-spin" />
+                                      {t('aiFill.photoUploading')}
+                                    </div>
+                                  ) : null}
+                                  {!isPublished ? (
+                                    <div className="absolute inset-x-2 bottom-2 flex flex-wrap gap-1">
+                                      <button
+                                        type="button"
+                                        disabled={uploading}
+                                        onClick={() => openProductImageUpload(cat.id, prod.id)}
+                                        className="inline-flex items-center gap-1 rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm"
+                                      >
+                                        <MaterialIcon name="upload" className="text-[14px]" />
+                                        {t('aiFill.uploadPhoto')}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={uploading}
+                                        onClick={() =>
+                                          setPickerProduct({
+                                            ...prod,
+                                            catId: cat.id,
+                                            sectionKey,
+                                          })
+                                        }
+                                        className="inline-flex items-center gap-1 rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm"
+                                      >
+                                        <MaterialIcon name="photo_library" className="text-[14px]" />
+                                        {t('aiFill.chooseLibrary')}
+                                      </button>
+                                      {prod.image ? (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            updateProduct(cat.id, prod.id, {
+                                              image: '',
+                                              imageSource: '',
+                                            })
+                                          }
+                                          className="inline-flex items-center gap-1 rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm"
+                                          aria-label={t('aiFill.removePhoto')}
+                                        >
+                                          <MaterialIcon name="hide_image" className="text-[14px]" />
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
+                                  <label className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold text-on-surface shadow-sm">
+                                    <input
+                                      type="checkbox"
+                                      className="h-3.5 w-3.5 accent-[var(--color-primary,#0d1b2a)]"
+                                      checked={Boolean(prod.selected)}
+                                      disabled={isPublished || !cat.selected}
+                                      onChange={(event) =>
+                                        updateProduct(cat.id, prod.id, {
+                                          selected: event.target.checked,
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                </div>
+
+                                <div className="flex flex-1 flex-col gap-2 p-3">
+                                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_5.75rem]">
                                     <input
                                       value={prod.name}
                                       disabled={isPublished}
@@ -1106,7 +1227,7 @@ export default function AiFillPage() {
                                         })
                                       }
                                       placeholder={t('aiFill.productName')}
-                                      className="h-9 rounded-lg border border-outline-variant/80 bg-surface-container-lowest px-2.5 text-sm text-on-surface outline-none focus:border-primary disabled:opacity-70"
+                                      className="h-10 rounded-xl border border-outline-variant/80 bg-background px-3 text-sm font-semibold text-on-surface outline-none focus:border-primary disabled:opacity-70"
                                     />
                                     <div className="relative">
                                       <input
@@ -1120,7 +1241,7 @@ export default function AiFillPage() {
                                             price: event.target.value,
                                           })
                                         }
-                                        className="h-9 w-full rounded-lg border border-outline-variant/80 bg-surface-container-lowest pe-9 ps-2.5 text-sm text-on-surface outline-none focus:border-primary disabled:opacity-70"
+                                        className="h-10 w-full rounded-xl border border-outline-variant/80 bg-background pe-9 ps-2.5 text-sm text-on-surface outline-none focus:border-primary disabled:opacity-70"
                                       />
                                       <span className="pointer-events-none absolute inset-e-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-on-surface-variant">
                                         {t('aiFill.currency')}
@@ -1135,32 +1256,36 @@ export default function AiFillPage() {
                                         description: event.target.value,
                                       })
                                     }
-                                    rows={2}
+                                    rows={3}
                                     maxLength={500}
                                     placeholder={t('aiFill.productDescription')}
-                                    className="w-full resize-y rounded-lg border border-outline-variant/80 bg-surface-container-lowest px-2.5 py-2 text-xs text-on-surface outline-none placeholder:text-on-surface-variant/50 focus:border-primary disabled:opacity-70"
+                                    className="min-h-[4.5rem] w-full flex-1 resize-y rounded-xl border border-outline-variant/80 bg-background px-3 py-2 text-sm text-on-surface outline-none placeholder:text-on-surface-variant/50 focus:border-primary disabled:opacity-70"
                                   />
-                                  {prod.needsReview ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
-                                      <MaterialIcon name="warning" className="text-[12px]" />
-                                      {t('aiFill.needsReview')}
-                                    </span>
-                                  ) : null}
+                                  <div className="flex items-center justify-between gap-2">
+                                    {prod.needsReview ? (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                                        <MaterialIcon name="warning" className="text-[12px]" />
+                                        {t('aiFill.needsReview')}
+                                      </span>
+                                    ) : (
+                                      <span />
+                                    )}
+                                    {!isPublished ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => removeProduct(cat.id, prod.id)}
+                                        className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold text-on-surface-variant hover:bg-error-container hover:text-error"
+                                      >
+                                        <MaterialIcon name="delete" className="text-[15px]" />
+                                        {t('aiFill.removeProduct')}
+                                      </button>
+                                    ) : null}
+                                  </div>
                                 </div>
-                                {!isPublished ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeProduct(cat.id, prod.id)}
-                                    className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-error-container hover:text-error"
-                                    aria-label={t('aiFill.removeProduct')}
-                                  >
-                                    <MaterialIcon name="close" className="text-[16px]" />
-                                  </button>
-                                ) : null}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
+                              </article>
+                            );
+                          })}
+                        </div>
                       ) : null}
                     </div>
                   );
@@ -1199,6 +1324,7 @@ export default function AiFillPage() {
           ) : null}
         </section>
       ) : null}
+      </div>
 
       {/* History — collapsed by default after first use */}
       <section className="rounded-2xl border border-outline-variant/70 bg-surface-container-lowest">
@@ -1284,9 +1410,11 @@ export default function AiFillPage() {
                 {selectedCounts.products}
               </span>
               <div>
-                <p className="text-sm font-semibold text-on-surface">{t('aiFill.readyToPublish')}</p>
+                <p className="text-sm font-semibold text-on-surface">
+                  {photoSummary ? t('aiFill.readyToPublish') : t('aiFill.readyForPhotos')}
+                </p>
                 <p className="text-[11px] text-on-surface-variant">
-                  {selectedCounts.categories} {t('aiFill.categoriesSelected')}
+                  {selectedCounts.withPhoto}/{selectedCounts.products} {t('aiFill.stepPhotos')}
                   {selectedCounts.review
                     ? ` · ${selectedCounts.review} ${t('aiFill.toReview')}`
                     : ''}
@@ -1303,22 +1431,58 @@ export default function AiFillPage() {
                 <MaterialIcon name="save" className="text-[18px]" />
                 {saving ? t('aiFill.saving') : t('aiFill.saveDraft')}
               </button>
-              <button
-                type="button"
-                disabled={busy || !selectedCounts.products}
-                onClick={handlePublish}
-                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary shadow-[0_8px_20px_rgba(13,27,42,0.2)] disabled:opacity-60 sm:flex-none"
-              >
-                <MaterialIcon
-                  name={publishing ? 'progress_activity' : 'check_circle'}
-                  className={publishing ? 'animate-spin text-[18px]' : 'text-[18px]'}
-                />
-                {publishing ? t('aiFill.publishing') : t('aiFill.confirmPublish')}
-              </button>
+              {!photoSummary ? (
+                <button
+                  type="button"
+                  disabled={busy || !selectedCounts.products}
+                  onClick={() => handleSuggestPhotos()}
+                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary shadow-[0_8px_20px_rgba(13,27,42,0.2)] disabled:opacity-60 sm:flex-none"
+                >
+                  <MaterialIcon
+                    name={suggestingPhotos ? 'progress_activity' : 'auto_awesome'}
+                    className={suggestingPhotos ? 'animate-spin text-[18px]' : 'text-[18px]'}
+                  />
+                  {suggestingPhotos ? t('aiFill.suggestingPhotos') : t('aiFill.generatePhotos')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy || !selectedCounts.products}
+                  onClick={handlePublish}
+                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary shadow-[0_8px_20px_rgba(13,27,42,0.2)] disabled:opacity-60 sm:flex-none"
+                >
+                  <MaterialIcon
+                    name={publishing ? 'progress_activity' : 'check_circle'}
+                    className={publishing ? 'animate-spin text-[18px]' : 'text-[18px]'}
+                  />
+                  {publishing ? t('aiFill.publishing') : t('aiFill.confirmPublishAfterPhotos')}
+                </button>
+              )}
             </div>
           </div>
         </div>
       ) : null}
+
+      <input
+        ref={productImageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={handleProductImageFile}
+      />
+
+      <MediaImagePickerModal
+        open={Boolean(pickerProduct)}
+        product={pickerProduct}
+        onClose={() => setPickerProduct(null)}
+        onApplied={(_saved, item) => {
+          if (!pickerProduct || !item?.image) return;
+          updateProduct(pickerProduct.catId, pickerProduct.id, {
+            image: item.image,
+            imageSource: 'menu-media-pick',
+          });
+        }}
+      />
 
       <style>{`
         @keyframes fadeIn {

@@ -8,10 +8,18 @@ import {
   listImageCandidatesForName,
   listMediaLibrary,
 } from './productImage.suggest.js';
+import { generateFluxProductImage, isFluxConfigured } from './productImage.flux.js';
 import { invalidatePublicMenu } from './menuCache.service.js';
-import { deleteReplacedImage, normalizeImageUrl, uploadImageFromUrl } from './storage.service.js';
+import {
+  deleteReplacedImage,
+  normalizeImageUrl,
+  uploadImageFromBase64,
+  uploadImageFromUrl,
+} from './storage.service.js';
 
 const BATCH_MAX = 20;
+const FLUX_BATCH_MAX = 8;
+const FLUX_CONCURRENCY = 3;
 
 function requireCafeId(user) {
   if (!user.cafeId) {
@@ -80,9 +88,16 @@ async function applyCandidate(product, candidate, { overwrite = false } = {}) {
   }
 
   const previousImage = product.image;
-  const cloudinaryUrl = candidate.reuseUrl
-    ? normalizeImageUrl(candidate.imageUrl)
-    : await uploadImageFromUrl(candidate.imageUrl, { folder: 'products' });
+  let cloudinaryUrl = '';
+  if (candidate.base64 || String(candidate.imageUrl || '').startsWith('data:')) {
+    cloudinaryUrl = await uploadImageFromBase64(candidate.base64 || candidate.imageUrl, {
+      folder: 'products',
+    });
+  } else if (candidate.reuseUrl) {
+    cloudinaryUrl = normalizeImageUrl(candidate.imageUrl);
+  } else {
+    cloudinaryUrl = await uploadImageFromUrl(candidate.imageUrl, { folder: 'products' });
+  }
 
   const updated = await prisma.product.update({
     where: { id: product.id },
@@ -115,12 +130,7 @@ async function applySuggestedImage(product, { overwrite = false } = {}) {
     };
   }
 
-  const sectionKey = resolveSectionKey(product);
-  const candidate = await findProductImageCandidate(product.name, {
-    sectionKey,
-    cafeId: product.cafeId,
-    productId: product.id,
-  });
+  const candidate = await resolveProductImageCandidate(product, { stage: 'auto' });
 
   return applyCandidate(product, candidate, { overwrite });
 }
@@ -129,8 +139,53 @@ export function getProductImageSuggestStatus() {
   return {
     enabled: isProductImageSuggestEnabled(),
     batchMax: BATCH_MAX,
-    mode: 'picker',
+    fluxBatchMax: FLUX_BATCH_MAX,
+    fluxEnabled: isFluxConfigured(),
+    mode: 'library-then-flux',
   };
+}
+
+async function resolveProductImageCandidate(product, { stage = 'auto' } = {}) {
+  const sectionKey = resolveSectionKey(product);
+  const doLibrary = stage === 'auto' || stage === 'library';
+  const doFlux = stage === 'auto' || stage === 'flux';
+
+  if (doLibrary) {
+    const fromApi = await findProductImageCandidate(product.name, {
+      sectionKey,
+      cafeId: product.cafeId,
+      productId: product.id,
+      description: product.description,
+    });
+    if (fromApi) return fromApi;
+  }
+
+  if (doFlux && isFluxConfigured()) {
+    return generateFluxProductImage({
+      name: product.name,
+      description: product.description,
+      sectionKey,
+    });
+  }
+
+  return null;
+}
+
+async function mapLimit(items, limit, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+
+  async function run() {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await worker(items[index], index);
+    }
+  }
+
+  const pool = Math.min(Math.max(Number(limit) || 1, 1), items.length || 1);
+  await Promise.all(Array.from({ length: pool }, () => run()));
+  return results;
 }
 
 export async function browseMediaLibrary(user, query = {}) {
@@ -205,7 +260,7 @@ export async function suggestProductImage(user, productId, { overwrite = false }
 
 export async function suggestProductImagesBatch(
   user,
-  { productIds = [], onlyMissing = true, overwrite = false, limit = BATCH_MAX } = {},
+  { productIds = [], onlyMissing = true, overwrite = false, limit = BATCH_MAX, stage = 'auto' } = {},
 ) {
   const cafeId = requireCafeId(user);
 
@@ -264,18 +319,28 @@ export async function suggestProductImagesBatch(
   }
 
   const pending = products.filter((product) => overwrite || !product.image);
-  const candidates = await findProductImageCandidatesBatch(
-    pending.map((product) => ({
-      id: product.id,
-      name: product.name,
-      sectionKey: resolveSectionKey(product),
-    })),
-  );
+  const doLibrary = stage === 'auto' || stage === 'library';
+  const doFlux = stage === 'auto' || stage === 'flux';
+
+  const candidates = doLibrary
+    ? await findProductImageCandidatesBatch(
+        pending.map((product) => ({
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          sectionKey: resolveSectionKey(product),
+        })),
+      )
+    : new Map();
 
   const results = [];
   let updated = 0;
   let skipped = 0;
   let failed = 0;
+  let fromLibrary = 0;
+  let fromFlux = 0;
+  let pendingFlux = 0;
+  const fluxQueue = [];
 
   for (const product of products) {
     try {
@@ -292,16 +357,49 @@ export async function suggestProductImagesBatch(
       }
 
       const candidate = candidates.get(product.id) || null;
-      const result = await applyCandidate(product, candidate, { overwrite });
+      if (candidate) {
+        const result = await applyCandidate(product, candidate, { overwrite });
+        results.push({
+          productId: product.id,
+          ok: true,
+          skipped: Boolean(result.skipped),
+          source: result.source,
+          product: result.product,
+        });
+        if (result.skipped) skipped += 1;
+        else {
+          updated += 1;
+          if (result.source === 'menu-media' || result.source === 'pollinations') fromLibrary += 1;
+        }
+        continue;
+      }
+
+      if (doFlux && isFluxConfigured()) {
+        fluxQueue.push(product);
+        continue;
+      }
+
+      if (stage === 'library') {
+        pendingFlux += 1;
+        results.push({
+          productId: product.id,
+          ok: true,
+          skipped: false,
+          pending: true,
+          source: null,
+          product: toProductResponse(product),
+        });
+        continue;
+      }
+
+      failed += 1;
       results.push({
         productId: product.id,
-        ok: true,
-        skipped: Boolean(result.skipped),
-        source: result.source,
-        product: result.product,
+        ok: false,
+        skipped: false,
+        source: null,
+        error: 'IMAGE_SUGGEST_NOT_FOUND',
       });
-      if (result.skipped) skipped += 1;
-      else updated += 1;
     } catch (error) {
       failed += 1;
       results.push({
@@ -314,12 +412,53 @@ export async function suggestProductImagesBatch(
     }
   }
 
+  const fluxLimit = stage === 'flux' ? pending.length : FLUX_BATCH_MAX;
+  const fluxTargets = fluxQueue.slice(0, fluxLimit);
+
+  if (fluxTargets.length) {
+    await mapLimit(fluxTargets, FLUX_CONCURRENCY, async (product) => {
+      try {
+        const generated = await generateFluxProductImage({
+          name: product.name,
+          description: product.description,
+          sectionKey: resolveSectionKey(product),
+        });
+        const result = await applyCandidate(product, generated, { overwrite });
+        results.push({
+          productId: product.id,
+          ok: true,
+          skipped: Boolean(result.skipped),
+          source: result.source,
+          product: result.product,
+        });
+        if (result.skipped) skipped += 1;
+        else {
+          updated += 1;
+          fromFlux += 1;
+        }
+      } catch (error) {
+        failed += 1;
+        results.push({
+          productId: product.id,
+          ok: false,
+          skipped: false,
+          source: null,
+          error: error?.code || error?.message || 'FLUX_FAILED',
+        });
+      }
+    });
+  }
+
   return {
     summary: {
       requested: products.length,
       updated,
       skipped,
       failed,
+      fromLibrary,
+      fromFlux,
+      pendingFlux,
+      stage,
     },
     results,
   };

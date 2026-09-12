@@ -11,7 +11,12 @@ import { extractDraftMenu, normalizeDraftMenu } from './menuDraft.extractor.js';
 import { extractDraftMenuWithLlm, isMenuLlmConfigured } from './menuDraft.llm.js';
 import { isOcrConfigured, runOcrOnImage } from './ocr.client.js';
 import { createProduct } from './product.service.js';
-import { uploadProductImage } from './storage.service.js';
+import { findProductImageCandidatesBatch } from './productImage.suggest.js';
+import { generateFluxProductImage, isFluxConfigured } from './productImage.flux.js';
+import { normalizeImageUrl, uploadImageFromBase64, uploadProductImage } from './storage.service.js';
+
+const DRAFT_FLUX_BATCH_MAX = 8;
+const DRAFT_FLUX_CONCURRENCY = 3;
 
 function requireCafeId(user) {
   if (!user.cafeId) {
@@ -191,6 +196,154 @@ export async function updateMenuImportDraft(user, id, draftMenuInput) {
   return toImportResponse(updated);
 }
 
+async function mapLimit(items, limit, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+
+  async function run() {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await worker(items[index], index);
+    }
+  }
+
+  const pool = Math.min(Math.max(Number(limit) || 1, 1), items.length || 1);
+  await Promise.all(Array.from({ length: pool }, () => run()));
+  return results;
+}
+
+async function persistDraftImage(candidate) {
+  if (!candidate) return '';
+  if (candidate.base64 || String(candidate.imageUrl || '').startsWith('data:')) {
+    const uploaded = await uploadImageFromBase64(candidate.base64 || candidate.imageUrl, {
+      folder: 'products',
+    });
+    return normalizeImageUrl(uploaded);
+  }
+  return normalizeImageUrl(candidate.imageUrl);
+}
+
+export async function suggestMenuImportImages(
+  user,
+  id,
+  { draftMenuInput = null, stage = 'auto', overwrite = false } = {},
+) {
+  const cafeId = requireCafeId(user);
+  const row = await findOwnedImport(cafeId, id);
+
+  if (row.status === 'published') {
+    throw new ApiError(400, 'This import was already published', null, 'MENU_IMPORT_PUBLISHED');
+  }
+  if (row.status === 'failed') {
+    throw new ApiError(400, 'Cannot edit a failed import', null, 'MENU_IMPORT_FAILED');
+  }
+
+  const draft = normalizeDraftMenu(draftMenuInput || row.draftMenu);
+  const doLibrary = stage === 'auto' || stage === 'library';
+  const doFlux = stage === 'auto' || stage === 'flux';
+
+  const targets = [];
+  for (const cat of draft.categories) {
+    if (!cat.selected) continue;
+    for (const prod of cat.products) {
+      if (!prod.selected) continue;
+      if (prod.image && !overwrite) continue;
+      targets.push({ product: prod, sectionKey: resolveDraftSectionKey(cat.sectionKey) });
+    }
+  }
+
+  let updated = 0;
+  let failed = 0;
+  let skipped = 0;
+  let fromLibrary = 0;
+  let fromFlux = 0;
+  let pendingFlux = 0;
+
+  const selectedCount = draft.categories.reduce(
+    (sum, cat) => sum + (cat.selected ? cat.products.filter((p) => p.selected).length : 0),
+    0,
+  );
+  skipped = Math.max(0, selectedCount - targets.length);
+
+  if (doLibrary && targets.length) {
+    const hits = await findProductImageCandidatesBatch(
+      targets.map(({ product, sectionKey }) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        sectionKey,
+      })),
+    );
+
+    for (const target of targets) {
+      const candidate = hits.get(target.product.id);
+      if (!candidate?.imageUrl) continue;
+      try {
+        target.product.image = await persistDraftImage(candidate);
+        target.product.imageSource = candidate.source || 'menu-media';
+        updated += 1;
+        fromLibrary += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+  }
+
+  const missing = targets.filter((target) => !target.product.image);
+
+  if (doFlux && isFluxConfigured() && missing.length) {
+    const fluxLimit = stage === 'flux' ? missing.length : DRAFT_FLUX_BATCH_MAX;
+    const fluxTargets = missing.slice(0, fluxLimit);
+
+    await mapLimit(fluxTargets, DRAFT_FLUX_CONCURRENCY, async (target) => {
+      try {
+        const generated = await generateFluxProductImage({
+          name: target.product.name,
+          description: target.product.description,
+          sectionKey: target.sectionKey,
+        });
+        if (!generated) {
+          failed += 1;
+          return;
+        }
+        target.product.image = await persistDraftImage(generated);
+        target.product.imageSource = 'flux';
+        updated += 1;
+        fromFlux += 1;
+      } catch {
+        failed += 1;
+      }
+    });
+  } else if (stage === 'library') {
+    pendingFlux = missing.length;
+  } else if (missing.length) {
+    failed += missing.filter((target) => !target.product.image).length;
+  }
+
+  const saved = await prisma.menuImport.update({
+    where: { id: row.id },
+    data: {
+      draftMenu: draft,
+      status: 'reviewed',
+    },
+  });
+
+  return {
+    import: toImportResponse(saved),
+    summary: {
+      requested: targets.length,
+      updated,
+      skipped,
+      failed,
+      fromLibrary,
+      fromFlux,
+      pendingFlux,
+      stage,
+    },
+  };
+}
+
 export async function publishMenuImport(user, id, draftMenuInput = null) {
   const cafeId = requireCafeId(user);
   const row = await findOwnedImport(cafeId, id);
@@ -300,6 +453,7 @@ export async function publishMenuImport(user, id, draftMenuInput = null) {
         name: String(prod.name).slice(0, 120),
         description: String(prod.description || '').slice(0, 500),
         price: Number(prod.price) || 0,
+        image: String(prod.image || '').trim().slice(0, 2048),
         categoryId,
         available: true,
         order: pIndex,

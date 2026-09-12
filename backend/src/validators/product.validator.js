@@ -68,6 +68,7 @@ export const suggestProductImagesBatchSchema = z.object({
       onlyMissing: z.boolean().optional().default(true),
       overwrite: z.boolean().optional().default(false),
       limit: z.coerce.number().int().min(1).max(20).optional().default(20),
+      stage: z.enum(['auto', 'library', 'flux']).optional().default('auto'),
     }),
   ),
 });

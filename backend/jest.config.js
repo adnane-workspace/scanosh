@@ -1,7 +1,24 @@
 export default {
   testEnvironment: 'node',
   transform: {},
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
-  testMatch: ['<rootDir>/tests/**/*.test.js'],
   verbose: true,
+  projects: [
+    {
+      displayName: 'unit',
+      testEnvironment: 'node',
+      transform: {},
+      testMatch: ['<rootDir>/tests/utils/**/*.test.js'],
+    },
+    {
+      displayName: 'db',
+      testEnvironment: 'node',
+      transform: {},
+      testMatch: [
+        '<rootDir>/tests/models/**/*.test.js',
+        '<rootDir>/tests/routes/**/*.test.js',
+        '<rootDir>/tests/services/**/*.test.js',
+      ],
+      setupFilesAfterEnv: ['<rootDir>/tests/setup.db.js'],
+    },
+  ],
 };

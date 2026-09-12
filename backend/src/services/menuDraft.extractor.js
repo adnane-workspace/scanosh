@@ -496,6 +496,8 @@ export function normalizeDraftMenu(draft) {
             needsReview:
               Boolean(prod?.needsReview) || isPlaceholderName(prodName) || !(price > 0),
             confidence: typeof prod?.confidence === 'number' ? prod.confidence : null,
+            image: String(prod?.image || '').trim().slice(0, 2048),
+            imageSource: String(prod?.imageSource || '').trim().slice(0, 40),
           };
         })
         .filter(Boolean);

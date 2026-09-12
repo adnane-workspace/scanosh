@@ -30,6 +30,13 @@ export async function updateMenuImportDraft(id, draftMenu) {
   return data.data.import;
 }
 
+export async function suggestMenuImportImages(id, payload = {}) {
+  const { data } = await api.post(`/me/menu-imports/${id}/suggest-images`, payload, {
+    timeout: 300000,
+  });
+  return data.data;
+}
+
 export async function publishMenuImport(id, draftMenu) {
   const payload = draftMenu ? { draftMenu } : {};
   const { data } = await api.post(`/me/menu-imports/${id}/publish`, payload, {

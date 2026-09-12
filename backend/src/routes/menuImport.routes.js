@@ -5,6 +5,7 @@ import {
   list,
   publish,
   status,
+  suggestImages,
   updateDraft,
 } from '../controllers/menuImport.controller.js';
 import { authenticate, requireAdmin } from '../middleware/authMiddleware.js';
@@ -14,6 +15,7 @@ import {
   listMenuImportsSchema,
   menuImportIdSchema,
   publishMenuImportSchema,
+  suggestMenuImportImagesSchema,
   updateMenuImportDraftSchema,
 } from '../validators/menuImport.validator.js';
 
@@ -26,6 +28,11 @@ menuImportRouter.post('/', menuImportImageUpload.single('image'), handleUploadEr
 menuImportRouter.get('/', validate(listMenuImportsSchema), list);
 menuImportRouter.get('/:id', validate(menuImportIdSchema), getById);
 menuImportRouter.put('/:id/draft', validate(updateMenuImportDraftSchema), updateDraft);
+menuImportRouter.post(
+  '/:id/suggest-images',
+  validate(suggestMenuImportImagesSchema),
+  suggestImages,
+);
 menuImportRouter.post('/:id/publish', validate(publishMenuImportSchema), publish);
 
 export { menuImportRouter };

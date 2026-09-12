@@ -19,7 +19,8 @@
     "db:superadmin": "node scripts/create-superadmin.mjs",
     "db:push": "npx prisma db push",
     "lint": "eslint src",
-    "test": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --runInBand"
+    "test": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --runInBand",
+    "test:unit": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --runInBand --selectProjects unit"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

@@ -296,16 +296,18 @@ function applySectionBias(score, item, preferCafe) {
   return next;
 }
 
-function matchInIndex(productName, sectionKey) {
+function matchInIndex(productName, sectionKey, description = '') {
   const queryNorm = normalizeSearchName(productName);
   const queryTokens = tokenize(productName);
   if (!queryNorm) return null;
 
-  const preferCafe = looksLikeCafe(productName, sectionKey);
+  const descTokens = tokenize(description);
+  const preferCafe = looksLikeCafe(`${productName} ${description}`, sectionKey);
   const candidateIds = new Set();
 
-  if (queryTokens.length) {
-    for (const token of queryTokens) {
+  const seedTokens = queryTokens.length ? queryTokens : descTokens;
+  if (seedTokens.length) {
+    for (const token of seedTokens) {
       const ids = libraryState.inverted.get(token) || [];
       for (const id of ids) candidateIds.add(id);
     }
@@ -321,6 +323,17 @@ function matchInIndex(productName, sectionKey) {
     if (!item) continue;
 
     let score = scoreCandidate(queryNorm, queryTokens, item);
+    if (!score && descTokens.length) {
+      const combined = scoreCandidate(
+        normalizeSearchName(`${productName} ${description}`),
+        [...queryTokens, ...descTokens],
+        item,
+      );
+      const nameHit = queryTokens.some(
+        (token) => item.normalizedTitle?.includes(token) || item.tokens?.includes(token),
+      );
+      if (combined && nameHit) score = Math.min(combined, 88);
+    }
     if (!score) continue;
 
     score = applySectionBias(score, item, preferCafe);
@@ -357,6 +370,7 @@ export async function findProductImageCandidatesBatch(products = []) {
     ? products.filter((p) => p?.id && p?.name).map((p) => ({
         id: String(p.id),
         name: p.name,
+        description: p.description || '',
         sectionKey: p.sectionKey || null,
       }))
     : [];
@@ -373,14 +387,16 @@ export async function findProductImageCandidatesBatch(products = []) {
   }
 
   for (const product of list) {
-    const cacheKey = `${product.sectionKey || 'any'}::${normalizeSearchName(product.name)}`;
+    const cacheKey = `${product.sectionKey || 'any'}::${normalizeSearchName(product.name)}::${normalizeSearchName(product.description).slice(0, 40)}`;
     const cached = resultCacheGet(cacheKey);
     if (cached !== undefined) {
       result.set(product.id, cached);
       continue;
     }
 
-    const hit = matchInIndex(product.name, product.sectionKey) || pollinationsFallback(product.name, product.sectionKey);
+    const hit =
+      matchInIndex(product.name, product.sectionKey, product.description) ||
+      pollinationsFallback(product.name, product.sectionKey);
     resultCacheSet(cacheKey, hit);
     result.set(product.id, hit);
   }
@@ -393,7 +409,7 @@ export async function findProductImageCandidatesBatch(products = []) {
  */
 export async function findProductImageCandidate(
   productName,
-  { sectionKey = null, cafeId = null, productId = 'single' } = {},
+  { sectionKey = null, cafeId = null, productId = 'single', description = '' } = {},
 ) {
   if (!isProductImageSuggestEnabled()) {
     throw new ApiError(503, 'Product image suggest is disabled', null, 'IMAGE_SUGGEST_DISABLED');
@@ -403,7 +419,7 @@ export async function findProductImageCandidate(
   if (!query) return null;
 
   const map = await findProductImageCandidatesBatch([
-    { id: productId || 'single', name: productName, sectionKey },
+    { id: productId || 'single', name: productName, description, sectionKey },
   ]);
   return map.get(String(productId || 'single')) || null;
 }

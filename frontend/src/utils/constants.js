@@ -76,9 +76,9 @@ export function getDocumentOrigin() {
   return getSiteOrigin();
 }
 
-export const DEMO_MENU_SLUG = String(import.meta.env.VITE_DEMO_MENU_SLUG || 'bbb')
+export const DEMO_MENU_SLUG = String(import.meta.env.VITE_DEMO_MENU_SLUG || 'seven')
   .trim()
-  .toLowerCase() || 'bbb';
+  .toLowerCase() || 'seven';
 
 export function getPublicMenuUrl(slug) {
   if (!slug) {

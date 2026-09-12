@@ -14,10 +14,21 @@ if (!process.env.VERCEL) {
   });
 }
 
+// Jest must never inherit the café DATABASE_URL for wipes.
+const isJest = Boolean(process.env.JEST_WORKER_ID) || process.env.NODE_ENV === 'test';
+if (isJest) {
+  const testUrl = String(process.env.TEST_DATABASE_URL || '').trim();
+  if (testUrl) {
+    process.env.DATABASE_URL = testUrl;
+    process.env.DIRECT_URL = testUrl;
+  }
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(5000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  TEST_DATABASE_URL: z.string().trim().optional().default(''),
   DIRECT_URL: z.string().optional().default(''),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),
@@ -53,6 +64,14 @@ const envSchema = z.object({
   MENU_LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(90000),
   PRODUCT_IMAGE_SUGGEST: z.string().trim().optional().default('1'),
   PRODUCT_IMAGE_POLLINATIONS: z.string().trim().optional().default('0'),
+  NVIDIA_FLUX_ENABLED: z.string().trim().optional().default('1'),
+  NVIDIA_FLUX_MODEL: z.string().trim().optional().default('black-forest-labs/flux.2-klein-4b'),
+  NVIDIA_FLUX_BASE_URL: z
+    .string()
+    .trim()
+    .optional()
+    .default('https://ai.api.nvidia.com/v1/genai'),
+  NVIDIA_FLUX_TIMEOUT_MS: z.coerce.number().int().positive().default(45000),
   MENU_MEDIA_API_URL: z
     .string()
     .trim()

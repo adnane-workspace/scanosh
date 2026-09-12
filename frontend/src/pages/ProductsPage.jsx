@@ -318,15 +318,31 @@ export default function ProductsPage() {
     setSuccess('');
     setSuggestingBatch(true);
     try {
-      const result = await suggestProductImagesBatch({
+      const library = await suggestProductImagesBatch({
         onlyMissing: true,
         limit: 20,
+        stage: 'library',
       });
+      let updated = library?.summary?.updated ?? 0;
+      let failed = library?.summary?.failed ?? 0;
+      let fluxUpdated = 0;
+      let safety = 0;
+      do {
+        const flux = await suggestProductImagesBatch({
+          onlyMissing: true,
+          limit: 8,
+          stage: 'flux',
+        });
+        fluxUpdated = flux?.summary?.updated ?? 0;
+        updated += fluxUpdated;
+        failed += flux?.summary?.failed ?? 0;
+        safety += 1;
+      } while (fluxUpdated > 0 && safety < 6);
       await loadData(true);
       setSuccess(
         t('products.suggestBatchSuccess', {
-          updated: result?.summary?.updated ?? 0,
-          failed: result?.summary?.failed ?? 0,
+          updated,
+          failed,
         }),
       );
     } catch (err) {
