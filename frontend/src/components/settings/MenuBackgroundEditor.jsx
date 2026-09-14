@@ -43,7 +43,7 @@ function MenuPreview({ menuUi, activeHex }) {
   const fill = activeHex || DEFAULT_MENU_BACKGROUND;
 
   return (
-    <div className="relative mx-auto aspect-[9/16] w-full max-w-[11.5rem] overflow-hidden rounded-[2rem] border-[3px] border-on-surface/10 bg-surface-container shadow-[0_20px_50px_rgba(13,27,42,0.12)] sm:max-w-[12.5rem]">
+    <div className="relative mx-auto aspect-[9/16] w-full max-w-[10.5rem] overflow-hidden rounded-[1.85rem] border-[3px] border-black/8 bg-surface-container shadow-[0_18px_40px_rgba(13,27,42,0.12)] sm:max-w-[11.5rem]">
       <div className="absolute inset-x-0 top-0 z-10 flex justify-center pt-2">
         <span className="h-1 w-10 rounded-full bg-on-surface/15" />
       </div>
@@ -103,11 +103,8 @@ export default function MenuBackgroundEditor({
   const activeHex = normalizeHexColor(colorDraft) || menuUi.backgroundColor || DEFAULT_MENU_BACKGROUND;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] lg:items-start">
-      <div className="lg:sticky lg:top-24">
-        <p className="mb-3 text-center text-xs font-semibold tracking-[0.14em] text-on-surface-variant uppercase lg:text-start">
-          {t('settings.menuBgPreview')}
-        </p>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] lg:items-start">
+      <div>
         <MenuPreview menuUi={menuUi} activeHex={activeHex} />
       </div>
 

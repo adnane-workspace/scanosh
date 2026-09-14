@@ -4,7 +4,7 @@ import ImageLightbox from '../components/ui/ImageLightbox.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import MenuBackgroundEditor from '../components/settings/MenuBackgroundEditor.jsx';
 import MenuCardEditor from '../components/settings/MenuCardEditor.jsx';
-import { SettingsImagePicker, SettingsSectionCard } from '../components/settings/SettingsPanels.jsx';
+import { SettingsImagePicker } from '../components/settings/SettingsPanels.jsx';
 import { SettingsToggle } from '../components/settings/SettingsToggle.jsx';
 import { useLocale } from '../hooks/useLocale.js';
 import { useToast } from '../hooks/useToast.js';
@@ -56,6 +56,8 @@ export default function PublicMenuSettingsPage() {
   const [savedSnapshotValue, setSavedSnapshotValue] = useState(() => draftSnapshot('', DEFAULT_MENU_UI));
   const [previewUrl, setPreviewUrl] = useState('');
   const [menuSections, setMenuSections] = useState(DEFAULT_SECTION_DEFS);
+  const [studioTab, setStudioTab] = useState('look');
+  const [activeSectionKey, setActiveSectionKey] = useState('restaurant');
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +81,9 @@ export default function PublicMenuSettingsPage() {
         setMenuUi(nextUi);
         setColorDraft(nextUi.backgroundColor);
         setMenuSections(nextSections);
+        setActiveSectionKey((current) =>
+          nextSections.some((item) => item.key === current) ? current : nextSections[0]?.key || 'restaurant',
+        );
         setSavedSnapshotValue(draftSnapshot(nextLogo, nextUi));
       })
       .catch((err) => {
@@ -150,7 +155,7 @@ export default function PublicMenuSettingsPage() {
     try {
       const cafe = await updateMyCafe({ logo, menuUi: nextUi });
       const savedLogo = cafe.logo || '';
-      const savedUi = normalizeMenuUi(cafe.menuUi);
+      const savedUi = withSectionCards(cafe.menuUi, menuSections.map((item) => item.key));
 
       setLogo(savedLogo);
       setMenuUi(savedUi);
@@ -216,57 +221,76 @@ export default function PublicMenuSettingsPage() {
 
   const publicUrl = getPublicMenuUrl(slug);
   const saveDisabled = !isDirty || saving || Boolean(uploading);
+  const activeSection = menuSections.find((item) => item.key === activeSectionKey) || menuSections[0];
 
   return (
-    <section className={`mx-auto w-full max-w-4xl space-y-6 ${isDirty ? 'pb-24 lg:pb-6' : ''}`}>
-      <div className="flex flex-col gap-4 border-b border-outline-variant pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="font-display text-2xl font-semibold tracking-tight text-on-surface sm:text-[1.75rem]">
+    <section className={`mx-auto w-full max-w-5xl space-y-6 ${isDirty ? 'pb-28' : 'pb-8'}`}>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 max-w-xl">
+          <p className="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase">
+            {t('publicMenu.kicker')}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2.5">
+            <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-on-surface sm:text-[2rem]">
               {t('publicMenu.title')}
             </h1>
             {isDirty ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:text-amber-200">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-800">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                 {t('publicMenu.unsavedShort')}
               </span>
             ) : null}
           </div>
-          <p className="mt-1.5 max-w-xl text-sm text-on-surface-variant">{t('publicMenu.subtitle')}</p>
+          <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">{t('publicMenu.subtitle')}</p>
         </div>
-        <div className="hidden flex-wrap items-center gap-2 sm:flex">
-          {publicUrl ? (
-            <a
-              href={publicUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
-            >
-              <MaterialIcon name="open_in_new" className="text-[18px]" />
-              {t('settings.viewMenu')}
-            </a>
-          ) : null}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saveDisabled}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+        {publicUrl ? (
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-black/8 bg-white px-4 text-sm font-semibold text-on-surface shadow-[0_8px_24px_rgba(13,27,42,0.04)] hover:bg-[#f7f8f9]"
           >
-            <MaterialIcon name="save" className="text-[18px]" />
-            {saving ? t('common.saving') : t('common.save')}
-          </button>
-        </div>
-      </div>
+            <MaterialIcon name="open_in_new" className="text-[18px]" />
+            {t('settings.viewMenu')}
+          </a>
+        ) : null}
+      </header>
+
+      <nav className="grid grid-cols-2 rounded-2xl border border-black/6 bg-white p-1 shadow-[0_8px_28px_rgba(13,27,42,0.04)]">
+        {[
+          { id: 'look', icon: 'wallpaper', label: t('publicMenu.tabLook') },
+          { id: 'cards', icon: 'style', label: t('publicMenu.tabCards') },
+        ].map((item) => {
+          const active = studioTab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setStudioTab(item.id)}
+              className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition ${
+                active ? 'bg-[#0d1b2a] text-white shadow-sm' : 'text-[#5c6570] hover:bg-[#f4f5f6]'
+              }`}
+            >
+              <MaterialIcon name={item.icon} className="text-[18px]" />
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
 
       {error ? (
-        <p className="rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-error">{error}</p>
+        <p className="rounded-2xl border border-error/20 bg-error-container px-4 py-3 text-sm text-error">{error}</p>
       ) : null}
 
       {loading ? (
         <PageSkeleton />
-      ) : (
+      ) : studioTab === 'look' ? (
         <div className="space-y-5">
-          <SettingsSectionCard icon="wallpaper" title={t('publicMenu.backgroundTitle')} subtitle={t('publicMenu.backgroundHint')}>
+          <section className="overflow-hidden rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
+            <div className="mb-5">
+              <h2 className="font-display text-lg font-semibold text-on-surface">{t('publicMenu.backgroundTitle')}</h2>
+              <p className="mt-1 text-sm text-on-surface-variant">{t('publicMenu.backgroundHint')}</p>
+            </div>
             <MenuBackgroundEditor
               menuUi={menuUi}
               colorDraft={colorDraft}
@@ -278,33 +302,15 @@ export default function PublicMenuSettingsPage() {
               onImageRemove={() => patchMenuUi({ backgroundImage: '', bgMode: 'color' })}
               onImagePreview={() => setPreviewUrl(menuUi.backgroundImage)}
             />
-          </SettingsSectionCard>
-
-          {menuSections.map((section) => (
-            <SettingsSectionCard
-              key={section.key}
-              icon={sectionIcon(section.key)}
-              title={t('publicMenu.cardsSectionTitle', { name: section.name })}
-              subtitle={t('publicMenu.cardsSectionHint')}
-            >
-              <MenuCardEditor
-                card={getSectionCard(menuUi, section.key)}
-                backdrop={
-                  menuUi.bgMode === 'color'
-                    ? menuUi.backgroundColor || DEFAULT_MENU_BACKGROUND
-                    : DEFAULT_MENU_BACKGROUND
-                }
-                t={t}
-                onChange={(partial) => patchSectionCard(section.key, partial)}
-              />
-            </SettingsSectionCard>
-          ))}
+          </section>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <SettingsSectionCard icon="storefront" title={t('settings.logo')} subtitle={t('settings.logoHint')}>
+            <section className="overflow-hidden rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
+              <h2 className="font-display text-lg font-semibold text-on-surface">{t('settings.logo')}</h2>
+              <p className="mt-1 mb-4 text-sm text-on-surface-variant">{t('settings.logoHint')}</p>
               <SettingsImagePicker
                 preview={logo}
-                emptyClass="h-28 w-28"
+                emptyClass="h-24 w-24"
                 uploading={uploading === 'logo'}
                 hasImage={Boolean(logo)}
                 chooseLabel={t('settings.chooseLogo')}
@@ -318,9 +324,11 @@ export default function PublicMenuSettingsPage() {
                 onPreview={() => setPreviewUrl(logo)}
                 disabled={Boolean(uploading) || saving}
               />
-            </SettingsSectionCard>
+            </section>
 
-            <SettingsSectionCard icon="visibility" title={t('settings.menuVisibility')} subtitle={t('publicMenu.visibilityHint')}>
+            <section className="overflow-hidden rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
+              <h2 className="font-display text-lg font-semibold text-on-surface">{t('settings.menuVisibility')}</h2>
+              <p className="mt-1 mb-4 text-sm text-on-surface-variant">{t('publicMenu.visibilityHint')}</p>
               <div className="grid gap-3">
                 <SettingsToggle
                   checked={Boolean(menuUi.showPhone)}
@@ -337,32 +345,63 @@ export default function PublicMenuSettingsPage() {
                   hint={t('settings.menuShowAddressHint')}
                 />
               </div>
-            </SettingsSectionCard>
+            </section>
           </div>
         </div>
+      ) : (
+        <section className="overflow-hidden rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
+          <div className="mb-5">
+            <h2 className="font-display text-lg font-semibold text-on-surface">{t('publicMenu.cardsTitle')}</h2>
+            <p className="mt-1 text-sm text-on-surface-variant">{t('publicMenu.cardsHint')}</p>
+          </div>
+
+          {menuSections.length > 1 ? (
+            <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+              {menuSections.map((section) => {
+                const active = activeSection?.key === section.key;
+                return (
+                  <button
+                    key={section.key}
+                    type="button"
+                    onClick={() => setActiveSectionKey(section.key)}
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                      active ? 'bg-[#0d1b2a] text-white' : 'bg-[#f4f5f6] text-[#5c6570] hover:bg-[#eceeef]'
+                    }`}
+                  >
+                    <MaterialIcon name={sectionIcon(section.key)} className="text-[18px]" />
+                    {section.name}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {activeSection ? (
+            <MenuCardEditor
+              card={getSectionCard(menuUi, activeSection.key)}
+              backdrop={
+                menuUi.bgMode === 'color'
+                  ? menuUi.backgroundColor || DEFAULT_MENU_BACKGROUND
+                  : DEFAULT_MENU_BACKGROUND
+              }
+              t={t}
+              onChange={(partial) => patchSectionCard(activeSection.key, partial)}
+            />
+          ) : null}
+        </section>
       )}
 
       {isDirty ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-outline-variant bg-background/95 px-4 py-3 backdrop-blur-md sm:hidden">
-          <div className="mx-auto flex max-w-4xl gap-2">
-            {publicUrl ? (
-              <a
-                href={publicUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface"
-                aria-label={t('settings.viewMenu')}
-              >
-                <MaterialIcon name="open_in_new" className="text-[20px]" />
-              </a>
-            ) : null}
+        <div className="sticky bottom-3 z-30 mx-auto max-w-5xl">
+          <div className="flex items-center gap-2 rounded-2xl border border-black/8 bg-white/90 p-2 shadow-[0_12px_40px_rgba(13,27,42,0.12)] backdrop-blur-md">
+            <p className="min-w-0 flex-1 px-3 text-sm font-semibold text-[#5c6570]">{t('publicMenu.unsaved')}</p>
             <button
               type="button"
               onClick={handleSave}
               disabled={saveDisabled}
-              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-on-primary disabled:opacity-50"
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#0d1b2a] px-5 text-sm font-semibold text-white disabled:opacity-45"
             >
-              <MaterialIcon name="save" className="text-[20px]" />
+              <MaterialIcon name={saving ? 'progress_activity' : 'save'} className={saving ? 'animate-spin text-[18px]' : 'text-[18px]'} />
               {saving ? t('common.saving') : t('common.save')}
             </button>
           </div>
