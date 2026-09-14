@@ -90,6 +90,33 @@ export function deriveMenuThemeTokens({ luminance, hasImage = false, backgroundC
   };
 }
 
+const CARD_RADIUS_CSS = {
+  sm: '0.85rem',
+  md: '1.2rem',
+  lg: '1.7rem',
+};
+
+const CARD_RATIO_CSS = {
+  square: '1 / 1',
+  portrait: '4 / 5',
+  landscape: '4 / 3',
+};
+
+export function applyCardAppearance(tokens = {}, card = {}) {
+  const radius = CARD_RADIUS_CSS[card.radius] || CARD_RADIUS_CSS.md;
+  const ratio = CARD_RATIO_CSS[card.imageRatio] || CARD_RATIO_CSS.square;
+  const background = normalizeHexColor(card.background) || tokens['--menu-card-bg'] || '#ffffff';
+
+  return {
+    ...tokens,
+    '--menu-card-bg': background,
+    '--menu-card-radius': radius,
+    '--menu-card-image-ratio': ratio,
+    '--menu-card-ring': tokens['--menu-card-ring'] || 'rgba(13, 27, 42, 0.07)',
+    '--menu-card-shadow': tokens['--menu-card-shadow'] || '0 10px 28px rgba(13, 27, 42, 0.07)',
+  };
+}
+
 export function sampleImageLuminance(src) {
   return new Promise((resolve) => {
     if (!src || typeof window === 'undefined') {

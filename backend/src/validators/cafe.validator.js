@@ -32,6 +32,23 @@ export const updateCafeSchema = z.object({
           bgMode: z.enum(['color', 'image', 'default']).optional(),
           backgroundColor: z.string().trim().max(16).optional(),
           backgroundImage: z.string().trim().max(2048).optional(),
+          cardBySection: z
+            .record(
+              z.string().max(40),
+              z
+                .object({
+                  layout: z.enum(['grid', 'list']).optional(),
+                  radius: z.enum(['sm', 'md', 'lg']).optional(),
+                  imageRatio: z.enum(['square', 'portrait', 'landscape']).optional(),
+                  background: z.string().trim().max(16).optional(),
+                })
+                .optional(),
+            )
+            .optional(),
+          cardLayout: z.enum(['auto', 'grid', 'list']).optional(),
+          cardRadius: z.enum(['sm', 'md', 'lg']).optional(),
+          cardImageRatio: z.enum(['square', 'portrait', 'landscape']).optional(),
+          cardBackground: z.string().trim().max(16).optional(),
         })
         .optional(),
     })

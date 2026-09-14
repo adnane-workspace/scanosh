@@ -3,15 +3,26 @@ import { useOutletContext } from 'react-router-dom';
 import ImageLightbox from '../components/ui/ImageLightbox.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import MenuBackgroundEditor from '../components/settings/MenuBackgroundEditor.jsx';
+import MenuCardEditor from '../components/settings/MenuCardEditor.jsx';
 import { SettingsImagePicker, SettingsSectionCard } from '../components/settings/SettingsPanels.jsx';
 import { SettingsToggle } from '../components/settings/SettingsToggle.jsx';
 import { useLocale } from '../hooks/useLocale.js';
 import { useToast } from '../hooks/useToast.js';
 import { clearPublicMenuCache } from '../hooks/usePublicMenu.js';
 import { getMyCafe, updateMyCafe, uploadCafeLogo } from '../services/cafe.service.js';
+import { listCategoryOptions } from '../services/category.service.js';
 import { getPublicMenuUrl } from '../utils/constants.js';
 import { getApiError } from '../utils/apiError.js';
-import { DEFAULT_MENU_UI, finalizeMenuUi, normalizeHexColor, normalizeMenuUi } from '../utils/menuUi.js';
+import {
+  DEFAULT_MENU_BACKGROUND,
+  DEFAULT_MENU_UI,
+  finalizeMenuUi,
+  getSectionCard,
+  normalizeHexColor,
+  normalizeMenuUi,
+  withSectionCards,
+} from '../utils/menuUi.js';
+import { DEFAULT_SECTION_DEFS, sectionIcon } from '../utils/menuSections.js';
 
 function draftSnapshot(logo, menuUi) {
   return JSON.stringify({
@@ -44,23 +55,30 @@ export default function PublicMenuSettingsPage() {
   const [colorDraft, setColorDraft] = useState(DEFAULT_MENU_UI.backgroundColor);
   const [savedSnapshotValue, setSavedSnapshotValue] = useState(() => draftSnapshot('', DEFAULT_MENU_UI));
   const [previewUrl, setPreviewUrl] = useState('');
+  const [menuSections, setMenuSections] = useState(DEFAULT_SECTION_DEFS);
 
   useEffect(() => {
     let cancelled = false;
 
-    getMyCafe()
-      .then((cafe) => {
+    Promise.all([getMyCafe(), listCategoryOptions().catch(() => [])])
+      .then(([cafe, categories]) => {
         if (cancelled) {
           return;
         }
 
         const nextLogo = cafe.logo || '';
-        const nextUi = normalizeMenuUi(cafe.menuUi);
+        const sections = (categories || [])
+          .filter((item) => item.sectionKey)
+          .sort((a, b) => (a.order - b.order) || String(a.name).localeCompare(String(b.name)))
+          .map((item) => ({ key: item.sectionKey, name: item.name }));
+        const nextSections = sections.length ? sections : DEFAULT_SECTION_DEFS;
+        const nextUi = withSectionCards(cafe.menuUi, nextSections.map((item) => item.key));
 
         setSlug(cafe.slug || '');
         setLogo(nextLogo);
         setMenuUi(nextUi);
         setColorDraft(nextUi.backgroundColor);
+        setMenuSections(nextSections);
         setSavedSnapshotValue(draftSnapshot(nextLogo, nextUi));
       })
       .catch((err) => {
@@ -96,6 +114,22 @@ export default function PublicMenuSettingsPage() {
     });
   }
 
+  function patchSectionCard(sectionKey, partial) {
+    setMenuUi((current) => {
+      const next = normalizeMenuUi(current);
+      return {
+        ...next,
+        cardBySection: {
+          ...next.cardBySection,
+          [sectionKey]: {
+            ...getSectionCard(next, sectionKey),
+            ...partial,
+          },
+        },
+      };
+    });
+  }
+
   function handleMenuBackgroundColor(value) {
     setColorDraft(value);
     const hex = normalizeHexColor(value);
@@ -108,7 +142,7 @@ export default function PublicMenuSettingsPage() {
   }
 
   async function handleSave() {
-    const nextUi = finalizeMenuUi(menuUi);
+    const nextUi = finalizeMenuUi(withSectionCards(menuUi, menuSections.map((item) => item.key)));
 
     setSaving(true);
     setError('');
@@ -245,6 +279,26 @@ export default function PublicMenuSettingsPage() {
               onImagePreview={() => setPreviewUrl(menuUi.backgroundImage)}
             />
           </SettingsSectionCard>
+
+          {menuSections.map((section) => (
+            <SettingsSectionCard
+              key={section.key}
+              icon={sectionIcon(section.key)}
+              title={t('publicMenu.cardsSectionTitle', { name: section.name })}
+              subtitle={t('publicMenu.cardsSectionHint')}
+            >
+              <MenuCardEditor
+                card={getSectionCard(menuUi, section.key)}
+                backdrop={
+                  menuUi.bgMode === 'color'
+                    ? menuUi.backgroundColor || DEFAULT_MENU_BACKGROUND
+                    : DEFAULT_MENU_BACKGROUND
+                }
+                t={t}
+                onChange={(partial) => patchSectionCard(section.key, partial)}
+              />
+            </SettingsSectionCard>
+          ))}
 
           <div className="grid gap-5 lg:grid-cols-2">
             <SettingsSectionCard icon="storefront" title={t('settings.logo')} subtitle={t('settings.logoHint')}>

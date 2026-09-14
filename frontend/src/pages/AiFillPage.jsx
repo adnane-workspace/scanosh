@@ -43,6 +43,48 @@ function statusMeta(status, t) {
   return { label: t('aiFill.statusPending'), tone: 'muted', icon: 'pending' };
 }
 
+function WizardFooter({
+  backLabel,
+  onBack,
+  primaryLabel,
+  onPrimary,
+  primaryDisabled,
+  primaryBusy,
+  primaryIcon = 'arrow_forward',
+  extra,
+}) {
+  return (
+    <div className="sticky bottom-3 z-30 mx-auto mt-6 max-w-5xl">
+      <div className="flex items-center gap-2 rounded-2xl border border-black/8 bg-white/90 p-2 shadow-[0_12px_40px_rgba(13,27,42,0.12)] backdrop-blur-md">
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex h-11 shrink-0 items-center rounded-xl px-4 text-sm font-semibold text-[#5c6570] hover:bg-[#f4f5f6]"
+          >
+            {backLabel}
+          </button>
+        ) : (
+          <span />
+        )}
+        <div className="min-w-0 flex-1">{extra}</div>
+        <button
+          type="button"
+          disabled={primaryDisabled}
+          onClick={onPrimary}
+          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#0d1b2a] px-5 text-sm font-semibold text-white disabled:opacity-45"
+        >
+          <MaterialIcon
+            name={primaryBusy ? 'progress_activity' : primaryIcon}
+            className={primaryBusy ? 'animate-spin text-[18px]' : 'text-[18px]'}
+          />
+          {primaryLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function toneClass(tone) {
   if (tone === 'ok') return 'bg-primary/10 text-primary';
   if (tone === 'error') return 'bg-error-container text-error';
@@ -622,117 +664,97 @@ export default function AiFillPage() {
   }, [draft, defaultSectionKey]);
 
   return (
-    <div className="relative mx-auto max-w-5xl space-y-4 pb-10">
-      {/* Compact header + stepper */}
-      <header className="overflow-hidden rounded-2xl border border-outline-variant/80 bg-surface-container-lowest">
-        <div className="relative px-4 py-5 sm:px-6 sm:py-6">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.55]"
-            style={{
-              background:
-                'radial-gradient(ellipse 80% 60% at 0% 0%, color-mix(in srgb, var(--color-primary, #0d1b2a) 14%, transparent), transparent 55%), radial-gradient(ellipse 50% 40% at 100% 0%, color-mix(in srgb, var(--color-primary, #0d1b2a) 8%, transparent), transparent 50%)',
-            }}
-            aria-hidden
-          />
-          <div className="relative flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 max-w-xl">
-              <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface sm:text-[1.85rem]">
-                {t('aiFill.title')}
-              </h1>
-              <p className="mt-1.5 text-sm leading-relaxed text-on-surface-variant">
-                {t('aiFill.subtitleShort')}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                  textLlm.configured
-                    ? 'bg-primary/10 text-primary'
-                    : 'bg-surface-container text-on-surface-variant'
-                }`}
-                title={textLlm.model || t('aiFill.llmOfflineShort')}
-              >
-                <MaterialIcon name="notes" className="text-[14px]" />
-                {t('aiFill.textLlmLabel')}
-                {textLlm.model ? ` · ${textLlm.model.split('/').pop()}` : ''}
-              </span>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                  imageLlm.configured
-                    ? 'bg-primary/10 text-primary'
-                    : 'bg-surface-container text-on-surface-variant'
-                }`}
-                title={imageLlm.model || t('aiFill.imageLlmLabel')}
-              >
-                <MaterialIcon name="image" className="text-[14px]" />
-                {t('aiFill.imageLlmLabel')}
-                {imageLlm.model ? ` · ${imageLlm.model.split('/').pop()}` : ''}
-              </span>
-              {!configured ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-error-container px-2.5 py-1 text-[11px] font-semibold text-error">
-                  <span className="h-1.5 w-1.5 rounded-full bg-error" />
-                  {t('aiFill.statusOffline')}
-                </span>
-              ) : null}
-              {result ? (
-                <button
-                  type="button"
-                  onClick={startNewImport}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant bg-surface-container-lowest px-3 py-1.5 text-xs font-semibold text-on-surface transition hover:bg-surface-container"
-                >
-                  <MaterialIcon name="add_a_photo" className="text-[16px]" />
-                  {t('aiFill.startOver')}
-                </button>
-              ) : null}
-            </div>
+    <div className="relative mx-auto max-w-5xl space-y-6 pb-24">
+      <header className="space-y-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 max-w-2xl">
+            <p className="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase">
+              {t('aiFill.kicker')}
+            </p>
+            <h1 className="mt-1 font-display text-[1.75rem] font-bold tracking-tight text-on-surface sm:text-[2rem]">
+              {t('aiFill.title')}
+            </h1>
+            <p className="mt-2 max-w-lg text-sm leading-relaxed text-on-surface-variant">
+              {t('aiFill.subtitleShort')}
+            </p>
           </div>
-
-          <nav aria-label={t('aiFill.stepsNav')} className="relative mt-5">
-            <ol className="grid grid-cols-4 gap-2">
-              {steps.map((item) => {
-                const state = stepStates[item.id];
-                const active = state === 'active';
-                const done = state === 'done';
-                const locked = state === 'todo';
-                return (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      disabled={locked}
-                      onClick={() => goToStep(item.id)}
-                      title={locked ? t('aiFill.stepLocked') : item.label}
-                      className={`flex w-full flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition-all duration-300 ${
-                        active ? 'bg-primary/8' : ''
-                      } ${locked ? 'cursor-not-allowed opacity-40' : 'opacity-100 hover:bg-surface-container/80'}`}
-                    >
-                      <span
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-all duration-300 ${
-                          active
-                            ? 'scale-105 bg-primary text-on-primary shadow-[0_6px_16px_rgba(13,27,42,0.22)]'
-                            : done
-                              ? 'bg-primary/15 text-primary'
-                              : 'bg-surface-container-high text-on-surface-variant'
-                        }`}
-                      >
-                        <MaterialIcon
-                          name={done && !active ? 'check' : item.icon}
-                          className="text-[18px]"
-                        />
-                      </span>
-                      <span
-                        className={`text-center text-[10px] font-semibold leading-tight sm:text-[11px] ${
-                          active ? 'text-on-surface' : 'text-on-surface-variant'
-                        }`}
-                      >
-                        {item.label}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
+          <div className="flex flex-wrap items-center gap-2">
+            {!configured ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-error-container px-3 py-1.5 text-xs font-semibold text-error">
+                <span className="h-1.5 w-1.5 rounded-full bg-error" />
+                {t('aiFill.statusOffline')}
+              </span>
+            ) : null}
+            {result ? (
+              <button
+                type="button"
+                onClick={startNewImport}
+                className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant bg-surface-container-lowest px-3.5 py-2 text-xs font-semibold text-on-surface transition hover:bg-surface-container"
+              >
+                <MaterialIcon name="add_a_photo" className="text-[16px]" />
+                {t('aiFill.startOver')}
+              </button>
+            ) : null}
+          </div>
         </div>
+
+        <nav
+          aria-label={t('aiFill.stepsNav')}
+          className="rounded-2xl border border-black/6 bg-white px-2 py-3 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:px-4"
+        >
+          <ol className="grid grid-cols-4">
+            {steps.map((item, index) => {
+              const state = stepStates[item.id];
+              const active = state === 'active';
+              const done = state === 'done';
+              const locked = state === 'todo';
+              return (
+                <li key={item.id} className="relative flex flex-col items-center">
+                  {index > 0 ? (
+                    <span
+                      aria-hidden
+                      className={`absolute top-4 end-1/2 h-px w-full ${
+                        done || active ? 'bg-[#0d1b2a]' : 'bg-black/10'
+                      }`}
+                    />
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={locked}
+                    onClick={() => goToStep(item.id)}
+                    title={locked ? t('aiFill.stepLocked') : item.label}
+                    className={`relative z-[1] flex flex-col items-center gap-1.5 rounded-xl px-1 py-1 transition ${
+                      locked ? 'cursor-not-allowed opacity-40' : 'hover:opacity-90'
+                    }`}
+                  >
+                    <span
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                        active
+                          ? 'bg-[#0d1b2a] text-white shadow-[0_6px_16px_rgba(13,27,42,0.22)]'
+                          : done
+                            ? 'bg-[#0d1b2a] text-white'
+                            : 'bg-[#f4f5f6] text-[#5c6570]'
+                      }`}
+                    >
+                      {done && !active ? (
+                        <MaterialIcon name="check" className="text-[16px]" />
+                      ) : (
+                        <span>{item.id}</span>
+                      )}
+                    </span>
+                    <span
+                      className={`hidden text-center text-[11px] font-semibold sm:block ${
+                        active ? 'text-on-surface' : 'text-on-surface-variant'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
       </header>
 
       {(error || success) && (
@@ -762,160 +784,170 @@ export default function AiFillPage() {
 
       {/* Stage 1 - Upload */}
       {wizardStep === 1 && !result ? (
-        <section className="animate-[fadeIn_0.35s_ease] rounded-2xl border border-outline-variant/80 bg-surface-container-lowest p-4 sm:p-6">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 className="font-display text-lg font-semibold text-on-surface">{t('aiFill.uploadTitle')}</h2>
-              <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.uploadHint')}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowAdvanced((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
-            >
-              <MaterialIcon name="tune" className="text-[15px]" />
-              {t('aiFill.advanced')}
-            </button>
+        <section className="animate-[fadeIn_0.35s_ease] space-y-5">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { icon: 'photo_camera', title: t('aiFill.how1Title'), hint: t('aiFill.how1Hint') },
+              { icon: 'edit_note', title: t('aiFill.how2Title'), hint: t('aiFill.how2Hint') },
+              { icon: 'restaurant_menu', title: t('aiFill.how3Title'), hint: t('aiFill.how3Hint') },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="flex items-start gap-3 rounded-2xl border border-black/6 bg-white px-4 py-3.5 shadow-[0_8px_24px_rgba(13,27,42,0.04)]"
+              >
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0d1b2a] text-white">
+                  <MaterialIcon name={item.icon} className="text-[20px]" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface">{item.title}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-on-surface-variant">{item.hint}</p>
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div
-            role="button"
-            tabIndex={0}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') inputRef.current?.click();
-            }}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={onDrop}
-            onClick={() => inputRef.current?.click()}
-            className={`relative flex min-h-[15rem] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed px-4 py-10 text-center transition-all duration-200 ${
-              dragOver
-                ? 'scale-[1.01] border-primary bg-primary/8'
-                : previewUrl
-                  ? 'border-outline-variant bg-surface-container/25'
-                  : 'border-outline-variant bg-surface-container/30 hover:border-primary/45 hover:bg-primary/[0.04]'
-            }`}
-          >
-            {previewUrl ? (
-              <div className="flex w-full max-w-md flex-col items-center gap-3">
-                <img
-                  src={previewUrl}
-                  alt=""
-                  className="max-h-56 w-auto rounded-xl object-contain shadow-[0_12px_28px_rgba(13,27,42,0.12)]"
-                />
-                <div>
-                  <p className="truncate text-sm font-semibold text-on-surface">{file?.name}</p>
-                  <p className="mt-0.5 text-xs text-on-surface-variant">{t('aiFill.changeImage')}</p>
+          <div className="rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h2 className="font-display text-lg font-semibold text-on-surface">{t('aiFill.uploadTitle')}</h2>
+                <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.uploadHint')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:bg-[#f4f5f6]"
+              >
+                <MaterialIcon name="tune" className="text-[15px]" />
+                {t('aiFill.advanced')}
+              </button>
+            </div>
+
+            <div
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') inputRef.current?.click();
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+              onClick={() => inputRef.current?.click()}
+              className={`relative flex min-h-[18rem] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed px-4 py-10 text-center transition-all duration-200 ${
+                dragOver
+                  ? 'scale-[1.01] border-[#0d1b2a] bg-[#0d1b2a]/6'
+                  : previewUrl
+                    ? 'border-black/10 bg-[#f7f8f9]'
+                    : 'border-black/12 bg-[#f7f8f9] hover:border-[#0d1b2a]/40 hover:bg-[#0d1b2a]/[0.03]'
+              }`}
+            >
+              {previewUrl ? (
+                <div className="flex w-full max-w-md flex-col items-center gap-3">
+                  <img
+                    src={previewUrl}
+                    alt=""
+                    className="max-h-64 w-auto rounded-xl object-contain shadow-[0_16px_36px_rgba(13,27,42,0.16)]"
+                  />
+                  <div>
+                    <p className="truncate text-sm font-semibold text-on-surface">{file?.name}</p>
+                    <p className="mt-0.5 text-xs text-on-surface-variant">{t('aiFill.changeImage')}</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <span className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0d1b2a] text-white shadow-sm">
+                    <MaterialIcon name="add_a_photo" className="text-[32px]" />
+                  </span>
+                  <p className="text-base font-semibold text-on-surface">{t('aiFill.dropTitle')}</p>
+                  <p className="mt-1.5 max-w-sm text-sm text-on-surface-variant">{t('aiFill.dropHint')}</p>
+                </>
+              )}
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={onPickFile}
+              />
+            </div>
+
+            {showAdvanced ? (
+              <label className="mt-4 block max-w-xs text-sm">
+                <span className="mb-1.5 block font-medium text-on-surface">{t('aiFill.mergeLevel')}</span>
+                <select
+                  value={mergeLevel}
+                  onChange={(event) => setMergeLevel(event.target.value)}
+                  className="h-11 w-full rounded-xl border border-outline-variant bg-background px-3 text-on-surface outline-none focus:border-primary"
+                >
+                  {MERGE_LEVELS.map((level) => (
+                    <option key={level} value={level}>
+                      {t(`aiFill.merge.${level}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {running ? (
+              <div className="mt-4 overflow-hidden rounded-2xl bg-[#0d1b2a] px-4 py-4 text-white">
+                <div className="flex items-center gap-3 text-sm">
+                  <MaterialIcon name="progress_activity" className="animate-spin text-[22px]" />
+                  <div className="min-w-0">
+                    <p className="font-semibold">{t('aiFill.processingTitle')}</p>
+                    <p className="text-white/70">{t('aiFill.runningHint')}</p>
+                  </div>
+                </div>
+                <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/15">
+                  <div className="h-full w-2/3 animate-pulse rounded-full bg-white/80" />
                 </div>
               </div>
             ) : (
-              <>
-                <span className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
-                  <MaterialIcon name="add_a_photo" className="text-[32px]" />
-                </span>
-                <p className="text-base font-semibold text-on-surface">{t('aiFill.dropTitle')}</p>
-                <p className="mt-1.5 max-w-sm text-sm text-on-surface-variant">{t('aiFill.dropHint')}</p>
-              </>
+              <p className="mt-4 text-xs text-on-surface-variant">{t('aiFill.privacyNote')}</p>
             )}
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
-              onChange={onPickFile}
-            />
           </div>
 
-          {showAdvanced ? (
-            <label className="mt-4 block max-w-xs text-sm">
-              <span className="mb-1.5 block font-medium text-on-surface">{t('aiFill.mergeLevel')}</span>
-              <select
-                value={mergeLevel}
-                onChange={(event) => setMergeLevel(event.target.value)}
-                className="h-11 w-full rounded-xl border border-outline-variant bg-background px-3 text-on-surface outline-none focus:border-primary"
-              >
-                {MERGE_LEVELS.map((level) => (
-                  <option key={level} value={level}>
-                    {t(`aiFill.merge.${level}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-on-surface-variant">{t('aiFill.privacyNote')}</p>
-            <button
-              type="button"
-              disabled={running || !configured || !file}
-              onClick={handleRun}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-8 text-sm font-semibold text-on-primary shadow-[0_10px_24px_rgba(13,27,42,0.18)] transition hover:brightness-105 disabled:opacity-45"
-            >
-              <MaterialIcon
-                name={running ? 'progress_activity' : 'auto_awesome'}
-                className={running ? 'animate-spin text-[20px]' : 'text-[20px]'}
-              />
-              {running ? t('aiFill.running') : t('aiFill.run')}
-            </button>
-          </div>
-
-          {running ? (
-            <div className="mt-4 overflow-hidden rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
-              <div className="flex items-center gap-3 text-sm text-primary">
-                <MaterialIcon name="progress_activity" className="animate-spin text-[20px]" />
-                <div className="min-w-0">
-                  <p className="font-semibold">{t('aiFill.runningTitle')}</p>
-                  <p className="text-primary/75">{t('aiFill.runningHint')}</p>
-                </div>
-              </div>
-              <div className="mt-3 h-1 overflow-hidden rounded-full bg-primary/15">
-                <div className="h-full w-1/2 animate-pulse rounded-full bg-primary/60" />
-              </div>
-            </div>
-          ) : null}
+          <WizardFooter
+            primaryLabel={running ? t('aiFill.running') : t('aiFill.run')}
+            onPrimary={handleRun}
+            primaryDisabled={running || !configured || !file}
+            primaryBusy={running}
+            primaryIcon="auto_awesome"
+          />
         </section>
       ) : wizardStep === 1 && result ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-outline-variant/70 bg-surface-container/40 px-3 py-2.5 sm:px-4">
-          {(previewUrl || result.sourceImageUrl) && (
-            <div className="h-12 w-12 overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest">
-              {previewUrl ? (
-                <img src={previewUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <CloudinaryImage
-                  src={result.sourceImageUrl}
-                  alt=""
-                  preset="productCard"
-                  className="h-full w-full object-cover"
-                />
+        <section className="animate-[fadeIn_0.35s_ease] space-y-5">
+          <div className="overflow-hidden rounded-3xl border border-black/6 bg-white shadow-[0_8px_28px_rgba(13,27,42,0.05)]">
+            <div className="grid gap-0 sm:grid-cols-[minmax(0,14rem)_1fr]">
+              {(previewUrl || result.sourceImageUrl) && (
+                <div className="aspect-[4/3] bg-[#f4f5f6] sm:aspect-auto sm:min-h-[12rem]">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <CloudinaryImage
+                      src={result.sourceImageUrl}
+                      alt=""
+                      preset="productCard"
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
               )}
+              <div className="flex flex-col justify-center px-5 py-5">
+                <p className="text-[11px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+                  {t('aiFill.sourcePhoto')}
+                </p>
+                <p className="mt-1 truncate text-lg font-semibold text-on-surface">
+                  {file?.name || t('aiFill.sourcePhotoHint')}
+                </p>
+                <p className="mt-2 text-sm text-on-surface-variant">
+                  {selectedCounts.products} {t('aiFill.productsShort')} · {selectedCounts.categories}{' '}
+                  {t('aiFill.categoriesSelected')}
+                </p>
+              </div>
             </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-on-surface">{t('aiFill.sourcePhoto')}</p>
-            <p className="truncate text-xs text-on-surface-variant">
-              {file?.name || t('aiFill.sourcePhotoHint')}
-            </p>
           </div>
-          {!isPublished ? (
-            <button
-              type="button"
-              onClick={() => goToStep(2)}
-              className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary"
-            >
-              {t('aiFill.continue')}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => goToStep(4)}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10"
-            >
-              {t('aiFill.continue')}
-            </button>
-          )}
           <input
             ref={inputRef}
             type="file"
@@ -923,7 +955,14 @@ export default function AiFillPage() {
             className="hidden"
             onChange={onPickFile}
           />
-        </div>
+          <WizardFooter
+            backLabel={t('aiFill.startOver')}
+            onBack={startNewImport}
+            primaryLabel={t('aiFill.continue')}
+            onPrimary={() => goToStep(isPublished ? 4 : 2)}
+            primaryIcon="arrow_forward"
+          />
+        </section>
       ) : null}
 
       <div className="flex flex-col gap-4">
@@ -931,166 +970,80 @@ export default function AiFillPage() {
       {wizardStep === 3 && result ? (
         <section
           ref={photosRef}
-          className="animate-[fadeIn_0.4s_ease] overflow-hidden rounded-2xl border border-primary/20 bg-surface-container-lowest"
+          className="animate-[fadeIn_0.4s_ease] overflow-hidden rounded-3xl border border-black/6 bg-white shadow-[0_8px_28px_rgba(13,27,42,0.05)]"
         >
-          <div className="bg-gradient-to-br from-primary/10 via-transparent to-transparent px-4 py-5 sm:px-6 sm:py-6">
+          <div className="px-4 py-4 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="max-w-xl">
-                <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
-                  {t('aiFill.stepLabel', { n: 3 })}
-                </p>
-                <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">
-                  {t('aiFill.photosTitle')}
-                </h2>
-                <p className="mt-1.5 text-sm text-on-surface-variant">{t('aiFill.photosOptionalHint')}</p>
+                <h2 className="font-display text-xl font-semibold text-on-surface">{t('aiFill.photosTitle')}</h2>
+                <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.photosOptionalHint')}</p>
               </div>
-              {publishSummary ? (
-                <div className="rounded-xl border border-outline-variant/60 bg-surface-container-lowest/80 px-3 py-2 text-xs text-on-surface-variant">
-                  <p className="font-semibold text-on-surface">{t('aiFill.publishSummaryTitle')}</p>
-                  <p className="mt-0.5">
-                    {t('aiFill.publishSummaryBody', {
-                      categories: publishSummary.categoriesCreated,
-                      products: publishSummary.productsCreated,
-                    })}
-                  </p>
-                </div>
-              ) : null}
+              {!isPublished ? (
+                <button
+                  type="button"
+                  disabled={suggestingPhotos || !selectedCounts.products}
+                  onClick={() => handleSuggestPhotos({ overwrite: Boolean(photoSummary) })}
+                  className="inline-flex h-10 items-center gap-2 rounded-full bg-[#f4f5f6] px-4 text-sm font-semibold text-[#0d1b2a] disabled:opacity-50"
+                >
+                  <MaterialIcon
+                    name={suggestingPhotos ? 'progress_activity' : 'auto_awesome'}
+                    className={suggestingPhotos ? 'animate-spin text-[18px]' : 'text-[18px]'}
+                  />
+                  {suggestingPhotos
+                    ? t('aiFill.suggestingPhotos')
+                    : photoSummary
+                      ? t('aiFill.generatePhotosAgain')
+                      : t('aiFill.generatePhotos')}
+                </button>
+              ) : (
+                <Link
+                  to="/app/products?review=1"
+                  className="inline-flex h-10 items-center gap-2 rounded-full bg-[#0d1b2a] px-4 text-sm font-semibold text-white"
+                >
+                  {t('aiFill.goReviewAll')}
+                </Link>
+              )}
             </div>
 
-            <div className="mt-5 rounded-2xl border border-outline-variant/70 bg-surface-container-lowest/90 px-4 py-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <MaterialIcon
-                    name={
-                      suggestingPhotos
-                        ? 'progress_activity'
-                        : photoSummary
-                          ? 'verified'
-                          : 'auto_awesome'
-                    }
-                    className={suggestingPhotos ? 'animate-spin text-[24px]' : 'text-[24px]'}
-                  />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-on-surface">
-                    {photoSummary
-                      ? t('aiFill.photosDoneTitle')
-                      : suggestingPhotos
-                        ? photoProgress?.stage === 'flux'
-                          ? t('aiFill.photosStageFlux')
-                          : t('aiFill.photosStageLibrary')
-                        : t('aiFill.photosReadyTitle')}
-                  </p>
-                  <p className="mt-0.5 text-xs text-on-surface-variant">
-                    {photoSummary
-                      ? t('aiFill.suggestPhotosSuccess', {
-                          updated: photoSummary.updated,
-                          failed: photoSummary.failed,
-                        })
-                      : photoProgress
-                        ? t('aiFill.photosProgress', {
-                            done: photoProgress.done,
-                            total: photoProgress.total,
-                          })
-                        : t('aiFill.photosReadyHint', {
-                            count: selectedCounts.products || '0',
-                          })}
-                  </p>
-                </div>
+            <div className="mt-4">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <p className="font-semibold text-on-surface">
+                  {t('aiFill.photoCoverage', {
+                    done: selectedCounts.withPhoto,
+                    total: selectedCounts.products || 0,
+                  })}
+                </p>
+                <p className="text-xs text-on-surface-variant">
+                  {photoSummary
+                    ? t('aiFill.suggestPhotosSuccess', {
+                        updated: photoSummary.updated,
+                        failed: photoSummary.failed,
+                      })
+                    : suggestingPhotos
+                      ? photoProgress?.stage === 'flux'
+                        ? t('aiFill.photosStageFlux')
+                        : t('aiFill.photosStageLibrary')
+                      : t('aiFill.photosReadyHint', { count: selectedCounts.products || '0' })}
+                </p>
               </div>
-
-              {photoProgress ? (
-                <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-container-high">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.round((photoProgress.done / Math.max(photoProgress.total, 1)) * 100),
-                      )}%`,
-                    }}
-                  />
-                </div>
-              ) : null}
-
-              {photoSummary ? (
-                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <div className="rounded-xl bg-primary/8 px-3 py-2.5 text-center">
-                    <p className="text-lg font-bold text-primary">{photoSummary.fromLibrary ?? 0}</p>
-                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase">
-                      {t('aiFill.statLibrary')}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-primary/8 px-3 py-2.5 text-center">
-                    <p className="text-lg font-bold text-primary">{photoSummary.fromFlux ?? 0}</p>
-                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase">
-                      {t('aiFill.statFlux')}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-surface-container px-3 py-2.5 text-center">
-                    <p className="text-lg font-bold text-on-surface">{photoSummary.failed}</p>
-                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase">
-                      {t('aiFill.statMissing')}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-surface-container px-3 py-2.5 text-center">
-                    <p className="text-lg font-bold text-on-surface">{photoSummary.skipped || 0}</p>
-                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase">
-                      {t('aiFill.statSkipped')}
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {!isPublished ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => goToStep(2)}
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-outline-variant px-4 text-sm font-semibold text-on-surface disabled:opacity-50"
-                    >
-                      {t('aiFill.back')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={suggestingPhotos || !selectedCounts.products}
-                      onClick={() => handleSuggestPhotos({ overwrite: Boolean(photoSummary) })}
-                      className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary disabled:opacity-50"
-                    >
-                      <MaterialIcon
-                        name={suggestingPhotos ? 'progress_activity' : 'auto_awesome'}
-                        className={suggestingPhotos ? 'animate-spin text-[18px]' : 'text-[18px]'}
-                      />
-                      {suggestingPhotos
-                        ? t('aiFill.suggestingPhotos')
-                        : photoSummary
-                          ? t('aiFill.generatePhotosAgain')
-                          : t('aiFill.generatePhotos')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy || !selectedCounts.products || selectedCounts.withPhoto < selectedCounts.products}
-                      onClick={() => goToStep(4)}
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface disabled:opacity-50"
-                    >
-                      {t('aiFill.continue')}
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    to="/app/products?review=1"
-                    className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary"
-                  >
-                    <MaterialIcon name="edit_note" className="text-[18px]" />
-                    {t('aiFill.goReviewAll')}
-                  </Link>
-                )}
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#f4f5f6]">
+                <div
+                  className="h-full rounded-full bg-[#0d1b2a] transition-all duration-500"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round(
+                        ((photoProgress
+                          ? photoProgress.done / Math.max(photoProgress.total, 1)
+                          : selectedCounts.products
+                            ? selectedCounts.withPhoto / selectedCounts.products
+                            : 0) *
+                          100),
+                      ),
+                    )}%`,
+                  }}
+                />
               </div>
-              {photoSummary && !isPublished ? (
-                <p className="mt-3 text-xs text-on-surface-variant">{t('aiFill.photosPublishHint')}</p>
-              ) : null}
             </div>
           </div>
         </section>
@@ -1123,14 +1076,14 @@ export default function AiFillPage() {
           </div>
           ) : null}
 
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-surface-container/60 px-3 py-2.5">
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-black/6 bg-white px-4 py-3 shadow-[0_8px_24px_rgba(13,27,42,0.04)]">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-on-surface">
                 {selectedCounts.products}/{selectedCounts.totalProducts} {t('aiFill.selectedProducts')}
               </p>
               <p className="text-xs text-on-surface-variant">
                 {selectedCounts.categories} {t('aiFill.categoriesSelected')}
-                {selectedCounts.review ? ` Â· ${selectedCounts.review} ${t('aiFill.toReview')}` : ''}
+                {selectedCounts.review ? ` · ${selectedCounts.review} ${t('aiFill.toReview')}` : ''}
               </p>
             </div>
             {!isPublished && wizardStep === 2 ? (
@@ -1252,6 +1205,7 @@ export default function AiFillPage() {
                             key={prod.id}
                             product={prod}
                             sectionKey={sectionKey}
+                            mode={wizardStep === 3 ? 'photos' : 'review'}
                             isPublished={isPublished}
                             busy={busy}
                             uploading={uploadingImageId === prod.id}
@@ -1288,122 +1242,120 @@ export default function AiFillPage() {
           ) : null}
 
           {wizardStep === 2 && !isPublished ? (
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-              <button
-                type="button"
-                onClick={() => goToStep(1)}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface"
-              >
-                {t('aiFill.back')}
-              </button>
-              <div className="flex gap-2">
+            <WizardFooter
+              backLabel={t('aiFill.back')}
+              onBack={() => goToStep(1)}
+              primaryLabel={t('aiFill.nextPhotos')}
+              onPrimary={continueFromReview}
+              primaryDisabled={busy || !selectedCounts.products}
+              extra={
                 <button
                   type="button"
                   disabled={busy}
                   onClick={handleSaveDraft}
-                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-outline-variant px-4 text-sm font-semibold text-on-surface disabled:opacity-60 sm:flex-none"
+                  className="hidden h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-[#5c6570] hover:bg-[#f4f5f6] disabled:opacity-60 sm:inline-flex"
                 >
                   <MaterialIcon name="save" className="text-[18px]" />
-                  {saving ? t('aiFill.saving') : t('aiFill.saveDraft')}
+                  {saving ? t('aiFill.saving') : t('aiFill.stickySave')}
                 </button>
-                <button
-                  type="button"
-                  disabled={busy || !selectedCounts.products}
-                  onClick={continueFromReview}
-                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary disabled:opacity-60 sm:flex-none"
-                >
-                  {t('aiFill.nextPhotos')}
-                </button>
-              </div>
-            </div>
+              }
+            />
+          ) : null}
+
+          {wizardStep === 3 && !isPublished ? (
+            <WizardFooter
+              backLabel={t('aiFill.back')}
+              onBack={() => goToStep(2)}
+              primaryLabel={t('aiFill.continuePublish')}
+              onPrimary={() => goToStep(4)}
+              primaryDisabled={busy || !selectedCounts.products}
+              extra={
+                <p className="truncate text-xs font-semibold text-on-surface-variant">
+                  {t('aiFill.photoCoverage', {
+                    done: selectedCounts.withPhoto,
+                    total: selectedCounts.products || 0,
+                  })}
+                </p>
+              }
+            />
           ) : null}
         </section>
       ) : null}
 
       {wizardStep === 4 && result ? (
-        <section className="animate-[fadeIn_0.35s_ease] rounded-2xl border border-outline-variant/80 bg-surface-container-lowest p-4 sm:p-6">
-          <h2 className="font-display text-lg font-semibold text-on-surface">{t('aiFill.publishTitle')}</h2>
-          <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.publishHint')}</p>
+        <section className="animate-[fadeIn_0.35s_ease] space-y-5">
+          <div className="rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
+            <h2 className="font-display text-xl font-semibold text-on-surface">{t('aiFill.publishTitle')}</h2>
+            <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.publishHint')}</p>
 
-          {publishSummary ? (
-            <div className="mt-4 rounded-xl border border-primary/20 bg-primary/8 px-4 py-3 text-sm text-on-surface">
-              <p className="font-semibold">{t('aiFill.publishSummaryTitle')}</p>
-              <p className="mt-1 text-on-surface-variant">
-                {t('aiFill.publishSummaryBody', {
-                  categories: publishSummary.categoriesCreated,
-                  products: publishSummary.productsCreated,
-                })}
+            {publishSummary ? (
+              <div className="mt-5 rounded-2xl bg-[#0d1b2a] px-5 py-5 text-white">
+                <p className="font-semibold">{t('aiFill.publishSummaryTitle')}</p>
+                <p className="mt-1 text-white/75">
+                  {t('aiFill.publishSummaryBody', {
+                    categories: publishSummary.categoriesCreated,
+                    products: publishSummary.productsCreated,
+                  })}
+                </p>
+                <Link
+                  to="/app/products?review=1"
+                  className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-[#0d1b2a]"
+                >
+                  {t('aiFill.goReviewAll')}
+                </Link>
+              </div>
+            ) : !selectedProductsList.length ? (
+              <p className="mt-4 rounded-xl bg-[#f4f5f6] px-4 py-6 text-center text-sm text-on-surface-variant">
+                {t('aiFill.recapEmpty')}
               </p>
-              <Link
-                to="/app/products?review=1"
-                className="mt-3 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary"
-              >
-                {t('aiFill.goReviewAll')}
-              </Link>
-            </div>
-          ) : !selectedProductsList.length ? (
-            <p className="mt-4 rounded-xl bg-surface-container/50 px-4 py-6 text-center text-sm text-on-surface-variant">
-              {t('aiFill.recapEmpty')}
-            </p>
-          ) : (
-            <>
-              <p className="mt-4 text-sm font-semibold text-on-surface">
-                {t('aiFill.recapCount', { count: selectedProductsList.length })}
-                {' Â· '}
-                {selectedCounts.withPhoto}/{selectedCounts.products} {t('aiFill.stepPhotos')}
-              </p>
-              <ul className="mt-3 divide-y divide-outline-variant/60 overflow-hidden rounded-xl border border-outline-variant/70">
-                {selectedProductsList.map(({ cat, prod }) => (
-                  <li key={prod.id} className="flex items-center gap-3 bg-background px-3 py-2.5">
-                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-surface-container">
-                      {prod.image ? (
-                        <CloudinaryImage
-                          src={prod.image}
-                          alt=""
-                          preset="productCard"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-on-surface-variant/50">
-                          <MaterialIcon name="image" className="text-[20px]" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-on-surface">{prod.name}</p>
-                      <p className="truncate text-xs text-on-surface-variant">
-                        {cat.name}
-                        {prod.price ? ` Â· ${prod.price} ${t('aiFill.currency')}` : ''}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+            ) : (
+              <>
+                <p className="mt-5 text-sm font-semibold text-on-surface">
+                  {t('aiFill.recapCount', { count: selectedProductsList.length })}
+                  {' · '}
+                  {selectedCounts.withPhoto}/{selectedCounts.products} {t('aiFill.stepPhotos')}
+                </p>
+                <ul className="mt-3 divide-y divide-black/6 overflow-hidden rounded-2xl border border-black/8">
+                  {selectedProductsList.map(({ cat, prod }) => (
+                    <li key={prod.id} className="flex items-center gap-3 bg-white px-3 py-2.5">
+                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#f4f5f6]">
+                        {prod.image ? (
+                          <CloudinaryImage
+                            src={prod.image}
+                            alt=""
+                            preset="productCard"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-on-surface-variant/50">
+                            <MaterialIcon name="image" className="text-[20px]" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-on-surface">{prod.name}</p>
+                        <p className="truncate text-xs text-on-surface-variant">
+                          {cat.name}
+                          {prod.price ? ` · ${prod.price} ${t('aiFill.currency')}` : ''}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
 
           {!isPublished ? (
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-              <button
-                type="button"
-                onClick={() => goToStep(3)}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-outline-variant px-5 text-sm font-semibold text-on-surface"
-              >
-                {t('aiFill.back')}
-              </button>
-              <button
-                type="button"
-                disabled={busy || !selectedCounts.products}
-                onClick={handlePublish}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-on-primary disabled:opacity-60"
-              >
-                <MaterialIcon
-                  name={publishing ? 'progress_activity' : 'check_circle'}
-                  className={publishing ? 'animate-spin text-[18px]' : 'text-[18px]'}
-                />
-                {publishing ? t('aiFill.publishing') : t('aiFill.confirmPublishAfterPhotos')}
-              </button>
-            </div>
+            <WizardFooter
+              backLabel={t('aiFill.back')}
+              onBack={() => goToStep(3)}
+              primaryLabel={publishing ? t('aiFill.publishing') : t('aiFill.confirmPublishAfterPhotos')}
+              onPrimary={handlePublish}
+              primaryDisabled={busy || !selectedCounts.products}
+              primaryBusy={publishing}
+              primaryIcon="check_circle"
+            />
           ) : null}
         </section>
       ) : null}
@@ -1411,7 +1363,7 @@ export default function AiFillPage() {
 
       {/* History */}
       {wizardStep === 1 ? (
-      <section className="rounded-2xl border border-outline-variant/70 bg-surface-container-lowest">
+      <section className="overflow-hidden rounded-3xl border border-black/6 bg-white shadow-[0_8px_28px_rgba(13,27,42,0.05)]">
         <button
           type="button"
           onClick={() => setHistoryOpen((v) => !v)}

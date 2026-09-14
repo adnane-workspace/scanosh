@@ -23,6 +23,8 @@ import {
   resolveFlatSelection,
   resolveSectionCategory,
 } from '../utils/menuSections.js';
+import { normalizeMenuUi, getSectionCard } from '../utils/menuUi.js';
+import { applyCardAppearance } from '../utils/menuTheme.js';
 
 const productGridClass = 'grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
 const productListClass = 'flex flex-col gap-3 sm:gap-4';
@@ -279,7 +281,11 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
       : t('menu.home')
     : t('menu.home');
 
-  const isRestaurantSection = isSectionMode && sectionKey === 'restaurant';
+  const menuUi = normalizeMenuUi(cafe?.menuUi);
+  const sectionCard = getSectionCard(menuUi, sectionKey);
+  const useListLayout = sectionCard.layout === 'list';
+  const showCardDescription = sectionKey !== 'cafe';
+  const cardStyle = applyCardAppearance({}, sectionCard);
 
   return frame(
     <div className="min-h-screen overflow-x-hidden">
@@ -300,13 +306,23 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
         </h1>
 
         {products.length ? (
-          <div className={isRestaurantSection ? productListClass : productGridClass}>
+          <div className={useListLayout ? productListClass : productGridClass} style={cardStyle}>
             {products.map((product) => {
               const item = sectionKey === 'cafe' ? { ...product, description: '' } : product;
-              return isRestaurantSection ? (
-                <PublicProductListItem key={product.id} product={item} onSelect={openProduct} />
+              return useListLayout ? (
+                <PublicProductListItem
+                  key={product.id}
+                  product={item}
+                  onSelect={openProduct}
+                  showDescription={showCardDescription}
+                />
               ) : (
-                <PublicProductCard key={product.id} product={item} onSelect={openProduct} />
+                <PublicProductCard
+                  key={product.id}
+                  product={item}
+                  onSelect={openProduct}
+                  showDescription={showCardDescription}
+                />
               );
             })}
           </div>
