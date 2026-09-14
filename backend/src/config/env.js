@@ -60,10 +60,16 @@ const envSchema = z.object({
   NVIDIA_API_KEY: z.string().trim().optional().default(''),
   MENU_LLM_API_KEY: z.string().trim().optional().default(''),
   MENU_LLM_BASE_URL: z.string().trim().optional().default('https://integrate.api.nvidia.com/v1'),
-  MENU_LLM_MODEL: z.string().trim().optional().default('meta/llama-3.2-11b-vision-instruct'),
+  MENU_LLM_MODEL: z.string().trim().optional().default('openai/gpt-oss-20b'),
+  MENU_LLM_FALLBACK_MODELS: z
+    .string()
+    .trim()
+    .optional()
+    .default('google/gemma-4-31b-it'),
   MENU_LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(90000),
   PRODUCT_IMAGE_SUGGEST: z.string().trim().optional().default('1'),
   PRODUCT_IMAGE_POLLINATIONS: z.string().trim().optional().default('0'),
+  NVIDIA_FLUX_API_KEY: z.string().trim().optional().default(''),
   NVIDIA_FLUX_ENABLED: z.string().trim().optional().default('1'),
   NVIDIA_FLUX_MODEL: z.string().trim().optional().default('black-forest-labs/flux.2-klein-4b'),
   NVIDIA_FLUX_BASE_URL: z
@@ -91,6 +97,31 @@ const data = parsed.data;
 if (!String(data.DIRECT_URL || '').trim()) {
   data.DIRECT_URL = data.DATABASE_URL;
   process.env.DIRECT_URL = data.DATABASE_URL;
+}
+
+function isLocalPostgresUrl(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === 'localhost' || host === '127.0.0.1';
+  } catch {
+    return false;
+  }
+}
+
+// Local `npm run dev` uses pgAdmin / Postgres on this machine. Neon stays on Vercel.
+if (
+  !process.env.VERCEL &&
+  data.NODE_ENV === 'development' &&
+  !isJest &&
+  process.env.ALLOW_REMOTE_DEV_DB !== '1' &&
+  !isLocalPostgresUrl(data.DATABASE_URL)
+) {
+  console.error(
+    'DATABASE_URL must point at local Postgres in development (pgAdmin, 127.0.0.1).',
+  );
+  console.error('Production Neon stays in Vercel env vars. Do not put the Neon URL in backend/.env.');
+  console.error('Override only if you mean it: ALLOW_REMOTE_DEV_DB=1');
+  process.exit(1);
 }
 
 export const env = data;

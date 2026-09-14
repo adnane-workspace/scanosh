@@ -130,7 +130,10 @@ async function applySuggestedImage(product, { overwrite = false } = {}) {
     };
   }
 
-  const candidate = await resolveProductImageCandidate(product, { stage: 'auto' });
+  const candidate = await resolveProductImageCandidate(product, {
+    stage: overwrite ? 'flux' : 'auto',
+    skipCache: Boolean(overwrite),
+  });
 
   return applyCandidate(product, candidate, { overwrite });
 }
@@ -145,7 +148,7 @@ export function getProductImageSuggestStatus() {
   };
 }
 
-async function resolveProductImageCandidate(product, { stage = 'auto' } = {}) {
+async function resolveProductImageCandidate(product, { stage = 'auto', skipCache = false } = {}) {
   const sectionKey = resolveSectionKey(product);
   const doLibrary = stage === 'auto' || stage === 'library';
   const doFlux = stage === 'auto' || stage === 'flux';
@@ -161,11 +164,14 @@ async function resolveProductImageCandidate(product, { stage = 'auto' } = {}) {
   }
 
   if (doFlux && isFluxConfigured()) {
-    return generateFluxProductImage({
-      name: product.name,
-      description: product.description,
-      sectionKey,
-    });
+    return generateFluxProductImage(
+      {
+        name: product.name,
+        description: product.description,
+        sectionKey,
+      },
+      { skipCache },
+    );
   }
 
   return null;

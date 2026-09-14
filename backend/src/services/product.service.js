@@ -15,16 +15,35 @@ function requireCafeId(user) {
   return user.cafeId;
 }
 
+function categoryInclude() {
+  return {
+    category: {
+      select: {
+        name: true,
+        sectionKey: true,
+        parent: { select: { sectionKey: true } },
+      },
+    },
+  };
+}
+
+function productSectionKey(product) {
+  return product.category?.sectionKey || product.category?.parent?.sectionKey || null;
+}
+
 function toProductResponse(product) {
   const category = product.category;
+  const sectionKey = productSectionKey(product);
+  const cafeSection = sectionKey === 'cafe';
 
   return {
     _id: product.id,
     cafeId: product.cafeId,
     categoryId: product.categoryId,
     categoryName: category?.name ?? null,
+    sectionKey,
     name: product.name,
-    description: product.description,
+    description: cafeSection ? '' : product.description,
     price: Number(product.price),
     image: product.image,
     available: product.available,
@@ -41,7 +60,7 @@ async function assertOwnedCategory(cafeId, categoryId) {
 async function findOwnedProduct(cafeId, productId) {
   const product = await prisma.product.findFirst({
     where: { id: productId, cafeId },
-    include: { category: { select: { name: true } } },
+    include: categoryInclude(),
   });
 
   if (!product) {
@@ -51,22 +70,31 @@ async function findOwnedProduct(cafeId, productId) {
   return product;
 }
 
+async function isCafeCategory(cafeId, categoryId) {
+  const category = await prisma.category.findFirst({
+    where: { id: categoryId, cafeId },
+    select: { sectionKey: true, parent: { select: { sectionKey: true } } },
+  });
+  return (category?.sectionKey || category?.parent?.sectionKey) === 'cafe';
+}
+
 export async function createProduct(user, payload) {
   const cafeId = requireCafeId(user);
   await assertOwnedCategory(cafeId, payload.categoryId);
+  const hideDescription = await isCafeCategory(cafeId, payload.categoryId);
 
   const product = await prisma.product.create({
     data: {
       cafeId,
       categoryId: payload.categoryId,
       name: payload.name,
-      description: payload.description ?? '',
+      description: hideDescription ? '' : payload.description ?? '',
       price: payload.price,
       image: normalizeImageUrl(payload.image),
       available: payload.available ?? true,
       order: payload.order ?? 0,
     },
-    include: { category: { select: { name: true } } },
+    include: categoryInclude(),
   });
 
   invalidatePublicMenu(cafeId);
@@ -105,7 +133,7 @@ export async function listProducts(user, query = {}) {
   const [products, total] = await Promise.all([
     prisma.product.findMany({
       where,
-      include: { category: { select: { name: true } } },
+      include: categoryInclude(),
       orderBy: [{ order: 'asc' }, { name: 'asc' }],
       skip,
       take: limit,
@@ -146,10 +174,15 @@ export async function updateProduct(user, productId, payload) {
     data.image = normalizeImageUrl(payload.image);
   }
 
+  const categoryId = payload.categoryId !== undefined ? payload.categoryId : current.categoryId;
+  if (await isCafeCategory(cafeId, categoryId)) {
+    data.description = '';
+  }
+
   const product = await prisma.product.update({
     where: { id: productId },
     data,
-    include: { category: { select: { name: true } } },
+    include: categoryInclude(),
   });
 
   if (payload.image !== undefined) {

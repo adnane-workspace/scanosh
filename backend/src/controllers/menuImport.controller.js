@@ -72,6 +72,7 @@ export const suggestImages = asyncHandler(async (req, res) => {
     draftMenuInput: req.validated.body?.draftMenu,
     stage: req.validated.body?.stage || 'auto',
     overwrite: Boolean(req.validated.body?.overwrite),
+    productIds: req.validated.body?.productIds,
   });
 
   res.status(200).json({

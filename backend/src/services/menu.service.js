@@ -4,11 +4,11 @@ import { groupByParent } from '../utils/categoryTree.js';
 import { normalizeMenuUi, normalizeSectionVisibility } from '../utils/menuUi.js';
 import { readPublicMenuCache, writePublicMenuCache } from './menuCache.service.js';
 
-function toPublicProduct(product) {
+function toPublicProduct(product, { hideDescription = false } = {}) {
   return {
     id: product.id,
     name: product.name,
-    description: product.description || '',
+    description: hideDescription ? '' : product.description || '',
     price: Number(product.price),
     image: product.image || '',
   };
@@ -23,9 +23,15 @@ function countNodeProducts(node) {
 function buildPublicTree(categories, productsByCategory) {
   const byParent = groupByParent(categories);
 
-  function buildNode(category) {
-    const children = (byParent.get(category.id) || []).map(buildNode).filter(Boolean);
-    const products = (productsByCategory.get(category.id) || []).map(toPublicProduct);
+  function buildNode(category, inheritedSectionKey = null) {
+    const sectionKey = category.sectionKey || inheritedSectionKey;
+    const hideDescription = sectionKey === 'cafe';
+    const children = (byParent.get(category.id) || [])
+      .map((child) => buildNode(child, sectionKey))
+      .filter(Boolean);
+    const products = (productsByCategory.get(category.id) || []).map((product) =>
+      toPublicProduct(product, { hideDescription }),
+    );
 
     if (children.length === 0 && products.length === 0) {
       return null;

@@ -5,12 +5,16 @@ const FLUX_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const FLUX_CACHE_MAX = 200;
 const fluxCache = new Map();
 
-function resolveFluxKey() {
-  let apiKey = String(env.NVIDIA_API_KEY || env.MENU_LLM_API_KEY || '').trim();
+function stripBearer(value) {
+  let apiKey = String(value || '').trim();
   if (/^bearer\s+/i.test(apiKey)) {
     apiKey = apiKey.replace(/^bearer\s+/i, '').trim();
   }
   return apiKey;
+}
+
+function resolveFluxKey() {
+  return stripBearer(env.NVIDIA_FLUX_API_KEY || env.NVIDIA_API_KEY || '');
 }
 
 function flagEnabled(value, fallback = true) {
@@ -23,6 +27,14 @@ function flagEnabled(value, fallback = true) {
 
 export function isFluxConfigured() {
   return flagEnabled(env.NVIDIA_FLUX_ENABLED, true) && Boolean(resolveFluxKey());
+}
+
+export function getFluxInfo() {
+  return {
+    configured: isFluxConfigured(),
+    model: String(env.NVIDIA_FLUX_MODEL || 'black-forest-labs/flux.2-klein-4b').trim(),
+    role: 'image',
+  };
 }
 
 function cacheGet(key) {
@@ -107,7 +119,7 @@ function fluxInvokeUrl() {
   return `${base}/${model}`;
 }
 
-async function callFluxApi(prompt) {
+async function callFluxApi(prompt, { seed } = {}) {
   const apiKey = resolveFluxKey();
   if (!apiKey) {
     throw new ApiError(503, 'Flux image generation is not configured', null, 'FLUX_NOT_CONFIGURED');
@@ -128,14 +140,11 @@ async function callFluxApi(prompt) {
         response_format: 'b64_json',
       }
     : {
-        mode: 'Image Generation',
         prompt,
         height: 1024,
         width: 1024,
-        cfg_scale: 0,
         samples: 1,
-        seed: 0,
-        steps: 4,
+        ...(Number.isFinite(seed) ? { seed } : {}),
       };
 
   try {
@@ -159,7 +168,10 @@ async function callFluxApi(prompt) {
 
     if (!response.ok) {
       const message =
-        payload?.error?.message || payload?.message || `Flux error (${response.status})`;
+        payload?.error?.message ||
+        payload?.detail?.[0]?.msg ||
+        payload?.message ||
+        `Flux error (${response.status})`;
       throw new ApiError(502, message, null, 'FLUX_PROVIDER_ERROR');
     }
 
@@ -182,9 +194,8 @@ async function callFluxApi(prompt) {
 
 /**
  * Generate a product photo via NVIDIA FLUX.2 Klein 4B.
- * Returns a candidate for applyCandidate (reuseUrl: false → Cloudinary upload).
  */
-export async function generateFluxProductImage(product = {}) {
+export async function generateFluxProductImage(product = {}, { skipCache = false } = {}) {
   if (!isFluxConfigured()) return null;
 
   const name = String(product.name || '').trim();
@@ -193,12 +204,15 @@ export async function generateFluxProductImage(product = {}) {
   const description = String(product.description || '').trim();
   const sectionKey = product.sectionKey || null;
   const key = fluxCacheKey(name, description, sectionKey);
-  const cached = cacheGet(key);
-  if (cached !== undefined) return cached;
+  if (!skipCache) {
+    const cached = cacheGet(key);
+    if (cached !== undefined) return cached;
+  }
 
   try {
     const prompt = buildFluxPrompt({ name, description, sectionKey });
-    const base64 = await callFluxApi(prompt);
+    const seed = skipCache ? Math.floor(Math.random() * 1_000_000_000) : undefined;
+    const base64 = await callFluxApi(prompt, { seed });
     const candidate = {
       imageUrl: `data:image/jpeg;base64,${base64}`,
       base64,
@@ -213,3 +227,4 @@ export async function generateFluxProductImage(product = {}) {
     return null;
   }
 }
+

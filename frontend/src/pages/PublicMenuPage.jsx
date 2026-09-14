@@ -301,13 +301,14 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
 
         {products.length ? (
           <div className={isRestaurantSection ? productListClass : productGridClass}>
-            {products.map((product) =>
-              isRestaurantSection ? (
-                <PublicProductListItem key={product.id} product={product} onSelect={openProduct} />
+            {products.map((product) => {
+              const item = sectionKey === 'cafe' ? { ...product, description: '' } : product;
+              return isRestaurantSection ? (
+                <PublicProductListItem key={product.id} product={item} onSelect={openProduct} />
               ) : (
-                <PublicProductCard key={product.id} product={product} onSelect={openProduct} />
-              ),
-            )}
+                <PublicProductCard key={product.id} product={item} onSelect={openProduct} />
+              );
+            })}
           </div>
         ) : (
           <MenuStatus title={t('menu.emptyTitle')} message={t('menu.empty')} />
@@ -315,7 +316,11 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
       </div>
 
       <PublicProductSheet
-        product={selectedProduct}
+        product={
+          selectedProduct && sectionKey === 'cafe'
+            ? { ...selectedProduct, description: '' }
+            : selectedProduct
+        }
         onClose={closeProduct}
         shareTitle={selectedProduct ? `${selectedProduct.name} · ${cafe.name}` : ''}
         shareText={

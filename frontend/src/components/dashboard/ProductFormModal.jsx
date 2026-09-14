@@ -89,6 +89,7 @@ export default function ProductFormModal({
             ))}
           </Field>
           <Field name="order" type="number" label={t('productForm.order')} icon="sort" value={form.order} onChange={onChange} />
+          {categories.find((category) => category._id === form.categoryId)?.sectionKey === 'cafe' ? null : (
           <Field
             as="textarea"
             name="description"
@@ -102,6 +103,7 @@ export default function ProductFormModal({
             className="md:col-span-2"
             hint={t('productForm.descriptionHint')}
           />
+          )}
           <div className="md:col-span-2">
             <p className="text-sm font-medium text-on-surface">{t('productForm.photo')}</p>
             <div className="mt-2 flex flex-wrap items-center gap-4">

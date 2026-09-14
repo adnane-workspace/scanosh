@@ -472,12 +472,12 @@ export function normalizeDraftMenu(draft) {
   const categoriesIn = Array.isArray(draft?.categories) ? draft.categories : [];
   const categories = categoriesIn
     .map((cat, catIndex) => {
-      const name = normalizeSpaces(cat?.name).slice(0, 80);
+      const name = cleanCategoryName(cat?.name, Array.isArray(cat?.products) ? cat.products : []);
       if (!name) return null;
       const products = (Array.isArray(cat?.products) ? cat.products : [])
         .map((prod, prodIndex) => {
-          let prodName = normalizeSpaces(prod?.name).slice(0, 120);
-          let description = normalizeSpaces(prod?.description || '').slice(0, 500);
+          let prodName = cleanProductName(prod?.name);
+          let description = cleanDescription(prodName, prod?.description || '');
           // Fix inverted OCR: "Article 1" + description "Pepperoni"
           if (isPlaceholderName(prodName) && looksLikeProductName(description)) {
             prodName = description.slice(0, 120);
@@ -502,31 +502,142 @@ export function normalizeDraftMenu(draft) {
         })
         .filter(Boolean);
 
+      const sectionKey = normalizeSectionKey(cat?.sectionKey, name, products);
       return {
         id: String(cat?.id || `cat-${catIndex}`),
         name,
-        sectionKey: normalizeSectionKey(cat?.sectionKey, name, products),
+        sectionKey,
         selected: cat?.selected !== false,
-        products,
+        products:
+          sectionKey === 'cafe'
+            ? products.map((product) => ({ ...product, description: '' }))
+            : products,
       };
     })
     .filter(Boolean);
 
-  const productCount = categories.reduce((sum, cat) => sum + cat.products.length, 0);
+  const repaired = promoteEmptyCategories(categories).map((cat) =>
+    cat.sectionKey === 'cafe'
+      ? { ...cat, products: (cat.products || []).map((product) => ({ ...product, description: '' })) }
+      : cat,
+  );
+  const productCount = repaired.reduce((sum, cat) => sum + cat.products.length, 0);
 
   return {
-    categories,
+    categories: repaired,
     meta: {
       ...(draft?.meta && typeof draft.meta === 'object' ? draft.meta : {}),
       parser: draft?.meta?.parser || 'heuristic-v1',
-      categoryCount: categories.length,
+      categoryCount: repaired.length,
       productCount,
-      needsReviewCount: categories.reduce(
+      needsReviewCount: repaired.reduce(
         (sum, cat) => sum + cat.products.filter((p) => p.needsReview).length,
         0,
       ),
-      cafeCategoryCount: categories.filter((c) => c.sectionKey === 'cafe').length,
-      restaurantCategoryCount: categories.filter((c) => c.sectionKey === 'restaurant').length,
+      cafeCategoryCount: repaired.filter((c) => c.sectionKey === 'cafe').length,
+      restaurantCategoryCount: repaired.filter((c) => c.sectionKey === 'restaurant').length,
     },
   };
+}
+
+const JUNK_CATEGORY = /^(menu|\/|-|—|_|\.|section|categorie|catégorie)$/i;
+
+function looksLikeDrinkName(name) {
+  return /\b(jus|juice|soda|thé|the|tea|café|cafe|latte|mocha|smoothie|milkshake|boisson|espresso|expresso|cappuccino|cappucino)\b/i.test(
+    String(name || ''),
+  );
+}
+
+const GENERIC_DESCRIPTION = /^(coffee|café|cafe|tea|thé|drink|boisson|hot drink|hot coffee)$/i;
+const VENUE_CATEGORY =
+  /\b(bean|beans|coffee house|coffee shop|roasters?|restaurant|resto|bistro|brasserie|kitchen|eatery)\b/i;
+
+export function cleanProductName(name = '') {
+  let value = normalizeSpaces(name);
+  value = value.replace(/[$€]+/g, ' ');
+  value = value.replace(
+    /\s*(?:dh|dhs|mad|usd|eur|dollar|dollars|dirhams?|درهم)\s*$/iu,
+    '',
+  );
+  value = value.replace(/\s{2,}/g, ' ').trim();
+  return value.slice(0, 120);
+}
+
+function cleanDescription(name, description) {
+  const value = normalizeSpaces(description);
+  if (!value) return '';
+  if (GENERIC_DESCRIPTION.test(value)) return '';
+  if (normalizeSpaces(name).toLowerCase() === value.toLowerCase()) return '';
+  return value.slice(0, 500);
+}
+
+function cleanCategoryName(name, products = []) {
+  let value = normalizeSpaces(name).slice(0, 80);
+  if (!value) return value;
+  const drinkHeavy =
+    products.length > 0 &&
+    products.filter((product) => looksLikeDrinkName(product?.name)).length / products.length >= 0.5;
+  if (VENUE_CATEGORY.test(value) && drinkHeavy) return 'Cafés';
+  return value;
+}
+
+function promoteEmptyCategories(categories) {
+  const kept = [];
+  const orphans = [];
+
+  for (const cat of categories) {
+    const name = String(cat?.name || '').trim();
+    const products = Array.isArray(cat?.products) ? cat.products : [];
+
+    if (!name || JUNK_CATEGORY.test(name) || name.length <= 1) {
+      orphans.push(
+        ...products
+          .filter((product) => normalizeSpaces(product?.name))
+          .map((product) => ({ ...product, _section: cat.sectionKey })),
+      );
+      continue;
+    }
+
+    if (!products.length) {
+      orphans.push({
+        id: `prod-from-${cat.id || name}`,
+        name: name.slice(0, 120),
+        description: '',
+        price: 0,
+        selected: cat.selected !== false,
+        needsReview: true,
+        confidence: null,
+        image: '',
+        imageSource: '',
+        _section: cat.sectionKey || (looksLikeDrinkName(name) ? 'cafe' : 'restaurant'),
+      });
+      continue;
+    }
+
+    kept.push(cat);
+  }
+
+  for (const orphan of orphans) {
+    const sectionKey = orphan._section || 'cafe';
+    const drink = looksLikeDrinkName(orphan.name);
+    let dest =
+      kept.find((cat) => cat.sectionKey === sectionKey && /boisson|jus|drink/i.test(cat.name)) ||
+      kept.find((cat) => cat.sectionKey === sectionKey);
+
+    if (!dest) {
+      dest = {
+        id: drink ? 'cat-boissons-auto' : 'cat-autres-auto',
+        name: drink ? 'Boissons' : 'Autres',
+        sectionKey,
+        selected: true,
+        products: [],
+      };
+      kept.push(dest);
+    }
+
+    const { _section, ...product } = orphan;
+    dest.products.push(product);
+  }
+
+  return kept;
 }

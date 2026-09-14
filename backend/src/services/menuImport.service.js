@@ -8,11 +8,11 @@ import {
 import { buildPaginationMeta, paginatedResult, parsePaginationQuery } from '../utils/pagination.js';
 import { createCategory, ensureDefaultSections } from './category.service.js';
 import { extractDraftMenu, normalizeDraftMenu } from './menuDraft.extractor.js';
-import { extractDraftMenuWithLlm, isMenuLlmConfigured } from './menuDraft.llm.js';
+import { extractDraftMenuWithLlm, getMenuLlmInfo, isMenuLlmConfigured } from './menuDraft.llm.js';
 import { isOcrConfigured, runOcrOnImage } from './ocr.client.js';
 import { createProduct } from './product.service.js';
 import { findProductImageCandidatesBatch } from './productImage.suggest.js';
-import { generateFluxProductImage, isFluxConfigured } from './productImage.flux.js';
+import { generateFluxProductImage, getFluxInfo, isFluxConfigured } from './productImage.flux.js';
 import { normalizeImageUrl, uploadImageFromBase64, uploadProductImage } from './storage.service.js';
 
 const DRAFT_FLUX_BATCH_MAX = 8;
@@ -78,9 +78,14 @@ async function buildDraftMenu(ocrResult) {
 }
 
 export function getMenuImportStatus() {
+  const textLlm = getMenuLlmInfo();
+  const imageLlm = getFluxInfo();
   return {
     configured: isOcrConfigured(),
-    llmConfigured: isMenuLlmConfigured(),
+    llmConfigured: textLlm.configured,
+    fluxConfigured: imageLlm.configured,
+    textLlm,
+    imageLlm,
     maxImageBytes: MENU_IMPORT_MAX_IMAGE_BYTES,
   };
 }
@@ -227,7 +232,7 @@ async function persistDraftImage(candidate) {
 export async function suggestMenuImportImages(
   user,
   id,
-  { draftMenuInput = null, stage = 'auto', overwrite = false } = {},
+  { draftMenuInput = null, stage = 'auto', overwrite = false, productIds = null } = {},
 ) {
   const cafeId = requireCafeId(user);
   const row = await findOwnedImport(cafeId, id);
@@ -242,12 +247,16 @@ export async function suggestMenuImportImages(
   const draft = normalizeDraftMenu(draftMenuInput || row.draftMenu);
   const doLibrary = stage === 'auto' || stage === 'library';
   const doFlux = stage === 'auto' || stage === 'flux';
+  const idFilter = Array.isArray(productIds)
+    ? new Set(productIds.map((value) => String(value).trim()).filter(Boolean))
+    : null;
 
   const targets = [];
   for (const cat of draft.categories) {
     if (!cat.selected) continue;
     for (const prod of cat.products) {
       if (!prod.selected) continue;
+      if (idFilter && !idFilter.has(String(prod.id))) continue;
       if (prod.image && !overwrite) continue;
       targets.push({ product: prod, sectionKey: resolveDraftSectionKey(cat.sectionKey) });
     }
@@ -266,7 +275,7 @@ export async function suggestMenuImportImages(
   );
   skipped = Math.max(0, selectedCount - targets.length);
 
-  if (doLibrary && targets.length) {
+  if (doLibrary && targets.length && !overwrite) {
     const hits = await findProductImageCandidatesBatch(
       targets.map(({ product, sectionKey }) => ({
         id: product.id,
@@ -290,19 +299,24 @@ export async function suggestMenuImportImages(
     }
   }
 
-  const missing = targets.filter((target) => !target.product.image);
+  const missing = overwrite
+    ? targets
+    : targets.filter((target) => !target.product.image);
 
   if (doFlux && isFluxConfigured() && missing.length) {
-    const fluxLimit = stage === 'flux' ? missing.length : DRAFT_FLUX_BATCH_MAX;
+    const fluxLimit = idFilter?.size || stage === 'flux' ? missing.length : DRAFT_FLUX_BATCH_MAX;
     const fluxTargets = missing.slice(0, fluxLimit);
 
     await mapLimit(fluxTargets, DRAFT_FLUX_CONCURRENCY, async (target) => {
       try {
-        const generated = await generateFluxProductImage({
-          name: target.product.name,
-          description: target.product.description,
-          sectionKey: target.sectionKey,
-        });
+        const generated = await generateFluxProductImage(
+          {
+            name: target.product.name,
+            description: target.product.description,
+            sectionKey: target.sectionKey,
+          },
+          { skipCache: Boolean(overwrite) },
+        );
         if (!generated) {
           failed += 1;
           return;

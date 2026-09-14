@@ -6,7 +6,11 @@ import { spawn } from 'node:child_process';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 if (!process.env.VERCEL) {
-  dotenv.config({ path: path.resolve(__dirname, '../.env'), quiet: true });
+  dotenv.config({
+    path: path.resolve(__dirname, '../.env'),
+    quiet: true,
+    override: true,
+  });
 }
 
 function ensureDirectUrl() {

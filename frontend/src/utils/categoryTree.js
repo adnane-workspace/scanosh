@@ -35,6 +35,16 @@ export function leafCategories(categories) {
   return categories.filter((category) => !category.childCount);
 }
 
+export function resolveCategorySectionKey(categories, categoryId) {
+  const byId = new Map(categories.map((category) => [category._id, category]));
+  let current = byId.get(categoryId);
+  while (current) {
+    if (current.sectionKey) return current.sectionKey;
+    current = current.parentId ? byId.get(current.parentId) : null;
+  }
+  return null;
+}
+
 export function categoryPathLabel(categories, categoryId) {
   const byId = new Map(categories.map((category) => [category._id, category]));
   const parts = [];

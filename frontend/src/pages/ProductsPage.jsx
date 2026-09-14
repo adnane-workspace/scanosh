@@ -13,11 +13,12 @@ import {
   deleteProduct,
   getProducts,
   suggestProductImagesBatch,
+  suggestProductImage,
   updateProduct,
   uploadProductImage,
 } from '../services/product.service.js';
 import { getApiError } from '../utils/apiError.js';
-import { categoryPathLabel, leafCategories } from '../utils/categoryTree.js';
+import { categoryPathLabel, leafCategories, resolveCategorySectionKey } from '../utils/categoryTree.js';
 
 const emptyForm = {
   name: '',
@@ -44,6 +45,7 @@ export default function ProductsPage() {
   const [togglingId, setTogglingId] = useState(null);
   const [pickerProduct, setPickerProduct] = useState(null);
   const [suggestingBatch, setSuggestingBatch] = useState(false);
+  const [generatingId, setGeneratingId] = useState('');
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
@@ -122,6 +124,7 @@ export default function ProductsPage() {
       leafCategories(categories).map((category) => ({
         ...category,
         pathLabel: categoryPathLabel(categories, category._id),
+        sectionKey: resolveCategorySectionKey(categories, category._id),
       })),
     [categories],
   );
@@ -304,6 +307,30 @@ export default function ProductsPage() {
     setPickerProduct(product);
   }
 
+  async function handleGenerateImage(product) {
+    setError('');
+    setSuccess('');
+    setGeneratingId(product._id);
+    try {
+      const result = await suggestProductImage(product._id, { overwrite: Boolean(product.image) });
+      if (result?.product) {
+        setProducts((current) =>
+          current.map((item) => (item._id === result.product._id ? result.product : item)),
+        );
+      }
+      if (result?.skipped) {
+        setSuccess(t('products.suggestImageSkipped'));
+      } else {
+        setSuccess(t('products.generatePhotoSuccess', { name: product.name }));
+      }
+    } catch (err) {
+      setError(getApiError(err, t, 'products.suggestImageError'));
+      setPickerProduct(product);
+    } finally {
+      setGeneratingId('');
+    }
+  }
+
   function handlePickerApplied(updatedProduct) {
     if (updatedProduct?._id) {
       setProducts((current) =>
@@ -318,7 +345,9 @@ export default function ProductsPage() {
     setSuccess('');
     setSuggestingBatch(true);
     try {
+      const missingIds = products.filter((item) => !item.image).map((item) => item._id);
       const library = await suggestProductImagesBatch({
+        productIds: missingIds,
         onlyMissing: true,
         limit: 20,
         stage: 'library',
@@ -329,15 +358,16 @@ export default function ProductsPage() {
       let safety = 0;
       do {
         const flux = await suggestProductImagesBatch({
+          productIds: missingIds,
           onlyMissing: true,
-          limit: 8,
+          limit: 20,
           stage: 'flux',
         });
         fluxUpdated = flux?.summary?.updated ?? 0;
         updated += fluxUpdated;
-        failed += flux?.summary?.failed ?? 0;
+        failed = flux?.summary?.failed ?? failed;
         safety += 1;
-      } while (fluxUpdated > 0 && safety < 6);
+      } while (fluxUpdated > 0 && safety < 8);
       await loadData(true);
       setSuccess(
         t('products.suggestBatchSuccess', {
@@ -380,7 +410,7 @@ export default function ProductsPage() {
               type="button"
               disabled={suggestingBatch || loading}
               onClick={handleSuggestMissingBatch}
-              className="inline-flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container-lowest px-5 py-3 text-label-lg font-semibold tracking-[0.05em] text-on-surface transition hover:bg-surface-container disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-label-lg font-semibold tracking-[0.05em] text-on-primary shadow-md transition hover:bg-primary/90 disabled:opacity-50"
             >
               <MaterialIcon
                 name={suggestingBatch ? 'progress_activity' : 'auto_awesome'}
@@ -475,6 +505,17 @@ export default function ProductsPage() {
             <option value="available">{t('products.inStock')}</option>
             <option value="unavailable">{t('products.outOfStock')}</option>
           </Field>
+          <button
+            type="button"
+            onClick={() => setMissingOnly((value) => !value)}
+            className={`inline-flex h-11 items-center justify-center rounded-xl px-3 text-xs font-semibold ${
+              missingOnly
+                ? 'bg-primary text-on-primary'
+                : 'border border-outline-variant bg-surface-container-lowest text-on-surface'
+            }`}
+          >
+            {t('products.filterMissingPhotos')}
+          </button>
         </div>
       </div>
 
@@ -492,10 +533,12 @@ export default function ProductsPage() {
               product={product}
               toggling={togglingId === product._id}
               suggesting={false}
+              generating={generatingId === product._id || suggestingBatch}
               onEdit={startEdit}
               onDelete={handleDelete}
               onToggleAvailable={handleToggleAvailable}
               onSuggestImage={handleSuggestImage}
+              onGenerateImage={handleGenerateImage}
             />
           ))}
         </div>

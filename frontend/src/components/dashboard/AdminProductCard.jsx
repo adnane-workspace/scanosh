@@ -8,15 +8,19 @@ export default function AdminProductCard({
   product,
   toggling,
   suggesting,
+  generating,
   onEdit,
   onDelete,
   onToggleAvailable,
   onSuggestImage,
+  onGenerateImage,
 }) {
   const { t, locale } = useLocale();
   const available = Boolean(product.available);
-  const canSuggest = Boolean(onSuggestImage);
-  const showEmptyPick = canSuggest && !product.image;
+  const canPick = Boolean(onSuggestImage);
+  const canGenerate = Boolean(onGenerateImage);
+  const busy = Boolean(suggesting || generating);
+  const showEmptyPick = (canPick || canGenerate) && !product.image;
 
   return (
     <article
@@ -25,10 +29,10 @@ export default function AdminProductCard({
       }`}
     >
       <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
-        {canSuggest ? (
+        {canPick ? (
           <button
             type="button"
-            disabled={suggesting}
+            disabled={busy}
             onClick={() => onSuggestImage(product)}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-on-surface shadow-sm transition-colors hover:bg-surface disabled:opacity-50"
             aria-label={t('products.suggestImage')}
@@ -60,23 +64,57 @@ export default function AdminProductCard({
 
       <div className={`relative h-48 w-full bg-surface-container-highest ${available ? '' : 'grayscale-[30%]'}`}>
         {product.image ? (
-          <CloudinaryImage src={product.image} alt="" preset="productCard" className="h-full w-full object-cover" />
+          <>
+            <CloudinaryImage src={product.image} alt="" preset="productCard" className="h-full w-full object-cover" />
+            {canGenerate ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onGenerateImage(product)}
+                className="absolute bottom-2 end-2 z-10 inline-flex items-center gap-1 rounded-full bg-black/65 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm disabled:opacity-50"
+              >
+                <MaterialIcon
+                  name={generating ? 'progress_activity' : 'auto_awesome'}
+                  className={`text-[14px] ${generating ? 'animate-spin' : ''}`}
+                />
+                {generating ? t('products.generatingPhoto') : t('products.regeneratePhoto')}
+              </button>
+            ) : null}
+          </>
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-on-surface-variant">
             <MaterialIcon name="image" className="text-4xl" />
             {showEmptyPick ? (
-              <button
-                type="button"
-                disabled={suggesting}
-                onClick={() => onSuggestImage(product)}
-                className="inline-flex items-center gap-1 rounded-full bg-surface/90 px-3 py-1 text-[11px] font-semibold text-primary shadow-sm disabled:opacity-50"
-              >
-                <MaterialIcon
-                  name={suggesting ? 'progress_activity' : 'photo_library'}
-                  className={`text-[14px] ${suggesting ? 'animate-spin' : ''}`}
-                />
-                {suggesting ? t('products.suggestingImage') : t('products.suggestImage')}
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {canGenerate ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onGenerateImage(product)}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-on-primary shadow-sm disabled:opacity-50"
+                  >
+                    <MaterialIcon
+                      name={generating ? 'progress_activity' : 'auto_awesome'}
+                      className={`text-[14px] ${generating ? 'animate-spin' : ''}`}
+                    />
+                    {generating ? t('products.generatingPhoto') : t('products.generatePhoto')}
+                  </button>
+                ) : null}
+                {canPick ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onSuggestImage(product)}
+                    className="inline-flex items-center gap-1 rounded-full bg-surface/90 px-3 py-1 text-[11px] font-semibold text-primary shadow-sm disabled:opacity-50"
+                  >
+                    <MaterialIcon
+                      name={suggesting ? 'progress_activity' : 'photo_library'}
+                      className={`text-[14px] ${suggesting ? 'animate-spin' : ''}`}
+                    />
+                    {suggesting ? t('products.suggestingImage') : t('products.suggestImage')}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
           </div>
         )}
@@ -107,9 +145,11 @@ export default function AdminProductCard({
             {formatPrice(product.price, locale)}
           </span>
         </div>
+        {product.sectionKey === 'cafe' ? null : (
         <p className="mb-3 flex-1 text-on-surface-variant line-clamp-2">
           {product.description || t('products.noDescription')}
         </p>
+        )}
         <div className="mt-auto flex items-center justify-between border-t border-outline-variant/30 pt-2">
           <span className="text-label-md font-medium text-on-surface-variant">{t('dashboard.availability')}</span>
           <AvailabilityToggle

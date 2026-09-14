@@ -78,6 +78,7 @@ export const suggestMenuImportImagesSchema = z.object({
       draftMenu: draftMenuSchema.optional(),
       stage: z.enum(['auto', 'library', 'flux']).optional().default('auto'),
       overwrite: z.boolean().optional().default(false),
+      productIds: z.array(z.string().trim().min(1).max(80)).max(40).optional(),
     }),
   ),
 });
