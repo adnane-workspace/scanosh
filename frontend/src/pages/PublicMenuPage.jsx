@@ -269,7 +269,7 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
 
   const tabItems = isSectionMode ? section?.children || [] : getFlatCatalogCategories(menu.categories);
   const activeCategoryId = selection.category?.id;
-  const products = selection.products || [];
+  const products = (selection.products || []).filter((product) => product.image);
   const backTo = isSectionMode
     ? activeSections.length > 1
       ? paths.sections

@@ -1,26 +1,28 @@
 import { useLocale } from '../../hooks/useLocale.js';
-import MaterialIcon from '../ui/MaterialIcon.jsx';
+import { useProductImageReady } from '../../hooks/useProductImageReady.js';
 import CloudinaryImage from '../ui/CloudinaryImage.jsx';
 import { formatPrice } from '../../utils/format.js';
 
 export default function PublicProductListItem({ product, onSelect, showDescription = true }) {
   const { locale } = useLocale();
+  const ready = useProductImageReady(product.image);
+
+  if (!ready) {
+    return null;
+  }
 
   return (
     <button
       type="button"
       onClick={() => onSelect(product)}
-      className="flex w-full gap-3 bg-[var(--menu-card-bg)] p-3 text-start shadow-[var(--menu-card-shadow)] ring-1 ring-[var(--menu-card-ring)] transition-colors duration-200 active:bg-[#faf9f7] sm:gap-4 sm:p-4"
+      className="flex w-full gap-3 bg-[var(--menu-card-bg)] p-3 text-start shadow-[var(--menu-card-shadow)] ring-1 ring-[var(--menu-card-ring)] transition-colors duration-200 animate-[fadeIn_0.35s_ease] active:bg-[#faf9f7] sm:gap-4 sm:p-4"
       style={{ borderRadius: 'var(--menu-card-radius)' }}
     >
-      <div className="h-[5.5rem] w-[5.5rem] shrink-0 overflow-hidden bg-surface-container sm:h-24 sm:w-24" style={{ borderRadius: 'calc(var(--menu-card-radius) - 0.35rem)' }}>
-        {product.image ? (
-          <CloudinaryImage src={product.image} alt="" preset="productCard" className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-on-surface/25">
-            <MaterialIcon name="restaurant" className="text-2xl" />
-          </div>
-        )}
+      <div
+        className="h-[5.5rem] w-[5.5rem] shrink-0 overflow-hidden bg-surface-container sm:h-24 sm:w-24"
+        style={{ borderRadius: 'calc(var(--menu-card-radius) - 0.35rem)' }}
+      >
+        <CloudinaryImage src={product.image} alt="" preset="productCard" className="h-full w-full object-cover" />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">

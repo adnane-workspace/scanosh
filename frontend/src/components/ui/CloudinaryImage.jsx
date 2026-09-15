@@ -15,6 +15,7 @@ export default function CloudinaryImage({
   height,
   decoding = 'async',
   onError,
+  onLoad,
   hintUrl,
 }) {
   if (!src) {
@@ -71,6 +72,7 @@ export default function CloudinaryImage({
       width={width}
       height={height}
       onError={onError}
+      onLoad={onLoad}
       style={{ imageRendering: 'auto' }}
     />
   );
