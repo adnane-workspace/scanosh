@@ -194,9 +194,9 @@ export default function PublicMenuLandingPage() {
 
           <Link
             to={menuDestination}
-            className="mt-7 inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold tracking-wide text-[#0d1b2a] shadow-[0_12px_32px_rgba(0,0,0,0.28)] transition-transform hover:bg-[#f7f6f3] active:scale-[0.98] sm:w-auto sm:min-w-52"
+            className="mt-7 inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-[#0d1b2a] shadow-[0_12px_32px_rgba(0,0,0,0.28)] transition-transform hover:bg-[#f7f6f3] active:scale-[0.98] sm:w-auto sm:min-w-52"
           >
-            {t('menu.viewMenu')}
+            <span className="tracking-wide">{t('menu.viewMenu')}</span>
             <MaterialIcon name="arrow_forward" className="text-[20px]" />
           </Link>
         </div>

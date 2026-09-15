@@ -15,6 +15,10 @@ if (env.NODE_ENV === 'production' || process.env.VERCEL) {
 
 app.use(
   helmet({
+    // Helmet 8 defaults to script-src 'none', which blocks Vite/React if HTML is
+    // ever served behind this API, and is useless on JSON responses.
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   }),
 );

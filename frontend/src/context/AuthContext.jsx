@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { fetchCurrentUser, loginRequest, logoutRequest, verifyEmailRequest } from '../services/auth.service.js';
 import { TOKEN_STORAGE_KEY, USER_STORAGE_KEY } from '../utils/constants.js';
+import { parseHost } from '../utils/hosts.js';
 import { AuthContext } from './auth-context.js';
 
 function readStoredUser() {
@@ -21,7 +23,14 @@ function clearSession() {
   localStorage.removeItem(USER_STORAGE_KEY);
 }
 
+function isPublicMenuSurface(pathname, hostname) {
+  const host = parseHost(hostname);
+  if (host.kind === 'menu') return true;
+  return String(pathname || '').startsWith('/menu/');
+}
+
 export function AuthProvider({ children }) {
+  const { pathname } = useLocation();
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_STORAGE_KEY));
   const [user, setUser] = useState(readStoredUser);
   const [isReady, setIsReady] = useState(!localStorage.getItem(TOKEN_STORAGE_KEY));
@@ -64,7 +73,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!token) {
+    if (!token || isPublicMenuSurface(pathname, window.location.hostname)) {
       setIsReady(true);
       return undefined;
     }
@@ -94,7 +103,7 @@ export function AuthProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, pathname]);
 
   useEffect(() => {
     const onUnauthorized = () => {
