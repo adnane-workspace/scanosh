@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import AuthLayout from './layouts/AuthLayout.jsx';
 import PublicLayout from './layouts/PublicLayout.jsx';
 import DashboardLegacyRedirect from './components/common/DashboardLegacyRedirect.jsx';
+import DemoMenuRedirect from './components/common/DemoMenuRedirect.jsx';
 import ExternalRedirect from './components/common/ExternalRedirect.jsx';
 import LandingSeoRedirect from './components/common/LandingSeoRedirect.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
@@ -19,7 +20,6 @@ import {
   tenantPathFromMenuUrl,
 } from './utils/hosts.js';
 import { getHomePath } from './utils/paths.js';
-import { getDemoMenuUrl } from './utils/demoMenu.js';
 
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout.jsx'));
 const ActivityLogsPage = lazy(() => import('./pages/ActivityLogsPage.jsx'));
@@ -109,8 +109,8 @@ function AuthRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/demo" element={<ExternalRedirect to={getDemoMenuUrl()} />} />
-      <Route path="/essai" element={<ExternalRedirect to={getDemoMenuUrl()} />} />
+      <Route path="/demo" element={<DemoMenuRedirect />} />
+      <Route path="/essai" element={<DemoMenuRedirect />} />
     </Route>
   );
 }

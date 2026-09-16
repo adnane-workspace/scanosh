@@ -38,7 +38,7 @@ function LandingShell({ children }) {
   useLockPageScroll();
 
   return (
-    <div className="fixed inset-0 z-10 flex h-dvh max-h-dvh flex-col overflow-hidden overscroll-none bg-[#0d1b2a] text-white">
+    <div className="fixed inset-x-0 top-0 z-10 flex h-[100svh] max-h-[100svh] flex-col overflow-hidden overscroll-none bg-[#0d1b2a] text-white">
       {children}
     </div>
   );
@@ -145,12 +145,12 @@ export default function PublicMenuLandingPage() {
       <div className="pointer-events-none absolute inset-0 bg-black/40" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/25" />
 
-      <div className="absolute left-0 top-0 z-20 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
+      <div className="absolute left-0 top-0 z-20 px-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6">
         <MenuDeveloperBadge to={paths.developer} />
       </div>
 
-      <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-lg flex-col justify-end px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-16 text-center min-[480px]:px-6 sm:max-w-xl sm:justify-center sm:px-8 sm:py-16">
-        <div className="flex min-h-0 w-full shrink flex-col items-center">
+      <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-lg flex-col items-center justify-center px-5 py-8 text-center min-[480px]:px-6 sm:max-w-xl sm:px-8 sm:py-12">
+        <div className="flex w-full min-h-0 flex-col items-center">
           {cafe.logo ? (
             <CloudinaryImage
               src={cafe.logo}
@@ -158,20 +158,20 @@ export default function PublicMenuLandingPage() {
               preset="logoHero"
               width={144}
               height={144}
-              className="h-[clamp(4rem,18vmin,8.5rem)] w-[clamp(4rem,18vmin,8.5rem)] shrink-0 rounded-full object-cover shadow-[0_12px_32px_rgba(0,0,0,0.35)] ring-[3px] ring-white"
+              className="h-16 w-16 shrink-0 rounded-full object-cover shadow-[0_12px_32px_rgba(0,0,0,0.35)] ring-[3px] ring-white sm:h-[clamp(4.5rem,16vmin,8.5rem)] sm:w-[clamp(4.5rem,16vmin,8.5rem)]"
             />
           ) : (
-            <div className="flex h-[clamp(4rem,18vmin,8.5rem)] w-[clamp(4rem,18vmin,8.5rem)] shrink-0 items-center justify-center rounded-full bg-white/15 font-display text-[clamp(1.35rem,6vmin,2.5rem)] font-semibold text-white ring-[3px] ring-white/80">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/15 font-display text-2xl font-semibold text-white ring-[3px] ring-white/80 sm:h-[clamp(4.5rem,16vmin,8.5rem)] sm:w-[clamp(4.5rem,16vmin,8.5rem)] sm:text-[clamp(1.35rem,6vmin,2.5rem)]">
               {cafe.name.slice(0, 1)}
             </div>
           )}
 
-          <h1 className="mt-5 max-w-full shrink-0 line-clamp-2 break-words text-balance font-display text-[clamp(1.75rem,7vmin,3.25rem)] leading-[1.1] font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
+          <h1 className="mt-3 max-w-full shrink-0 line-clamp-2 break-words text-balance font-display text-[1.65rem] leading-[1.15] font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:mt-5 sm:text-[clamp(1.75rem,7vmin,3.25rem)] sm:leading-[1.1]">
             {cafe.name}
           </h1>
 
           {(showAddress || showPhone) && (
-            <div className="mt-4 flex max-w-md flex-col items-center gap-1.5 text-sm text-white/90">
+            <div className="mt-3 flex max-w-md flex-col items-center gap-1.5 text-sm text-white/90 sm:mt-4">
               {showAddress ? (
                 <a
                   href={mapsHref(cafe)}
@@ -194,7 +194,7 @@ export default function PublicMenuLandingPage() {
 
           <Link
             to={menuDestination}
-            className="mt-7 inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-[#0d1b2a] shadow-[0_12px_32px_rgba(0,0,0,0.28)] transition-transform hover:bg-[#f7f6f3] active:scale-[0.98] sm:w-auto sm:min-w-52"
+            className="mt-5 inline-flex min-h-11 w-full max-w-[16rem] shrink-0 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#0d1b2a] shadow-[0_12px_32px_rgba(0,0,0,0.28)] transition-transform hover:bg-[#f7f6f3] active:scale-[0.98] sm:mt-7 sm:min-h-12 sm:max-w-none sm:w-auto sm:min-w-52 sm:px-7 sm:py-3.5"
           >
             <span className="tracking-wide">{t('menu.viewMenu')}</span>
             <MaterialIcon name="arrow_forward" className="text-[20px]" />

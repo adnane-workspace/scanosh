@@ -37,7 +37,7 @@ export default function MenuDeveloperPage() {
   useLockPageScroll();
 
   return (
-    <div className="fixed inset-0 z-10 flex h-dvh max-h-dvh flex-col overflow-hidden overscroll-none bg-[#0d1b2a] text-white">
+    <div className="fixed inset-x-0 top-0 z-10 flex h-[100svh] max-h-[100svh] flex-col overflow-hidden overscroll-none bg-[#0d1b2a] text-white">
       <DocumentHead
         title={t('menu.developer.pageTitle', { name: APP_NAME })}
         description={t('menu.developer.pageDescription')}

@@ -15,7 +15,7 @@ const STEPS = [
     number: '02',
     titleKey: 'landing.step2Title',
     bodyKey: 'landing.step2Body',
-    icon: 'restaurant_menu',
+    icon: 'photo_camera',
     preview: 'dishes',
   },
   {

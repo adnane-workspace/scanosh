@@ -47,7 +47,7 @@ export default function LandingShowcase() {
             <div className="grid items-center gap-8 p-6 lg:grid-cols-2 lg:p-10">
               <div className="mx-auto">
                 <div className="h-[420px] w-[210px] overflow-hidden rounded-[2rem] border-[6px] border-[#0d1b2a] bg-[#0d1b2a] sm:h-[480px] sm:w-[240px]">
-                  <img src="/landing/dessert.jpg" alt="" className="h-36 w-full object-cover sm:h-40" />
+                  <img src="/landing/pepperoni.jpg" alt="" className="h-36 w-full object-cover sm:h-40" />
                   <div className="space-y-3 p-4">
                     <p className="font-display text-lg font-bold text-[#e0e1dd]">{t('landing.phoneMenu')}</p>
                     <div className="space-y-3">
@@ -56,14 +56,21 @@ export default function LandingShowcase() {
                           <p className="text-sm font-semibold text-[#e0e1dd]">{t('landing.dishOne')}</p>
                           <p className="text-xs text-[#778da9]">{t('landing.dishOneDesc')}</p>
                         </div>
-                        <img src="/landing/ceviche.jpg" alt="" className="h-12 w-12 rounded-lg object-cover" />
+                        <img src="/landing/pepperoni.jpg" alt="" className="h-12 w-12 rounded-lg object-cover" />
                       </div>
                       <div className="flex gap-3">
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-[#e0e1dd]">{t('landing.dishTwo')}</p>
                           <p className="text-xs text-[#778da9]">{t('landing.dishTwoDesc')}</p>
                         </div>
-                        <img src="/landing/dessert.jpg" alt="" className="h-12 w-12 rounded-lg object-cover" />
+                        <img src="/landing/jus-peche.jpg" alt="" className="h-12 w-12 rounded-lg object-cover" />
+                      </div>
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-[#e0e1dd]">{t('landing.demoDish3')}</p>
+                          <p className="text-xs text-[#778da9]">{t('landing.dishThreeDesc')}</p>
+                        </div>
+                        <img src="/landing/jus-grenadine.jpg" alt="" className="h-12 w-12 rounded-lg object-cover" />
                       </div>
                     </div>
                   </div>
@@ -78,59 +85,23 @@ export default function LandingShowcase() {
 
           {tab === 'dashboard' ? (
             <div className="p-6 lg:p-10">
-              <div className="overflow-hidden rounded-2xl border border-on-surface/10">
-                <div className="flex items-center justify-between border-b border-on-surface/10 bg-surface-container px-4 py-3">
-                  <div className="flex gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-[#415a77]/50" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-[#778da9]/50" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-[#0d1b2a]/30" />
-                  </div>
-                  <span className="rounded-md bg-background px-3 py-1 font-mono text-[11px] text-on-surface-variant">app.scanosh.com</span>
-                </div>
-                <div className="grid grid-cols-12 gap-3 bg-[#e0e1dd] p-4 sm:p-6">
-                  <div className="col-span-3 hidden flex-col gap-2 md:flex">
-                    <div className="mb-2 h-6 w-3/4 rounded bg-surface-container-high" />
-                    <div className="h-9 rounded-md bg-[#0d1b2a]" />
-                    <div className="h-9 rounded-md bg-surface-container" />
-                    <div className="h-9 rounded-md bg-surface-container" />
-                  </div>
-                  <div className="col-span-12 space-y-4 md:col-span-9">
-                    <div className="flex justify-between">
-                      <div className="h-7 w-1/3 rounded bg-surface-container-high" />
-                      <div className="h-7 w-20 rounded bg-[#0d1b2a]/20" />
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      {[0, 1, 2].map((i) => (
-                        <div key={i} className="rounded-xl bg-surface-container-lowest p-3">
-                          <div className="mb-2 h-16 rounded-lg bg-surface-container" />
-                          <div className="h-3 w-3/4 rounded bg-surface-container-high" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              <div className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-on-surface/10 bg-[#e8e9ea] shadow-sm">
+                <img
+                  src="/landing/showcase-dashboard.png"
+                  alt=""
+                  className="mx-auto h-auto w-full max-w-full object-contain object-top"
+                />
               </div>
-              <p className="mt-6 text-on-surface-variant">{t('landing.showDashBody')}</p>
+              <p className="mx-auto mt-6 max-w-2xl text-on-surface-variant">{t('landing.showDashBody')}</p>
             </div>
           ) : null}
 
           {tab === 'products' ? (
-            <div className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3 lg:p-10">
-              {[
-                { img: '/landing/ceviche.jpg', name: 'landing.dishOne', price: '85 DH' },
-                { img: '/landing/dessert.jpg', name: 'landing.dishTwo', price: '120 DH' },
-                { img: '/landing/hero.jpg', name: 'landing.demoDish3', price: '95 DH' },
-              ].map((item) => (
-                <div key={item.name} className="overflow-hidden rounded-2xl border border-on-surface/10 bg-background">
-                  <img src={item.img} alt="" className="h-36 w-full object-cover" />
-                  <div className="p-4">
-                    <p className="font-semibold">{t(item.name)}</p>
-                    <p className="mt-1 text-sm text-on-surface-variant">{t('landing.showProductHint')}</p>
-                    <p className="mt-3 font-bold">{item.price}</p>
-                  </div>
-                </div>
-              ))}
-              <p className="sm:col-span-2 lg:col-span-3 text-on-surface-variant">{t('landing.showProductsBody')}</p>
+            <div className="mx-auto max-w-3xl space-y-6 p-6 lg:p-10">
+              <div className="overflow-hidden rounded-2xl border border-on-surface/10 shadow-sm">
+                <img src="/landing/showcase-products.png" alt="" className="mx-auto h-auto w-full object-contain object-top" />
+              </div>
+              <p className="text-on-surface-variant">{t('landing.showProductsBody')}</p>
             </div>
           ) : null}
 

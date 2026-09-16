@@ -42,7 +42,7 @@ export default function DocumentHead({
   const origin = getDocumentOrigin();
   const canonicalPath = path === '/' ? '/' : path;
   const canonical = origin ? `${origin}${canonicalPath}` : canonicalPath;
-  const image = origin ? `${origin}/landing/hero.jpg` : '/landing/hero.jpg';
+  const image = origin ? `${origin}/landing/hero-bg.jpg` : '/landing/hero-bg.jpg';
   const pageTitle = title || APP_NAME;
 
   useEffect(() => {

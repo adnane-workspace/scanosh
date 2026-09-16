@@ -29,6 +29,7 @@ function toPlatformCafe(cafe, counts) {
     createdAt: cafe.createdAt,
     qrGeneratedAt: cafe.qrGeneratedAt || null,
     trialRole: cafe.trialRole || 'none',
+    isDemo: Boolean(cafe.isDemo),
     ...ownerFromUsers(cafe.users),
   };
 }
@@ -173,6 +174,7 @@ export async function listPlatformCafes(query = {}) {
         createdAt: true,
         qrGeneratedAt: true,
         trialRole: true,
+        isDemo: true,
         ...ownerSelect,
       },
     }),
@@ -214,7 +216,7 @@ export async function listPlatformCafes(query = {}) {
 export async function updatePlatformCafe(cafeId, payload, actor) {
   const cafe = await prisma.cafe.findUnique({
     where: { id: cafeId },
-    select: { id: true, name: true, slug: true },
+    select: { id: true, name: true, slug: true, isActive: true, isDemo: true },
   });
 
   if (!cafe) {
@@ -231,10 +233,32 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
     data.trialRole = payload.trialRole;
   }
 
+  if (payload.isDemo !== undefined) {
+    data.isDemo = payload.isDemo;
+  }
+
+  if (payload.isActive === false) {
+    data.isDemo = false;
+  }
+
+  const willBeActive = payload.isActive !== undefined ? payload.isActive : cafe.isActive;
+  const willBeDemo = data.isDemo === true || (data.isDemo === undefined && cafe.isDemo);
+
+  if (willBeDemo && !willBeActive) {
+    throw new ApiError(400, 'Demo cafe must be active', null, 'DEMO_CAFE_INACTIVE');
+  }
+
   if (payload.trialRole === 'playground' || payload.trialRole === 'template') {
     await prisma.cafe.updateMany({
       where: { trialRole: payload.trialRole, id: { not: cafeId } },
       data: { trialRole: 'none' },
+    });
+  }
+
+  if (payload.isDemo === true) {
+    await prisma.cafe.updateMany({
+      where: { isDemo: true, id: { not: cafeId } },
+      data: { isDemo: false },
     });
   }
 
@@ -249,6 +273,7 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
       createdAt: true,
       qrGeneratedAt: true,
       trialRole: true,
+      isDemo: true,
       ...ownerSelect,
     },
   });
@@ -273,6 +298,14 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
       },
     });
   } else {
+    const fields = [];
+    if (payload.trialRole !== undefined) {
+      fields.push('trialRole');
+    }
+    if (payload.isDemo !== undefined) {
+      fields.push('isDemo');
+    }
+
     await recordActivity({
       action: 'cafe_updated',
       actorId: actor?.id,
@@ -280,8 +313,9 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
       metadata: {
         cafeName: cafe.name,
         slug: cafe.slug,
-        fields: ['trialRole'],
+        fields,
         trialRole: payload.trialRole,
+        isDemo: payload.isDemo,
       },
     });
   }

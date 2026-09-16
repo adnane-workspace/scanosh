@@ -20,8 +20,6 @@ import { formatDate } from '../utils/format.js';
 import { DEFAULT_SECTION_DEFS, isMenuSectionKey } from '../utils/menuSections.js';
 import { repairDraftMenu } from '../utils/draftMenuRepair.js';
 
-const MERGE_LEVELS = ['paragraph', 'sentence', 'word'];
-
 function emptyDraft() {
   return { categories: [], meta: {} };
 }
@@ -99,8 +97,6 @@ export default function AiFillPage() {
   const [configured, setConfigured] = useState(true);
   const [textLlm, setTextLlm] = useState({ configured: false, model: '' });
   const [imageLlm, setImageLlm] = useState({ configured: false, model: '' });
-  const [mergeLevel, setMergeLevel] = useState('paragraph');
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -342,7 +338,7 @@ export default function AiFillPage() {
     setSuccess('');
     setPublishSummary(null);
     try {
-      const item = await createMenuImport(file, { mergeLevel });
+      const item = await createMenuImport(file);
       applyImport(item);
       await loadHistory();
     } catch (err) {
@@ -807,19 +803,9 @@ export default function AiFillPage() {
           </div>
 
           <div className="rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <h2 className="font-display text-lg font-semibold text-on-surface">{t('aiFill.uploadTitle')}</h2>
-                <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.uploadHint')}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAdvanced((v) => !v)}
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:bg-[#f4f5f6]"
-              >
-                <MaterialIcon name="tune" className="text-[15px]" />
-                {t('aiFill.advanced')}
-              </button>
+            <div className="mb-4">
+              <h2 className="font-display text-lg font-semibold text-on-surface">{t('aiFill.uploadTitle')}</h2>
+              <p className="mt-1 text-sm text-on-surface-variant">{t('aiFill.uploadHint')}</p>
             </div>
 
             <div
@@ -872,23 +858,6 @@ export default function AiFillPage() {
                 onChange={onPickFile}
               />
             </div>
-
-            {showAdvanced ? (
-              <label className="mt-4 block max-w-xs text-sm">
-                <span className="mb-1.5 block font-medium text-on-surface">{t('aiFill.mergeLevel')}</span>
-                <select
-                  value={mergeLevel}
-                  onChange={(event) => setMergeLevel(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-outline-variant bg-background px-3 text-on-surface outline-none focus:border-primary"
-                >
-                  {MERGE_LEVELS.map((level) => (
-                    <option key={level} value={level}>
-                      {t(`aiFill.merge.${level}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
 
             {running ? (
               <div className="mt-4 overflow-hidden rounded-2xl bg-[#0d1b2a] px-4 py-4 text-white">

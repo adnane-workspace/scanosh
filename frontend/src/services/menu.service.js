@@ -7,3 +7,10 @@ export async function getPublicMenu(slug) {
   });
   return data.data;
 }
+
+export async function getPublicDemoMenu() {
+  const { data } = await api.get('/menu/public-demo', {
+    headers: { 'Cache-Control': 'no-cache' },
+  });
+  return data.data;
+}

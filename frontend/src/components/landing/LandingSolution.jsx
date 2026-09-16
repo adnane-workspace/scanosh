@@ -3,9 +3,9 @@ import { useLocale } from '../../hooks/useLocale.js';
 import { useInView } from '../../hooks/useInView.js';
 
 const STEPS = [
-  { number: '01', icon: 'qr_code_2', titleKey: 'landing.solution1Title', bodyKey: 'landing.solution1Body' },
+  { number: '01', icon: 'auto_awesome', titleKey: 'landing.solution1Title', bodyKey: 'landing.solution1Body' },
   { number: '02', icon: 'menu_book', titleKey: 'landing.solution2Title', bodyKey: 'landing.solution2Body' },
-  { number: '03', icon: 'dashboard', titleKey: 'landing.solution3Title', bodyKey: 'landing.solution3Body' },
+  { number: '03', icon: 'qr_code_2', titleKey: 'landing.solution3Title', bodyKey: 'landing.solution3Body' },
 ];
 
 export default function LandingSolution() {

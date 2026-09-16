@@ -174,9 +174,16 @@ export default function CafesPage() {
               cafes.map((cafe) => (
                 <tr key={cafe._id} className="border-t border-outline-variant/20 hover:bg-surface-container-high/50">
                   <td className="px-4 py-3">
-                    <Link to={`/platform/cafes/${cafe._id}`} className="font-medium text-primary hover:underline">
-                      {cafe.name}
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link to={`/platform/cafes/${cafe._id}`} className="font-medium text-primary hover:underline">
+                        {cafe.name}
+                      </Link>
+                      {cafe.isDemo ? (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                          {t('platform.demoBadge')}
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="text-on-surface-variant">{cafe.slug}</p>
                   </td>
                     <td className="px-4 py-3 text-on-surface-variant">{cafe.ownerEmail || t('common.none')}</td>

@@ -12,6 +12,7 @@ import { formatDate } from '../utils/format.js';
 import { hasCoordinates, mapsHref } from '../utils/location.js';
 import { getPublicMenuUrl } from '../utils/constants.js';
 import { getHomePath } from '../utils/paths.js';
+import { clearDemoMenuCache } from '../utils/demoMenu.js';
 
 function DetailStat({ label, value }) {
   return (
@@ -95,6 +96,27 @@ export default function CafeDetailPage() {
     try {
       const updated = await updatePlatformCafe(cafe._id, { isActive: !cafe.isActive });
       setCafe((current) => ({ ...current, ...updated }));
+      await refreshPlatformOverview?.();
+    } catch (err) {
+      setError(getApiError(err, t, 'platform.updateError'));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function handleToggleDemo() {
+    if (!cafe) {
+      return;
+    }
+
+    setPending(true);
+    setError('');
+
+    try {
+      const updated = await updatePlatformCafe(cafe._id, { isDemo: !cafe.isDemo });
+      setCafe((current) => ({ ...current, ...updated }));
+      clearDemoMenuCache();
+      toast.success(updated.isDemo ? t('platform.demoSet') : t('platform.demoCleared'));
       await refreshPlatformOverview?.();
     } catch (err) {
       setError(getApiError(err, t, 'platform.updateError'));
@@ -226,9 +248,16 @@ export default function CafeDetailPage() {
                 <p className="text-on-surface-variant">/{cafe.slug}</p>
               </div>
             </div>
-            <span className={cafe.isActive ? 'font-semibold text-primary' : 'font-semibold text-error'}>
-              {cafe.isActive ? t('platform.statusActive') : t('platform.statusInactive')}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={cafe.isActive ? 'font-semibold text-primary' : 'font-semibold text-error'}>
+                {cafe.isActive ? t('platform.statusActive') : t('platform.statusInactive')}
+              </span>
+              {cafe.isDemo ? (
+                <span className="rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
+                  {t('platform.demoBadge')}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -271,6 +300,19 @@ export default function CafeDetailPage() {
               className="rounded-xl bg-surface-container-high px-5 py-2.5 text-sm font-semibold text-on-surface disabled:opacity-60"
             >
               {cafe.isActive ? t('platform.deactivate') : t('platform.activate')}
+            </button>
+          </div>
+
+          <div className="space-y-3 border-t border-outline-variant/30 pt-5">
+            <h2 className="text-lg font-semibold text-on-surface">{t('platform.demoTitle')}</h2>
+            <p className="text-sm text-on-surface-variant">{t('platform.demoHint')}</p>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={handleToggleDemo}
+              className="rounded-xl bg-surface-container-high px-5 py-2.5 text-sm font-semibold text-on-surface disabled:opacity-60"
+            >
+              {cafe.isDemo ? t('platform.unsetDemo') : t('platform.setAsDemo')}
             </button>
           </div>
 

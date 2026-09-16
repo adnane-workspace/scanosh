@@ -10,7 +10,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { useLocale } from '../hooks/useLocale.js';
 import { registerRequest, resendVerificationRequest } from '../services/auth.service.js';
 import { getApiError } from '../utils/apiError.js';
-import { getDemoMenuUrl } from '../utils/demoMenu.js';
+import DemoMenuLink from '../components/common/DemoMenuLink.jsx';
 import { getHomePath } from '../utils/paths.js';
 
 export default function RegisterPage() {
@@ -298,9 +298,9 @@ export default function RegisterPage() {
               {t('auth.submit')}
             </Link>
             {' · '}
-            <a href={getDemoMenuUrl()} className="font-semibold text-primary hover:underline">
+            <DemoMenuLink className="font-semibold text-primary hover:underline">
               {t('auth.trialLink')}
-            </a>
+            </DemoMenuLink>
           </p>
         </div>
       </section>

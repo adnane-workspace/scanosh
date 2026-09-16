@@ -3,7 +3,7 @@ import { useLocale } from '../../hooks/useLocale.js';
 import { useInView } from '../../hooks/useInView.js';
 
 const PROBLEMS = [
-  { icon: 'edit_off', titleKey: 'landing.problem1Title', bodyKey: 'landing.problem1Body' },
+  { icon: 'photo_camera', titleKey: 'landing.problem1Title', bodyKey: 'landing.problem1Body' },
   { icon: 'payments', titleKey: 'landing.problem2Title', bodyKey: 'landing.problem2Body' },
   { icon: 'history_toggle_off', titleKey: 'landing.problem3Title', bodyKey: 'landing.problem3Body' },
   { icon: 'phonelink_erase', titleKey: 'landing.problem4Title', bodyKey: 'landing.problem4Body' },

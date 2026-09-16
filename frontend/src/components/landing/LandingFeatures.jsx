@@ -4,8 +4,8 @@ import { useInView } from '../../hooks/useInView.js';
 
 const FEATURES = [
   { icon: 'sell', titleKey: 'landing.feat1Title', bodyKey: 'landing.feat1Body' },
-  { icon: 'add_circle', titleKey: 'landing.feat2Title', bodyKey: 'landing.feat2Body' },
-  { icon: 'photo_camera', titleKey: 'landing.feat3Title', bodyKey: 'landing.feat3Body' },
+  { icon: 'auto_awesome', titleKey: 'landing.feat2Title', bodyKey: 'landing.feat2Body' },
+  { icon: 'add_a_photo', titleKey: 'landing.feat3Title', bodyKey: 'landing.feat3Body' },
   { icon: 'category', titleKey: 'landing.feat4Title', bodyKey: 'landing.feat4Body' },
   { icon: 'qr_code_2', titleKey: 'landing.feat5Title', bodyKey: 'landing.feat5Body' },
   { icon: 'smartphone', titleKey: 'landing.feat6Title', bodyKey: 'landing.feat6Body' },

@@ -83,6 +83,7 @@ const envSchema = z.object({
     .trim()
     .optional()
     .default('https://cafe-restau-images.vercel.app'),
+  DEMO_MENU_SLUG: z.string().trim().optional().default('seven'),
 });
 
 const parsed = envSchema.safeParse(process.env);

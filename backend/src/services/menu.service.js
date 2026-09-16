@@ -1,3 +1,4 @@
+import { env } from '../config/env.js';
 import { prisma } from '../config/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
 import { groupByParent } from '../utils/categoryTree.js';
@@ -171,4 +172,18 @@ async function loadPublicMenu(slug) {
       sections,
     },
   };
+}
+
+export async function getPublicDemoMenu() {
+  const cafe = await prisma.cafe.findFirst({
+    where: { isDemo: true, isActive: true },
+    select: { slug: true, name: true },
+  });
+
+  if (cafe) {
+    return { slug: cafe.slug, name: cafe.name };
+  }
+
+  const slug = env.DEMO_MENU_SLUG || 'seven';
+  return { slug, name: '' };
 }

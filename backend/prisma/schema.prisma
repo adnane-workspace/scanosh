@@ -81,6 +81,7 @@ model Cafe {
   qrGeneratedAt   DateTime?
   qrChangeAllowed Boolean       @default(false)
   trialRole       CafeTrialRole @default(none)
+  isDemo          Boolean       @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   users           User[]
@@ -91,6 +92,7 @@ model Cafe {
   menuImports     MenuImport[]
 
   @@index([trialRole])
+  @@index([isDemo])
 }
 
 model MenuImport {
