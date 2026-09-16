@@ -26,9 +26,9 @@ import {
 import { normalizeMenuUi, getSectionCard } from '../utils/menuUi.js';
 import { applyCardAppearance } from '../utils/menuTheme.js';
 
-const productGridClass = 'grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
+const productGridClass = 'grid min-w-0 grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
 const productListClass = 'flex flex-col gap-3 sm:gap-4';
-const contentClass = 'mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8';
+const contentClass = 'mx-auto max-w-6xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8';
 
 function MenuStatus({ title, message }) {
   return (
