@@ -281,6 +281,13 @@ export default function RegisterPage() {
                 </p>
               ) : null}
 
+              <p className="text-xs leading-relaxed text-on-surface-variant">
+                {t('auth.privacyAgree')}{' '}
+                <MarketingLink to="/confidentialite" className="font-semibold text-primary hover:underline">
+                  {t('landing.privacy')}
+                </MarketingLink>
+              </p>
+
               <button
                 type="submit"
                 disabled={isSubmitting}

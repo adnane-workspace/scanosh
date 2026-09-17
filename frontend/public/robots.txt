@@ -6,6 +6,7 @@ Allow: /fonctionnalites
 Allow: /tarifs
 Allow: /blog
 Allow: /contact
+Allow: /confidentialite
 Allow: /maroc
 Allow: /register
 Disallow: /app

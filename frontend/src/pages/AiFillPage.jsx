@@ -1,5 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import MarketingLink from '../components/common/MarketingLink.jsx';
 import AiFillDraftCard from '../components/dashboard/AiFillDraftCard.jsx';
 import MediaImagePickerModal from '../components/dashboard/MediaImagePickerModal.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
@@ -873,7 +874,12 @@ export default function AiFillPage() {
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-xs text-on-surface-variant">{t('aiFill.privacyNote')}</p>
+              <p className="mt-4 text-xs text-on-surface-variant">
+                {t('aiFill.privacyNote')}{' '}
+                <MarketingLink to="/confidentialite" className="font-semibold text-primary hover:underline">
+                  {t('landing.privacy')}
+                </MarketingLink>
+              </p>
             )}
           </div>
 

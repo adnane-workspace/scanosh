@@ -277,4 +277,142 @@ export const extraPages = [
     ctaTitle: loc('Créer un compte', 'Create an account', 'أنشئ حساباً'),
     ctaBody: loc('Inscription en quelques minutes.', 'Signup in a few minutes.', 'تسجيل في دقائق.'),
   }),
+  page({
+    path: '/confidentialite',
+    cluster: 'legal',
+    related: ['/contact', '/tarifs'],
+    title: loc(
+      'Politique de confidentialité | Scanosh',
+      'Privacy policy | Scanosh',
+      'سياسة الخصوصية | Scanosh',
+    ),
+    description: loc(
+      'Comment Scanosh traite vos données : compte, menu, photos, OCR et sous-traitants. Contact : contact@scanosh.com.',
+      'How Scanosh handles your data: account, menu, photos, OCR and processors. Contact: contact@scanosh.com.',
+      'كيف يعالج Scanosh بياناتك: الحساب، القائمة، الصور، OCR والمعالجون. التواصل: contact@scanosh.com.',
+    ),
+    h1: loc('Politique de confidentialité', 'Privacy policy', 'سياسة الخصوصية'),
+    answer: loc(
+      'Dernière mise à jour : 16 septembre 2026. Cette notice décrit les données traitées par Scanosh pour fournir le menu digital QR. Elle s’adresse aux gérants qui créent un compte. Ce n’est pas un avis juridique personnalisé.',
+      'Last update: 16 September 2026. This notice describes the data Scanosh processes to provide the QR digital menu. It is for managers who create an account. It is not personalised legal advice.',
+      'آخر تحديث: 16 سبتمبر 2026. توضّح هذه الصفحة البيانات التي يعالجها Scanosh لتقديم القائمة الرقمية QR. وهي موجّهة للمديرين الذين ينشئون حساباً. ليست استشارة قانونية شخصية.',
+    ),
+    sections: [
+      {
+        h2: loc('Responsable', 'Controller', 'المسؤول'),
+        body: loc(
+          'Scanosh est édité par Adnane EL MENOUAR. Pour toute question relative aux données : contact@scanosh.com.',
+          'Scanosh is published by Adnane EL MENOUAR. For data questions: contact@scanosh.com.',
+          'يُصدر Scanosh عدنان المنور. لأي سؤال عن البيانات: contact@scanosh.com.',
+        ),
+      },
+      {
+        h2: loc('Données collectées', 'Data we collect', 'البيانات المجمّعة'),
+        items: [
+          loc(
+            'Compte : nom, email, mot de passe stocké sous forme hachée, codes de vérification email.',
+            'Account: name, email, hashed password, email verification codes.',
+            'الحساب: الاسم، البريد، كلمة المرور المخزّنة مشفّرة بالتجزئة، رموز تأكيد البريد.',
+          ),
+          loc(
+            'Établissement : nom, slug, description, adresse, téléphone, coordonnées GPS si vous les saisissez, logo et visuels de couverture.',
+            'Venue: name, slug, description, address, phone, GPS if you enter them, logo and cover images.',
+            'المؤسسة: الاسم، الرابط، الوصف، العنوان، الهاتف، الإحداثيات إن أدخلتها، الشعار وصور الغلاف.',
+          ),
+          loc(
+            'Menu : catégories, plats, prix, photos, réglages d’affichage du menu public.',
+            'Menu: categories, dishes, prices, photos, public-menu display settings.',
+            'القائمة: التصنيفات، الأطباق، الأسعار، الصور، إعدادات عرض القائمة العامة.',
+          ),
+          loc(
+            'Journal d’activité côté plateforme (connexions, modifications) pour le support et la sécurité.',
+            'Platform activity logs (sign-ins, edits) for support and security.',
+            'سجل نشاط المنصة (دخول، تعديلات) للدعم والأمان.',
+          ),
+        ],
+      },
+      {
+        h2: loc('Photo et intelligence artificielle', 'Photo and AI', 'الصورة والذكاء الاصطناعي'),
+        body: loc(
+          'Si vous utilisez « Remplir avec l’IA », la photo du menu papier est envoyée à un service d’OCR puis à un modèle de langage (NVIDIA) pour proposer plats, prix et sections. Des images de plats peuvent être générées ou cherchées pour illustrer la carte. Rien n’est publié sur le menu public tant que vous ne validez pas. La photo sert à construire votre menu, pas à de la publicité.',
+          'If you use “Fill with AI”, the paper-menu photo is sent to an OCR service then to a language model (NVIDIA) to propose dishes, prices and sections. Dish images may be generated or searched to illustrate the card. Nothing is published on the public menu until you confirm. The photo is used to build your menu, not for advertising.',
+          'إذا استخدمت «التعبئة بالذكاء الاصطناعي»، تُرسل صورة القائمة الورقية إلى خدمة OCR ثم إلى نموذج لغوي (NVIDIA) لاقتراح الأطباق والأسعار والأقسام. قد تُنشأ أو تُبحث صور للأطباق. لا يُنشر شيء في القائمة العامة قبل تأكيدك. الصورة لبناء قائمتك لا للإعلان.',
+        ),
+      },
+      {
+        h2: loc('Menu public', 'Public menu', 'القائمة العامة'),
+        body: loc(
+          'Le menu que vous publiez (nom de l’établissement, plats, photos, prix) est accessible à toute personne qui ouvre le lien ou scanne le QR. Ne mettez pas de données personnelles de clients dans les descriptions de plats.',
+          'The menu you publish (venue name, dishes, photos, prices) is available to anyone who opens the link or scans the QR. Do not put guest personal data in dish descriptions.',
+          'القائمة التي تنشرها (اسم المؤسسة، الأطباق، الصور، الأسعار) متاحة لمن يفتح الرابط أو يمسح الرمز. لا تضع بيانات شخصية للزبائن في وصف الأطباق.',
+        ),
+      },
+      {
+        h2: loc('Hébergeurs et sous-traitants', 'Hosts and processors', 'المستضيفون والمعالجون'),
+        items: [
+          loc('Vercel : hébergement de l’application et de l’API.', 'Vercel: hosting of the app and API.', 'Vercel: استضافة التطبيق وواجهة البرمجة.'),
+          loc('Neon : base de données PostgreSQL.', 'Neon: PostgreSQL database.', 'Neon: قاعدة بيانات PostgreSQL.'),
+          loc('Cloudinary : stockage et diffusion des images.', 'Cloudinary: image storage and delivery.', 'Cloudinary: تخزين الصور وعرضها.'),
+          loc('Resend : envoi des emails (code, mot de passe).', 'Resend: sending emails (code, password).', 'Resend: إرسال البريد (الرمز، كلمة المرور).'),
+          loc('NVIDIA : OCR, structuration du menu et génération d’images si vous lancez ces fonctions.', 'NVIDIA: OCR, menu structuring and image generation when you run those features.', 'NVIDIA: OCR وهيكلة القائمة وتوليد الصور عند تشغيل هذه الميزات.'),
+        ],
+      },
+      {
+        h2: loc('Transferts', 'Transfers', 'النقل'),
+        body: loc(
+          'Ces prestataires peuvent traiter des données hors du Maroc, dans l’Union européenne ou aux États-Unis, uniquement pour faire fonctionner Scanosh.',
+          'These providers may process data outside Morocco, in the EU or the United States, solely to operate Scanosh.',
+          'قد يعالج هؤلاء المقدّمون بيانات خارج المغرب، في الاتحاد الأوروبي أو الولايات المتحدة، لتشغيل Scanosh فقط.',
+        ),
+      },
+      {
+        h2: loc('Durée de conservation', 'Retention', 'مدة الاحتفاظ'),
+        body: loc(
+          'Les données du compte et du menu sont conservées tant que le compte est actif. Les codes email expirent rapidement. Après suppression du compte ou de l’établissement, les données correspondantes sont retirées de la base, sous réserve de sauvegardes techniques limitées dans le temps.',
+          'Account and menu data are kept while the account is active. Email codes expire quickly. After the account or venue is deleted, matching data is removed from the database, subject to short-lived technical backups.',
+          'تُحفظ بيانات الحساب والقائمة طالما الحساب نشط. رموز البريد تنتهي بسرعة. بعد حذف الحساب أو المؤسسة تُزال البيانات من القاعدة، مع نسخ احتياطية تقنية محدودة المدة.',
+        ),
+      },
+      {
+        h2: loc('Vos droits', 'Your rights', 'حقوقك'),
+        body: loc(
+          'Vous pouvez consulter et corriger la plupart des informations dans le dashboard. Pour une copie, une correction que vous ne pouvez pas faire seul, ou une suppression du compte : contact@scanosh.com. Scanosh n’utilise pas de cookies publicitaires ni d’outil d’analytics tierce. La session gérant est stockée localement dans votre navigateur.',
+          'You can view and edit most information in the dashboard. For a copy, a correction you cannot make yourself, or account deletion: contact@scanosh.com. Scanosh does not use advertising cookies or a third-party analytics tool. The manager session is stored locally in your browser.',
+          'يمكنك عرض وتصحيح معظم المعلومات من اللوحة. لنسخة أو تصحيح لا يمكنك إجراؤه وحدك أو حذف الحساب: contact@scanosh.com. لا يستخدم Scanosh كوكيز إعلانية ولا أداة تحليلات لطرف ثالث. جلسة المدير تُحفظ محلياً في المتصفح.',
+        ),
+      },
+      {
+        h2: loc('Ce que nous ne faisons pas', 'What we do not do', 'ما لا نفعله'),
+        items: [
+          loc('Nous ne vendons pas vos données.', 'We do not sell your data.', 'لا نبيع بياناتك.'),
+          loc('Nous ne créons pas de compte pour les clients qui scannent le QR.', 'We do not create accounts for guests who scan the QR.', 'لا ننشئ حسابات لضيوف يمسحون الرمز.'),
+          loc('Scanosh n’est pas une caisse et n’enregistre pas les commandes des clients.', 'Scanosh is not a till and does not record guest orders.', 'Scanosh ليس صندوقاً ولا يسجّل طلبات الزبائن.'),
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: loc('Les clients doivent-ils accepter cette politique ?', 'Do guests need to accept this policy?', 'هل يجب على الضيوف قبول هذه السياسة؟'),
+        a: loc(
+          'Non. Elle concerne le gérant qui ouvre un compte. Le client ouvre seulement le menu public.',
+          'No. It applies to the manager who opens an account. The guest only opens the public menu.',
+          'لا. تخص المدير الذي يفتح حساباً. الضيف يفتح القائمة العامة فقط.',
+        ),
+      },
+      {
+        q: loc('Puis-je tout supprimer ?', 'Can I delete everything?', 'هل يمكنني حذف كل شيء؟'),
+        a: loc(
+          'Oui. Écrivez à contact@scanosh.com : nous supprimons le compte et le menu associé.',
+          'Yes. Email contact@scanosh.com: we delete the account and associated menu.',
+          'نعم. راسل contact@scanosh.com: نحذف الحساب والقائمة المرتبطة.',
+        ),
+      },
+    ],
+    ctaTitle: loc('Une question sur vos données ?', 'A question about your data?', 'سؤال عن بياناتك؟'),
+    ctaBody: loc(
+      'Écrivez à contact@scanosh.com ou utilisez la page contact.',
+      'Write to contact@scanosh.com or use the contact page.',
+      'راسل contact@scanosh.com أو استخدم صفحة التواصل.',
+    ),
+  }),
 ];

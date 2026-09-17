@@ -16,32 +16,31 @@ export default function LandingHero() {
   return (
     <section
       id="accueil"
-      className="relative isolate min-h-[100svh] overflow-hidden pt-[calc(12rem+env(safe-area-inset-top,0px))] pb-16 sm:pb-20 lg:pt-[calc(13.5rem+env(safe-area-inset-top,0px))] lg:pb-24"
+      className="relative isolate flex flex-col overflow-hidden pt-[calc(5.75rem+env(safe-area-inset-top,0px))] pb-10 sm:pb-12 lg:min-h-[100svh] lg:justify-center lg:pb-16"
     >
-      {/* Full-bleed restaurant background */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <img
           src="/landing/hero-bg.jpg"
           alt=""
-          className="h-full w-full scale-105 object-cover object-[center_40%] brightness-[1.08] contrast-[1.05] saturate-[1.08]"
+          className="h-full w-full object-cover object-[center_38%] brightness-[1.06] contrast-[1.04] saturate-[1.06]"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d1b2a]/55 via-[#0d1b2a]/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d1b2a]/50 via-transparent to-[#0d1b2a]/25" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0d1b2a]/80 via-[#0d1b2a]/45 to-[#0d1b2a]/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d1b2a] via-[#0d1b2a]/25 to-[#0d1b2a]/40" />
       </div>
 
-      <div className="relative z-10 mx-auto grid max-w-[1400px] items-center gap-10 px-5 sm:gap-12 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-10 lg:px-12 xl:gap-14">
+      <div className="relative z-10 mx-auto grid w-full max-w-[1400px] items-center gap-10 px-5 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-10 lg:px-12 xl:gap-14">
         <div className="relative z-20 min-w-0 max-w-xl text-[#e0e1dd]">
           <p
-            className={`mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-[#e0e1dd]/90 backdrop-blur-md transition-all duration-700 sm:mb-5 ${
+            className={`mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.12em] text-white/90 uppercase backdrop-blur-md transition-all duration-700 ${
               isVisible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
             }`}
           >
-            <MaterialIcon name="restaurant" className="shrink-0 text-[16px]" />
-            <span className="truncate">{t('landing.heroEyebrow')}</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-[#e0e1dd]" />
+            {t('landing.heroEyebrow')}
           </p>
 
           <h1
-            className={`font-display text-[clamp(1.9rem,6.5vw,3.75rem)] font-bold leading-[1.08] tracking-[-0.03em] text-white transition-all duration-1000 ${
+            className={`font-display text-[clamp(2rem,6vw,3.6rem)] font-bold leading-[1.06] tracking-[-0.035em] text-white transition-all duration-1000 ${
               isVisible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
             }`}
           >
@@ -49,7 +48,7 @@ export default function LandingHero() {
           </h1>
 
           <p
-            className={`mt-4 text-base leading-relaxed text-[#e0e1dd]/78 transition-all delay-150 duration-700 sm:mt-5 sm:text-lg lg:text-xl ${
+            className={`mt-4 max-w-md text-base leading-relaxed text-white/75 transition-all delay-150 duration-700 sm:text-lg ${
               isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
             }`}
           >
@@ -57,20 +56,18 @@ export default function LandingHero() {
           </p>
 
           <div
-            className={`mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center ${
+            className={`mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center ${
               isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
             } transition-all delay-200 duration-700`}
           >
             <AppLink
               to="/register"
-              className="group inline-flex h-auto min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#e0e1dd] px-5 py-3 text-sm font-semibold text-[#0d1b2a] shadow-[0_12px_30px_rgba(0,0,0,0.28)] hover:bg-white sm:w-auto sm:px-7 sm:text-base"
+              className="group inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#e0e1dd] px-6 py-3 text-sm font-semibold text-[#0d1b2a] shadow-[0_12px_30px_rgba(0,0,0,0.28)] hover:bg-white sm:w-auto"
             >
               <span className="text-center">{t('landing.ctaStart')}</span>
               <MaterialIcon name="arrow_forward" className="shrink-0 text-[18px] transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
             </AppLink>
-            <DemoMenuLink
-              className="inline-flex h-auto min-h-12 w-full items-center justify-center rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md hover:bg-white/15 sm:w-auto sm:px-7 sm:text-base"
-            >
+            <DemoMenuLink className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/20 bg-white/8 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md hover:bg-white/14 sm:w-auto">
               {t('landing.ctaTrial')}
             </DemoMenuLink>
           </div>

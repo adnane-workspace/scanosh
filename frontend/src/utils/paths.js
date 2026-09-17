@@ -6,6 +6,7 @@ export const LANDING_PRODUCT = '/menu-digital';
 export const LANDING_PRICING = '/tarifs';
 export const LANDING_BLOG = '/blog';
 export const LANDING_CONTACT = '/contact';
+export const LANDING_PRIVACY = '/confidentialite';
 
 const LANDING_SEO_REDIRECTS = {
   '/accueil': LANDING_HOME,
