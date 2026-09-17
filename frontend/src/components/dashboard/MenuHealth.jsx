@@ -64,6 +64,7 @@ export default function MenuHealth({ stats, qr, loading }) {
   if (qr && !qr.generated) {
     alerts.push({
       id: 'qr',
+      to: '/app/menu',
       icon: 'qr_code_2',
       title: t('dashboard.healthQr'),
       hint: t('dashboard.healthQrHint'),
@@ -72,7 +73,16 @@ export default function MenuHealth({ stats, qr, loading }) {
 
   return (
     <DashboardCard className="h-full">
-      <SectionHeader title={t('dashboard.healthTitle')} />
+      <SectionHeader
+        title={t('dashboard.healthTitle')}
+        action={
+          !loading && alerts.length > 0 ? (
+            <span className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-semibold text-on-surface-variant tabular-nums">
+              {alerts.length}
+            </span>
+          ) : null
+        }
+      />
 
       {loading ? (
         <p className="text-sm text-on-surface-variant">{t('dashboard.loading')}</p>
@@ -109,7 +119,7 @@ export default function MenuHealth({ stats, qr, loading }) {
                 {item.to ? (
                   <Link
                     to={item.to}
-                    className="flex items-center gap-3 rounded-xl px-1 py-2 transition-colors hover:bg-surface-container-low"
+                    className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-container-low"
                   >
                     {body}
                   </Link>

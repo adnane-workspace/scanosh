@@ -63,9 +63,25 @@ export default function RecentProducts({ products, loading, onToggleAvailable })
       />
 
       {loading ? (
-        <p className="text-sm text-on-surface-variant">{t('dashboard.loading')}</p>
+        <div className="space-y-3">
+          {[0, 1, 2].map((row) => (
+            <div key={row} className="flex items-center gap-3 py-2">
+              <div className="h-10 w-10 animate-pulse rounded-[10px] bg-surface-container-high" />
+              <div className="h-4 flex-1 animate-pulse rounded bg-surface-container-high" />
+            </div>
+          ))}
+        </div>
       ) : products.length === 0 ? (
-        <p className="text-sm text-on-surface-variant">{t('dashboard.noProducts')}</p>
+        <div className="flex flex-col items-start gap-3 rounded-2xl bg-surface-container-low px-4 py-6">
+          <p className="text-sm text-on-surface-variant">{t('dashboard.noProductsYet')}</p>
+          <Link
+            to="/app/products?new=1"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary-hover"
+          >
+            {t('dashboard.quickAddProduct')}
+            <MaterialIcon name="arrow_forward" className="text-[16px]" />
+          </Link>
+        </div>
       ) : (
         <>
           <ul className="divide-y divide-outline-variant md:hidden">

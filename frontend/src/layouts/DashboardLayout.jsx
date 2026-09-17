@@ -192,6 +192,16 @@ export default function DashboardLayout() {
               >
                 <MaterialIcon name="menu" />
               </button>
+              <div className="min-w-0">
+                <h1 className="truncate font-display text-base font-semibold tracking-tight text-on-surface sm:text-lg">
+                  {headerSubtitle}
+                </h1>
+                {isSuperAdmin ? (
+                  <p className="hidden truncate text-xs text-on-surface-variant sm:block">{t('header.platform')}</p>
+                ) : stats.cafe?.name ? (
+                  <p className="hidden truncate text-xs text-on-surface-variant sm:block">{stats.cafe.name}</p>
+                ) : null}
+              </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">

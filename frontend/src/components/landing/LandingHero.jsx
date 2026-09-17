@@ -22,6 +22,8 @@ export default function LandingHero() {
         <img
           src="/landing/hero-bg.jpg"
           alt=""
+          fetchPriority="high"
+          decoding="async"
           className="h-full w-full object-cover object-[center_32%] brightness-[1.06] contrast-[1.04] saturate-[1.06] sm:object-[center_38%]"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0d1b2a]/80 via-[#0d1b2a]/45 to-[#0d1b2a]/20" />

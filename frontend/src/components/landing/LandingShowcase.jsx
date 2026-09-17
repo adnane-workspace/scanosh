@@ -46,7 +46,7 @@ export default function LandingShowcase() {
             {tab === 'menu' ? (
               <div className="grid items-center gap-6 lg:grid-cols-[auto_1fr] lg:gap-12">
                 <div className="mx-auto w-full max-w-[17rem] overflow-hidden rounded-[1.5rem] bg-[#0d1b2a] shadow-xl sm:w-[230px] sm:max-w-none sm:rounded-[1.7rem]">
-                  <img src="/landing/pepperoni.jpg" alt="" className="h-32 w-full object-cover sm:h-36" />
+                  <img src="/landing/pepperoni.jpg" alt="" loading="lazy" decoding="async" className="h-32 w-full object-cover sm:h-36" />
                   <div className="space-y-3 p-4">
                     <p className="font-display text-base font-bold text-[#e0e1dd]">{t('landing.phoneMenu')}</p>
                     {[
@@ -59,7 +59,7 @@ export default function LandingShowcase() {
                           <p className="truncate text-sm font-semibold text-[#e0e1dd]">{dish.name}</p>
                           <p className="text-xs text-[#778da9]">{dish.meta}</p>
                         </div>
-                        <img src={dish.img} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                        <img src={dish.img} alt="" loading="lazy" decoding="async" className="h-10 w-10 rounded-lg object-cover" />
                       </div>
                     ))}
                   </div>
@@ -71,7 +71,7 @@ export default function LandingShowcase() {
             {tab === 'dashboard' ? (
               <div>
                 <div className="overflow-hidden rounded-xl border border-[#0d1b2a]/8 bg-white sm:rounded-2xl">
-                  <img src="/landing/showcase-dashboard.png" alt="" className="mx-auto h-auto w-full object-contain object-top" />
+                  <img src="/landing/showcase-dashboard.png" alt="" loading="lazy" decoding="async" className="mx-auto h-auto w-full object-contain object-top" />
                 </div>
                 <p className="mt-4 text-sm text-[#0d1b2a]/65 sm:text-base">{t('landing.showDashBody')}</p>
               </div>
@@ -80,7 +80,7 @@ export default function LandingShowcase() {
             {tab === 'products' ? (
               <div>
                 <div className="overflow-hidden rounded-xl border border-[#0d1b2a]/8 bg-white sm:rounded-2xl">
-                  <img src="/landing/showcase-products.png" alt="" className="mx-auto h-auto w-full object-contain object-top" />
+                  <img src="/landing/showcase-products.png" alt="" loading="lazy" decoding="async" className="mx-auto h-auto w-full object-contain object-top" />
                 </div>
                 <p className="mt-4 text-sm text-[#0d1b2a]/65 sm:text-base">{t('landing.showProductsBody')}</p>
               </div>

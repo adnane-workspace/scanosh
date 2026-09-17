@@ -440,12 +440,14 @@ export default function ProductsPage() {
             <button
               type="button"
               onClick={() => setMissingOnly((value) => !value)}
-              className={`inline-flex h-9 items-center rounded-full px-3 text-xs font-semibold ${
+              aria-pressed={missingOnly}
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${
                 missingOnly
                   ? 'bg-primary text-on-primary'
                   : 'border border-outline-variant bg-surface-container-lowest text-on-surface'
               }`}
             >
+              <MaterialIcon name="hide_image" className="text-[16px]" />
               {t('products.filterMissingPhotos')}
             </button>
             <button
@@ -470,20 +472,21 @@ export default function ProductsPage() {
         </p>
       ) : null}
 
-      <div className="mb-stack-lg flex flex-col items-stretch gap-gutter rounded-xl bg-surface-container-low p-stack-md shadow-sm sm:flex-row sm:items-end">
+      <div className="mb-stack-lg flex flex-col gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 sm:flex-row sm:items-center">
         <Field
           size="compact"
           icon="search"
-          className="w-full sm:w-96"
+          className="min-w-0 flex-1"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('products.search')}
         />
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0 sm:items-center">
           <Field
             as="select"
             size="compact"
-            className="w-full sm:min-w-48"
+            icon="category"
+            className="min-w-0 sm:w-48"
             value={categoryFilter}
             onChange={(event) => setCategoryFilter(event.target.value)}
           >
@@ -497,9 +500,11 @@ export default function ProductsPage() {
           <Field
             as="select"
             size="compact"
-            className="w-full sm:min-w-44"
+            icon="inventory_2"
+            className="min-w-0 sm:w-40"
             value={availabilityFilter}
             onChange={(event) => setAvailabilityFilter(event.target.value)}
+            aria-label={t('dashboard.availability')}
           >
             <option value="all">{t('products.availabilityAll')}</option>
             <option value="available">{t('products.inStock')}</option>
@@ -508,12 +513,14 @@ export default function ProductsPage() {
           <button
             type="button"
             onClick={() => setMissingOnly((value) => !value)}
-            className={`inline-flex h-11 items-center justify-center rounded-xl px-3 text-xs font-semibold ${
+            aria-pressed={missingOnly}
+            className={`col-span-2 inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 text-sm font-semibold transition-colors sm:col-span-1 ${
               missingOnly
                 ? 'bg-primary text-on-primary'
-                : 'border border-outline-variant bg-surface-container-lowest text-on-surface'
+                : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
             }`}
           >
+            <MaterialIcon name="hide_image" className="text-[18px]" />
             {t('products.filterMissingPhotos')}
           </button>
         </div>

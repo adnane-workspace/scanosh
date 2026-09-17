@@ -1,5 +1,6 @@
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { listActivityLogs } from '../services/activity.service.js';
+import { getMenuImportStatus } from '../services/menuImport.service.js';
 import { getStorageReport } from '../services/usage.service.js';
 import {
   createPlatformCafe,
@@ -41,6 +42,13 @@ export const getOverview = asyncHandler(async (_req, res) => {
   res.status(200).json({
     success: true,
     data: { overview },
+  });
+});
+
+export const getAiStatus = asyncHandler(async (_req, res) => {
+  res.status(200).json({
+    success: true,
+    data: getMenuImportStatus(),
   });
 });
 

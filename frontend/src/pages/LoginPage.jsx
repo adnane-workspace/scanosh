@@ -11,7 +11,6 @@ import { useLocale } from '../hooks/useLocale.js';
 import { useToast } from '../hooks/useToast.js';
 import { resendVerificationRequest } from '../services/auth.service.js';
 import { getApiError } from '../utils/apiError.js';
-import DemoMenuLink from '../components/common/DemoMenuLink.jsx';
 import { getHomePath } from '../utils/paths.js';
 
 export default function LoginPage() {
@@ -166,10 +165,6 @@ export default function LoginPage() {
             <Link to="/register" className="font-semibold text-primary hover:underline">
               {t('auth.createCafe')}
             </Link>
-            {' · '}
-            <DemoMenuLink className="font-semibold text-primary hover:underline">
-              {t('auth.trialLink')}
-            </DemoMenuLink>
           </p>
         </div>
       </section>

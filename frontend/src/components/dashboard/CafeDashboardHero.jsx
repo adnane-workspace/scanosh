@@ -95,7 +95,7 @@ export default function CafeDashboardHero({ cafe, greetingName, menuUrl, qr, onO
                 href={menuUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
               >
                 <MaterialIcon name="open_in_new" className="text-[20px]" />
                 {t('dashboard.openMenu')}
@@ -105,7 +105,7 @@ export default function CafeDashboardHero({ cafe, greetingName, menuUrl, qr, onO
               type="button"
               disabled={!menuUrl}
               onClick={() => onOpenQr(qr.canGenerate ? 'issue' : 'view')}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-primary"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-primary"
             >
               <MaterialIcon name="qr_code_scanner" className="text-[20px]" />
               {qr.canGenerate ? t('dashboard.generateQr') : t('dashboard.viewQr')}
@@ -114,7 +114,7 @@ export default function CafeDashboardHero({ cafe, greetingName, menuUrl, qr, onO
         </div>
 
         {qr.generated ? (
-          <p className="mt-4 text-sm text-on-surface-variant">{t('dashboard.qrPermanentHint')}</p>
+          <p className="mt-4 text-xs text-on-surface-variant">{t('dashboard.qrPermanentHint')}</p>
         ) : null}
       </div>
     </section>

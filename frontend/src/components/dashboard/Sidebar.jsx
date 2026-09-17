@@ -59,20 +59,20 @@ export default function Sidebar({ cafe, role, onLogout, onNavigate }) {
             <MarketingLink to="/" aria-label={APP_NAME} className="inline-flex">
               <BrandLogo onDark={isDark} className="h-8 max-w-[11rem]" />
             </MarketingLink>
-            <div className="mt-5 flex items-center gap-3.5">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface-container">
+            <div className="mt-5 flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-surface-container ring-1 ring-outline-variant">
                 {cafe?.logo ? (
                   <CloudinaryImage
                     src={cafe.logo}
                     alt=""
                     preset="logoHero"
-                    className="h-full w-full object-contain p-1"
+                    className="h-full w-full object-contain p-0.5"
                   />
                 ) : (
-                  <MaterialIcon name="storefront" className="text-[28px] text-on-surface-variant" />
+                  <MaterialIcon name="storefront" className="text-[20px] text-on-surface-variant" />
                 )}
               </div>
-              <p className="min-w-0 truncate font-display text-base font-semibold tracking-tight text-on-surface">
+              <p className="min-w-0 truncate text-sm font-semibold tracking-tight text-on-surface">
                 {cafe?.name || t('auth.digitalMenu')}
               </p>
             </div>

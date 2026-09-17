@@ -5,6 +5,11 @@ export async function getPlatformOverview() {
   return data.data.overview;
 }
 
+export async function getPlatformAiStatus() {
+  const { data } = await api.get('/platform/ai-status');
+  return data.data;
+}
+
 export async function listPlatformCafeOptions() {
   const { data } = await api.get('/platform/cafes/options');
   return data.data.cafes;

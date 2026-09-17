@@ -307,12 +307,6 @@ html[dir="rtl"] .landing-editorial {
   -webkit-font-smoothing: antialiased;
 }
 
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -355,153 +349,6 @@ html[dir="rtl"] .landing-editorial {
   }
 }
 
-@keyframes landingFadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes landingKenBurns {
-  from {
-    transform: scale(1.06);
-  }
-  to {
-    transform: scale(1);
-  }
-}
-
-.landing-fade-up {
-  animation: landingFadeUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.landing-fade-up-delay-1 {
-  animation-delay: 0.12s;
-}
-
-.landing-fade-up-delay-2 {
-  animation-delay: 0.24s;
-}
-
-.landing-fade-up-delay-3 {
-  animation-delay: 0.36s;
-}
-
-.landing-hero-media {
-  animation: landingKenBurns 12s ease-out both;
-}
-
-.landing-editorial .text-stroke {
-  -webkit-text-stroke: 1.5px currentColor;
-  -webkit-text-fill-color: transparent;
-}
-
-.landing-marquee {
-  animation: landingMarquee 32s linear infinite;
-}
-
-.landing-marquee-reverse {
-  animation: landingMarqueeReverse 28s linear infinite;
-}
-
-@keyframes landingMarquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-@keyframes landingMarqueeReverse {
-  from {
-    transform: translateX(-50%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-html[dir="rtl"] .landing-marquee {
-  animation-name: landingMarqueeReverse;
-}
-
-html[dir="rtl"] .landing-marquee-reverse {
-  animation-name: landingMarquee;
-}
-
-.landing-char-in {
-  animation: landingCharIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes landingCharIn {
-  from {
-    opacity: 0;
-    filter: blur(24px);
-    transform: translateY(80%);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: translateY(0);
-  }
-}
-
-.landing-line-reveal {
-  animation: landingLineReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes landingLineReveal {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-html[dir="rtl"] .landing-line-reveal {
-  animation-name: landingLineRevealRtl;
-}
-
-@keyframes landingLineRevealRtl {
-  from {
-    opacity: 0;
-    transform: translateX(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes landingProgress {
-  from {
-    width: 0%;
-  }
-  to {
-    width: 100%;
-  }
-}
-
-.landing-progress {
-  animation: landingProgress 5s linear forwards;
-}
-
-.landing-editorial .landing-hover-lift {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease;
-}
-
-.landing-editorial .landing-hover-lift:hover {
-  transform: translateY(-2px);
-}
-
 .landing-noise::after {
   content: "";
   position: absolute;
@@ -513,24 +360,8 @@ html[dir="rtl"] .landing-line-reveal {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-fade-up,
-  .landing-hero-media,
-  .landing-marquee,
-  .landing-marquee-reverse,
-  .landing-char-in,
-  .landing-line-reveal,
-  .landing-progress,
-  .landing-editorial .landing-hover-lift {
-    animation: none;
-  }
-
-  .landing-editorial .landing-hover-lift:hover {
-    transform: none;
-  }
-
-  html[dir="rtl"] .landing-marquee,
-  html[dir="rtl"] .landing-marquee-reverse {
-    animation: none;
+  html {
+    scroll-behavior: auto;
   }
 }
 

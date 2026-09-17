@@ -10,7 +10,7 @@ import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useLocale } from '../hooks/useLocale.js';
 import { generateCafeQr } from '../services/cafe.service.js';
-import { getStorageReport, listPlatformCafes } from '../services/platform.service.js';
+import { getPlatformAiStatus, getStorageReport, listPlatformCafes } from '../services/platform.service.js';
 import { updateProduct } from '../services/product.service.js';
 import { getPublicMenuUrl } from '../utils/constants.js';
 import { getApiError } from '../utils/apiError.js';
@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const [qrIssueError, setQrIssueError] = useState('');
   const [qrMode, setQrMode] = useState('view');
   const [storage, setStorage] = useState(null);
+  const [aiStatus, setAiStatus] = useState(null);
   const isSuperAdmin = user?.role === 'superadmin';
   const menuUrl = getPublicMenuUrl(stats.cafe?.slug);
   const qr = stats.cafe?.qr || {
@@ -83,6 +84,22 @@ export default function DashboardPage() {
       .catch(() => {
         if (!cancelled) {
           setStorage(null);
+        }
+      });
+
+    getPlatformAiStatus()
+      .then((status) => {
+        if (!cancelled) {
+          setAiStatus({
+            ocr: Boolean(status?.configured),
+            llm: Boolean(status?.textLlm?.configured ?? status?.llmConfigured),
+            photos: Boolean(status?.imageLlm?.configured ?? status?.fluxConfigured),
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAiStatus({ ocr: false, llm: false, photos: false });
         }
       });
 
@@ -145,6 +162,40 @@ export default function DashboardPage() {
             <p className="mt-2 text-sm leading-relaxed text-on-surface-variant sm:text-base">
               {t('dashboard.subtitleSuper')}
             </p>
+            {aiStatus ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                    aiStatus.ocr ? 'bg-tertiary/15 text-tertiary' : 'bg-error-container text-error'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${aiStatus.ocr ? 'bg-tertiary' : 'bg-error'}`} />
+                  {aiStatus.ocr ? t('aiFill.statusReady') : t('aiFill.statusOffline')}
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                    aiStatus.llm ? 'bg-tertiary/15 text-tertiary' : 'bg-error-container text-error'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${aiStatus.llm ? 'bg-tertiary' : 'bg-error'}`} />
+                  {aiStatus.llm ? t('aiFill.llmReadyShort') : t('aiFill.llmOfflineShort')}
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                    aiStatus.photos ? 'bg-tertiary/15 text-tertiary' : 'bg-error-container text-error'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${aiStatus.photos ? 'bg-tertiary' : 'bg-error'}`} />
+                  {aiStatus.photos ? t('aiFill.imageLlmReadyShort') : t('aiFill.imageLlmOfflineShort')}
+                </span>
+              </div>
+            ) : (
+              <div className="mt-4 flex gap-2">
+                <span className="h-7 w-24 animate-pulse rounded-full bg-surface-container-high" />
+                <span className="h-7 w-28 animate-pulse rounded-full bg-surface-container-high" />
+                <span className="h-7 w-32 animate-pulse rounded-full bg-surface-container-high" />
+              </div>
+            )}
           </div>
           <Link
             to="/platform/cafes/new"
@@ -305,7 +356,7 @@ export default function DashboardPage() {
         </>
       ) : (
       <>
-      <QuickActions menuUrl={menuUrl} hasCategory={(stats.totalCategories || 0) > 0} />
+      <QuickActions hasCategory={(stats.totalCategories || 0) > 0} />
       <div className="grid w-full grid-cols-1 gap-5 xl:grid-cols-3 xl:gap-6">
         <div className="xl:col-span-2">
           <RecentProducts

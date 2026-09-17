@@ -2,9 +2,17 @@ import { Link } from 'react-router-dom';
 import { useLocale } from '../../hooks/useLocale.js';
 import MaterialIcon from '../ui/MaterialIcon.jsx';
 
-export default function QuickActions({ menuUrl, hasCategory }) {
+export default function QuickActions({ hasCategory }) {
   const { t } = useLocale();
   const items = [
+    {
+      key: 'aiFill',
+      to: '/app/ai-fill',
+      icon: 'auto_awesome',
+      label: t('dashboard.quickAiFill'),
+      hint: t('dashboard.quickAiFillHint'),
+      featured: true,
+    },
     {
       key: 'product',
       to: hasCategory ? '/app/products?new=1' : '/app/categories?new=1',
@@ -18,13 +26,6 @@ export default function QuickActions({ menuUrl, hasCategory }) {
       icon: 'create_new_folder',
       label: t('dashboard.quickAddCategory'),
       hint: t('dashboard.quickAddCategoryHint'),
-    },
-    {
-      key: 'aiFill',
-      to: '/app/ai-fill',
-      icon: 'auto_awesome',
-      label: t('dashboard.quickAiFill'),
-      hint: t('dashboard.quickAiFillHint'),
     },
     {
       key: 'settings',
@@ -41,43 +42,26 @@ export default function QuickActions({ menuUrl, hasCategory }) {
         <Link
           key={item.key}
           to={item.to}
-          className="group flex items-start gap-3 rounded-[18px] border border-outline-variant bg-surface-container-lowest p-4 transition-colors hover:bg-surface-container-high"
+          className={`group flex items-start gap-3 rounded-2xl border p-4 transition-colors ${
+            item.featured
+              ? 'border-primary/20 bg-primary/5 hover:bg-primary/10'
+              : 'border-outline-variant bg-surface-container-lowest hover:bg-surface-container-high'
+          }`}
         >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <MaterialIcon name={item.icon} />
+          <span
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+              item.featured ? 'bg-primary text-on-primary' : 'bg-primary/10 text-primary'
+            }`}
+          >
+            <MaterialIcon name={item.icon} className="text-[20px]" />
           </span>
-          <span className="min-w-0">
-            <span className="block font-semibold text-on-surface">{item.label}</span>
-            <span className="mt-0.5 block text-sm text-on-surface-variant">{item.hint}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-on-surface">{item.label}</span>
+            <span className="mt-0.5 block text-xs leading-snug text-on-surface-variant sm:text-sm">{item.hint}</span>
           </span>
+          <MaterialIcon name="chevron_right" className="mt-1 text-on-surface-variant opacity-0 transition-opacity group-hover:opacity-100" />
         </Link>
       ))}
-      {menuUrl ? (
-        <a
-          href={menuUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="group flex items-start gap-3 rounded-[18px] border border-outline-variant bg-surface-container-lowest p-4 transition-colors hover:bg-surface-container-high"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <MaterialIcon name="menu_book" />
-          </span>
-          <span className="min-w-0">
-            <span className="block font-semibold text-on-surface">{t('dashboard.quickViewMenu')}</span>
-            <span className="mt-0.5 block text-sm text-on-surface-variant">{t('dashboard.quickViewMenuHint')}</span>
-          </span>
-        </a>
-      ) : (
-        <div className="flex items-start gap-3 rounded-[18px] border border-dashed border-outline-variant p-4 opacity-70">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-container text-on-surface-variant">
-            <MaterialIcon name="menu_book" />
-          </span>
-          <span>
-            <span className="block font-semibold text-on-surface">{t('dashboard.quickViewMenu')}</span>
-            <span className="mt-0.5 block text-sm text-on-surface-variant">{t('dashboard.quickViewMenuEmpty')}</span>
-          </span>
-        </div>
-      )}
     </div>
   );
 }

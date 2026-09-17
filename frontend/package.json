@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --test src/utils/paths.test.js src/utils/apiError.test.js src/utils/hosts.test.js src/utils/menuTheme.test.js src/utils/menuUi.test.js src/content/seo/catalog.test.js"
+    "test": "node --test src/utils/paths.test.js src/utils/apiError.test.js src/utils/hosts.test.js src/utils/menuTheme.test.js src/utils/menuUi.test.js src/utils/menuSections.test.js src/content/seo/catalog.test.js"
   },
   "dependencies": {
     "axios": "^1.11.0",

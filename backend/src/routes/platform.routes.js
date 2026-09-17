@@ -3,6 +3,7 @@ import {
   createCafe,
   deleteCafe,
   getCafe,
+  getAiStatus,
   getOverview,
   getStorage,
   listCafeOptions,
@@ -33,6 +34,7 @@ const platformRouter = Router();
 platformRouter.use(authenticate, requireSuperAdmin);
 
 platformRouter.get('/overview', getOverview);
+platformRouter.get('/ai-status', getAiStatus);
 platformRouter.get('/cafes/options', listCafeOptions);
 platformRouter.get('/storage', validate(listStorageSchema), getStorage);
 platformRouter.get('/logs', validate(listActivityLogsSchema), listLogs);

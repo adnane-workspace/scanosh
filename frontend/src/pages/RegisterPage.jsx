@@ -10,7 +10,6 @@ import { useAuth } from '../hooks/useAuth.js';
 import { useLocale } from '../hooks/useLocale.js';
 import { registerRequest, resendVerificationRequest } from '../services/auth.service.js';
 import { getApiError } from '../utils/apiError.js';
-import DemoMenuLink from '../components/common/DemoMenuLink.jsx';
 import { getHomePath } from '../utils/paths.js';
 
 export default function RegisterPage() {
@@ -304,10 +303,6 @@ export default function RegisterPage() {
             <Link to="/login" className="font-semibold text-primary hover:underline">
               {t('auth.submit')}
             </Link>
-            {' · '}
-            <DemoMenuLink className="font-semibold text-primary hover:underline">
-              {t('auth.trialLink')}
-            </DemoMenuLink>
           </p>
         </div>
       </section>
