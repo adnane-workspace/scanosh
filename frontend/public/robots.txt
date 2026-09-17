@@ -1,17 +1,7 @@
 User-agent: *
 Allow: /
-Allow: /menu-digital
-Allow: /menu-qr-code
-Allow: /fonctionnalites
-Allow: /tarifs
-Allow: /blog
-Allow: /contact
-Allow: /confidentialite
-Allow: /maroc
-Allow: /register
 Disallow: /app
 Disallow: /platform
-Disallow: /dashboard
 Disallow: /login
 Disallow: /forgot-password
 

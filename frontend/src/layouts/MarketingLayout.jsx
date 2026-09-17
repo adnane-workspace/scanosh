@@ -120,7 +120,7 @@ export default function MarketingLayout({ children }) {
                 }
               }}
             >
-              <BrandLogo onDark={onDarkNav} className="h-[1.2rem] max-w-[6.75rem] sm:h-6 sm:max-w-[10.5rem]" />
+              <BrandLogo onDark={onDarkNav} className="h-5 max-w-[7.25rem] sm:h-6 sm:max-w-[10.5rem]" />
             </MarketingLink>
 
             {!isHome ? (
@@ -153,13 +153,15 @@ export default function MarketingLayout({ children }) {
                 {t('landing.ctaLogin')}
               </AppLink>
               <DemoMenuLink
+                aria-label={t('landing.ctaTrial')}
                 className={`inline-flex h-8 items-center justify-center rounded-full px-2.5 text-[13px] font-semibold whitespace-nowrap transition-colors sm:h-9 sm:px-4 sm:text-sm ${
                   onDarkNav
                     ? 'bg-[#e0e1dd] text-[#0d1b2a] hover:bg-white'
                     : 'bg-on-surface text-background hover:bg-on-surface/90'
                 }`}
               >
-                {t('landing.ctaTrial')}
+                <span className="sm:hidden">{t('landing.ctaTrialShort')}</span>
+                <span className="hidden sm:inline">{t('landing.ctaTrial')}</span>
               </DemoMenuLink>
               {!isHome ? (
                 <button
@@ -333,9 +335,9 @@ export default function MarketingLayout({ children }) {
         <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-28 opacity-40 lg:block">
           <AsciiWave />
         </div>
-        <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-10 px-4 sm:gap-12 sm:px-6 lg:px-10">
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
-            <div className="sm:col-span-2 md:col-span-1">
+        <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-8 px-4 sm:gap-12 sm:px-6 lg:px-10">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 md:grid-cols-4">
+            <div className="col-span-2 md:col-span-1">
               <div className="mb-6">
                 <MarketingLink to="/" aria-label={APP_NAME} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                   <BrandLogo className="h-8" />

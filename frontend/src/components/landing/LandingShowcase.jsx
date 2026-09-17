@@ -15,36 +15,38 @@ export default function LandingShowcase() {
   const [tab, setTab] = useState('menu');
 
   return (
-    <section id="produit" ref={ref} className="bg-[#0d1b2a] pb-16 lg:pb-20">
-      <div className="mx-auto max-w-[1400px] px-5 sm:px-6 lg:px-12">
-        <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#e8e6e1] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-          <div className="flex flex-col gap-4 px-5 pt-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:pt-6">
-            <h2 className="font-display text-2xl font-bold tracking-tight text-[#0d1b2a] sm:text-3xl">{t('landing.showcaseTitle')}</h2>
-            <div className="flex flex-wrap gap-1 rounded-full bg-[#0d1b2a]/8 p-1">
-              {TABS.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setTab(item.key)}
-                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
-                    tab === item.key ? 'bg-[#0d1b2a] text-[#e0e1dd]' : 'text-[#0d1b2a]/60 hover:text-[#0d1b2a]'
-                  }`}
-                >
-                  {t(item.labelKey)}
-                </button>
-              ))}
+    <section id="produit" ref={ref} className="bg-[#0d1b2a] pb-12 sm:pb-16 lg:pb-20">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-12">
+        <div className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#e8e6e1] shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:rounded-[1.75rem]">
+          <div className="flex flex-col gap-3 px-4 pt-4 sm:gap-4 sm:px-7 sm:pt-6">
+            <h2 className="font-display text-[1.65rem] font-bold tracking-tight text-[#0d1b2a] sm:text-3xl">{t('landing.showcaseTitle')}</h2>
+            <div className="-mx-1 overflow-x-auto overscroll-x-contain pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex w-max min-w-full gap-1 rounded-full bg-[#0d1b2a]/8 p-1">
+                {TABS.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setTab(item.key)}
+                    className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition-colors sm:px-3.5 sm:py-1.5 sm:text-sm ${
+                      tab === item.key ? 'bg-[#0d1b2a] text-[#e0e1dd]' : 'text-[#0d1b2a]/60 hover:text-[#0d1b2a]'
+                    }`}
+                  >
+                    {t(item.labelKey)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           <div
-            className={`px-5 pb-6 pt-5 transition-all duration-700 sm:px-7 sm:pb-8 ${
+            className={`px-4 pb-5 pt-4 transition-all duration-700 sm:px-7 sm:pb-8 sm:pt-5 ${
               isVisible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
             }`}
           >
             {tab === 'menu' ? (
-              <div className="grid items-center gap-8 lg:grid-cols-[auto_1fr] lg:gap-12">
-                <div className="mx-auto w-[210px] overflow-hidden rounded-[1.7rem] bg-[#0d1b2a] shadow-xl sm:w-[230px]">
-                  <img src="/landing/pepperoni.jpg" alt="" className="h-36 w-full object-cover" />
+              <div className="grid items-center gap-6 lg:grid-cols-[auto_1fr] lg:gap-12">
+                <div className="mx-auto w-full max-w-[17rem] overflow-hidden rounded-[1.5rem] bg-[#0d1b2a] shadow-xl sm:w-[230px] sm:max-w-none sm:rounded-[1.7rem]">
+                  <img src="/landing/pepperoni.jpg" alt="" className="h-32 w-full object-cover sm:h-36" />
                   <div className="space-y-3 p-4">
                     <p className="font-display text-base font-bold text-[#e0e1dd]">{t('landing.phoneMenu')}</p>
                     {[
@@ -62,13 +64,13 @@ export default function LandingShowcase() {
                     ))}
                   </div>
                 </div>
-                <p className="max-w-md text-base leading-relaxed text-[#0d1b2a]/70 sm:text-lg">{t('landing.showMenuBody')}</p>
+                <p className="text-sm leading-relaxed text-[#0d1b2a]/70 sm:max-w-md sm:text-lg">{t('landing.showMenuBody')}</p>
               </div>
             ) : null}
 
             {tab === 'dashboard' ? (
               <div>
-                <div className="overflow-hidden rounded-2xl border border-[#0d1b2a]/8 bg-white">
+                <div className="overflow-hidden rounded-xl border border-[#0d1b2a]/8 bg-white sm:rounded-2xl">
                   <img src="/landing/showcase-dashboard.png" alt="" className="mx-auto h-auto w-full object-contain object-top" />
                 </div>
                 <p className="mt-4 text-sm text-[#0d1b2a]/65 sm:text-base">{t('landing.showDashBody')}</p>
@@ -77,7 +79,7 @@ export default function LandingShowcase() {
 
             {tab === 'products' ? (
               <div>
-                <div className="overflow-hidden rounded-2xl border border-[#0d1b2a]/8 bg-white">
+                <div className="overflow-hidden rounded-xl border border-[#0d1b2a]/8 bg-white sm:rounded-2xl">
                   <img src="/landing/showcase-products.png" alt="" className="mx-auto h-auto w-full object-contain object-top" />
                 </div>
                 <p className="mt-4 text-sm text-[#0d1b2a]/65 sm:text-base">{t('landing.showProductsBody')}</p>
@@ -85,8 +87,8 @@ export default function LandingShowcase() {
             ) : null}
 
             {tab === 'qr' ? (
-              <div className="grid items-center gap-8 sm:grid-cols-[12rem_1fr]">
-                <div className="mx-auto w-40 rounded-3xl bg-white p-4 shadow-lg">
+              <div className="grid items-center gap-5 sm:grid-cols-[12rem_1fr] sm:gap-8">
+                <div className="mx-auto w-32 rounded-3xl bg-white p-3 shadow-lg sm:w-40 sm:p-4">
                   <div className="aspect-square text-[#0d1b2a]">
                     <svg viewBox="0 0 120 120" className="h-full w-full" aria-hidden="true">
                       <rect x="8" y="8" width="36" height="36" rx="3" fill="none" stroke="currentColor" strokeWidth="5" />
@@ -101,7 +103,7 @@ export default function LandingShowcase() {
                     </svg>
                   </div>
                 </div>
-                <p className="text-base leading-relaxed text-[#0d1b2a]/70 sm:text-lg">{t('landing.showQrBody')}</p>
+                <p className="text-sm leading-relaxed text-[#0d1b2a]/70 sm:text-lg">{t('landing.showQrBody')}</p>
               </div>
             ) : null}
           </div>
