@@ -9,14 +9,14 @@ function Tile({ active, label, onClick, children }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex min-w-0 flex-1 flex-col items-center gap-2 rounded-2xl px-3 py-3 text-center transition ${
+      className={`flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-2xl px-2 py-2.5 text-center transition sm:gap-2 sm:px-3 sm:py-3 ${
         active
           ? 'bg-[#0d1b2a] text-white shadow-[0_8px_20px_rgba(13,27,42,0.18)]'
           : 'bg-[#f4f5f6] text-[#5c6570] hover:bg-[#eceeef]'
       }`}
     >
       <span className={active ? 'text-white' : 'text-[#0d1b2a]'}>{children}</span>
-      <span className="text-[11px] font-semibold leading-tight">{label}</span>
+      <span className="text-[10px] font-semibold leading-tight sm:text-[11px]">{label}</span>
     </button>
   );
 }
@@ -27,7 +27,7 @@ function CardPreview({ card, backdrop }) {
 
   return (
     <div
-      className="relative mx-auto aspect-[9/16] w-full max-w-[10.5rem] overflow-hidden rounded-[1.85rem] border-[3px] border-black/8 shadow-[0_18px_40px_rgba(13,27,42,0.12)]"
+      className="relative mx-auto aspect-[9/16] w-full max-w-[8.5rem] overflow-hidden rounded-[1.85rem] border-[3px] border-black/8 shadow-[0_18px_40px_rgba(13,27,42,0.12)] sm:max-w-[10.5rem]"
       style={{ background: backdrop, ...tokens }}
     >
       <div className="absolute inset-x-0 top-0 z-10 flex justify-center pt-2">
@@ -78,7 +78,7 @@ function CardPreview({ card, backdrop }) {
 
 export default function MenuCardEditor({ card, backdrop, t, onChange }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-5 sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] sm:items-start lg:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] lg:gap-6">
       <CardPreview card={card} backdrop={backdrop} />
 
       <div className="min-w-0 space-y-5">

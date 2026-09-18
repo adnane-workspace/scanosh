@@ -43,7 +43,7 @@ function MenuPreview({ menuUi, activeHex }) {
   const fill = activeHex || DEFAULT_MENU_BACKGROUND;
 
   return (
-    <div className="relative mx-auto aspect-[9/16] w-full max-w-[10.5rem] overflow-hidden rounded-[1.85rem] border-[3px] border-black/8 bg-surface-container shadow-[0_18px_40px_rgba(13,27,42,0.12)] sm:max-w-[11.5rem]">
+    <div className="relative mx-auto aspect-[9/16] w-full max-w-[8.5rem] overflow-hidden rounded-[1.85rem] border-[3px] border-black/8 bg-surface-container shadow-[0_18px_40px_rgba(13,27,42,0.12)] sm:max-w-[11.5rem]">
       <div className="absolute inset-x-0 top-0 z-10 flex justify-center pt-2">
         <span className="h-1 w-10 rounded-full bg-on-surface/15" />
       </div>
@@ -77,14 +77,14 @@ function ModeSegment({ active, label, icon, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
+      className={`inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-3 sm:text-sm ${
         active
           ? 'bg-surface-container-lowest text-on-surface shadow-sm'
           : 'text-on-surface-variant hover:text-on-surface'
       }`}
     >
-      <MaterialIcon name={icon} className="text-[18px]" />
-      {label}
+      <MaterialIcon name={icon} className="shrink-0 text-[18px]" />
+      <span className="truncate">{label}</span>
     </button>
   );
 }
@@ -103,7 +103,7 @@ export default function MenuBackgroundEditor({
   const activeHex = normalizeHexColor(colorDraft) || menuUi.backgroundColor || DEFAULT_MENU_BACKGROUND;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-5 sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] sm:items-start lg:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] lg:gap-6">
       <div>
         <MenuPreview menuUi={menuUi} activeHex={activeHex} />
       </div>
@@ -126,7 +126,7 @@ export default function MenuBackgroundEditor({
 
         {menuUi.bgMode === 'color' ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-4 rounded-2xl border border-outline-variant bg-surface-container-low p-4">
+            <div className="flex items-center gap-3 rounded-2xl border border-outline-variant bg-surface-container-low p-3 sm:gap-4 sm:p-4">
               <label className="relative flex h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-2xl shadow-inner ring-1 ring-black/10">
                 <span className="absolute inset-0" style={{ background: activeHex }} />
                 <input
@@ -174,8 +174,8 @@ export default function MenuBackgroundEditor({
                     </span>
                   </span>
                 </button>
-                <div className="flex flex-wrap gap-2 border-t border-outline-variant p-3">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary">
+                <div className="flex flex-col gap-2 border-t border-outline-variant p-3 sm:flex-row sm:flex-wrap">
+                  <label className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-on-primary sm:h-auto sm:w-auto sm:rounded-xl sm:py-2.5">
                     <MaterialIcon name="upload" className="text-[18px]" />
                     {uploading ? t('settings.uploading') : t('settings.replaceCover')}
                     <input type="file" accept="image/*" className="hidden" onChange={onImageChange} disabled={uploading} />
@@ -183,14 +183,14 @@ export default function MenuBackgroundEditor({
                   <button
                     type="button"
                     onClick={onImageRemove}
-                    className="rounded-xl px-4 py-2.5 text-sm font-semibold text-error hover:bg-error-container"
+                    className="inline-flex h-11 w-full items-center justify-center rounded-full px-4 text-sm font-semibold text-error hover:bg-error-container sm:h-auto sm:w-auto sm:rounded-xl sm:py-2.5"
                   >
                     {t('settings.removeCover')}
                   </button>
                 </div>
               </div>
             ) : (
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-outline-variant bg-surface-container-low px-6 py-12 text-center transition-colors hover:border-primary/40 hover:bg-surface-container">
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-outline-variant bg-surface-container-low px-4 py-8 text-center transition-colors hover:border-primary/40 hover:bg-surface-container sm:px-6 sm:py-12">
                 <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <MaterialIcon name="add_photo_alternate" className="text-3xl" />
                 </span>

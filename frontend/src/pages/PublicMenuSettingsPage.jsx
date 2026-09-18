@@ -224,14 +224,14 @@ export default function PublicMenuSettingsPage() {
   const activeSection = menuSections.find((item) => item.key === activeSectionKey) || menuSections[0];
 
   return (
-    <section className={`mx-auto w-full max-w-5xl space-y-6 ${isDirty ? 'pb-28' : 'pb-8'}`}>
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <section className={`mx-auto w-full max-w-5xl space-y-5 sm:space-y-6 ${isDirty ? 'pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:pb-28' : 'pb-8'}`}>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="min-w-0 max-w-xl">
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase">
+          <p className="hidden text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase sm:block">
             {t('publicMenu.kicker')}
           </p>
-          <div className="mt-1 flex flex-wrap items-center gap-2.5">
-            <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-on-surface sm:text-[2rem]">
+          <div className="flex flex-wrap items-center gap-2 sm:mt-1">
+            <h1 className="hidden font-display text-[1.75rem] font-bold tracking-tight text-on-surface sm:block sm:text-[2rem]">
               {t('publicMenu.title')}
             </h1>
             {isDirty ? (
@@ -241,14 +241,14 @@ export default function PublicMenuSettingsPage() {
               </span>
             ) : null}
           </div>
-          <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">{t('publicMenu.subtitle')}</p>
+          <p className="text-sm leading-relaxed text-on-surface-variant sm:mt-2">{t('publicMenu.subtitle')}</p>
         </div>
         {publicUrl ? (
           <a
             href={publicUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-black/8 bg-white px-4 text-sm font-semibold text-on-surface shadow-[0_8px_24px_rgba(13,27,42,0.04)] hover:bg-[#f7f8f9]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-black/8 bg-white px-4 text-sm font-semibold text-on-surface shadow-[0_8px_24px_rgba(13,27,42,0.04)] hover:bg-[#f7f8f9] sm:w-auto sm:rounded-xl"
           >
             <MaterialIcon name="open_in_new" className="text-[18px]" />
             {t('settings.viewMenu')}
@@ -256,7 +256,7 @@ export default function PublicMenuSettingsPage() {
         ) : null}
       </header>
 
-      <nav className="grid grid-cols-2 rounded-2xl border border-black/6 bg-white p-1 shadow-[0_8px_28px_rgba(13,27,42,0.04)]">
+      <nav className="grid grid-cols-2 gap-1 rounded-2xl border border-black/6 bg-white p-1 shadow-[0_8px_28px_rgba(13,27,42,0.04)]">
         {[
           { id: 'look', icon: 'wallpaper', label: t('publicMenu.tabLook') },
           { id: 'cards', icon: 'style', label: t('publicMenu.tabCards') },
@@ -267,12 +267,12 @@ export default function PublicMenuSettingsPage() {
               key={item.id}
               type="button"
               onClick={() => setStudioTab(item.id)}
-              className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition ${
+              className={`inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-[13px] font-semibold transition sm:gap-2 sm:px-3 sm:text-sm ${
                 active ? 'bg-[#0d1b2a] text-white shadow-sm' : 'text-[#5c6570] hover:bg-[#f4f5f6]'
               }`}
             >
-              <MaterialIcon name={item.icon} className="text-[18px]" />
-              {item.label}
+              <MaterialIcon name={item.icon} className="shrink-0 text-[18px]" />
+              <span className="truncate">{item.label}</span>
             </button>
           );
         })}
@@ -356,7 +356,7 @@ export default function PublicMenuSettingsPage() {
           </div>
 
           {menuSections.length > 1 ? (
-            <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+            <div className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {menuSections.map((section) => {
                 const active = activeSection?.key === section.key;
                 return (
@@ -392,14 +392,16 @@ export default function PublicMenuSettingsPage() {
       )}
 
       {isDirty ? (
-        <div className="sticky bottom-3 z-30 mx-auto max-w-5xl">
-          <div className="flex items-center gap-2 rounded-2xl border border-black/8 bg-white/90 p-2 shadow-[0_12px_40px_rgba(13,27,42,0.12)] backdrop-blur-md">
-            <p className="min-w-0 flex-1 px-3 text-sm font-semibold text-[#5c6570]">{t('publicMenu.unsaved')}</p>
+        <div className="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 mx-auto max-w-5xl">
+          <div className="flex flex-col gap-2 rounded-2xl border border-black/8 bg-white/95 p-2 shadow-[0_12px_40px_rgba(13,27,42,0.12)] backdrop-blur-md sm:flex-row sm:items-center">
+            <p className="min-w-0 flex-1 px-3 pt-1 text-sm font-semibold leading-snug text-[#5c6570] sm:pt-0">
+              {t('publicMenu.unsaved')}
+            </p>
             <button
               type="button"
               onClick={handleSave}
               disabled={saveDisabled}
-              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#0d1b2a] px-5 text-sm font-semibold text-white disabled:opacity-45"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0d1b2a] px-5 text-sm font-semibold text-white disabled:opacity-45 sm:w-auto sm:shrink-0"
             >
               <MaterialIcon name={saving ? 'progress_activity' : 'save'} className={saving ? 'animate-spin text-[18px]' : 'text-[18px]'} />
               {saving ? t('common.saving') : t('common.save')}
