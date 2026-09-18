@@ -28,13 +28,13 @@ export default function AdminProductCard({
         available ? '' : 'opacity-75'
       }`}
     >
-      <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+      <div className="absolute top-2 right-2 z-10 flex rounded-full border border-white/40 bg-surface/90 p-0.5 shadow-sm backdrop-blur-sm">
         {canPick ? (
           <button
             type="button"
             disabled={busy}
             onClick={() => onSuggestImage(product)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-on-surface shadow-sm transition-colors hover:bg-surface disabled:opacity-50"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-lowest hover:text-on-surface disabled:opacity-50"
             aria-label={t('products.suggestImage')}
             title={t('products.suggestImage')}
           >
@@ -47,16 +47,18 @@ export default function AdminProductCard({
         <button
           type="button"
           onClick={() => onEdit(product)}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-on-surface shadow-sm transition-colors hover:bg-surface"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-lowest hover:text-on-surface"
           aria-label={`${t('common.edit')} ${product.name}`}
+          title={t('common.edit')}
         >
           <MaterialIcon name="edit" className="text-[18px]" />
         </button>
         <button
           type="button"
           onClick={() => onDelete(product)}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-error-container/90 text-on-error-container shadow-sm transition-colors hover:bg-error-container"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
           aria-label={`${t('common.delete')} ${product.name}`}
+          title={t('common.delete')}
         >
           <MaterialIcon name="delete" className="text-[18px]" />
         </button>
@@ -71,7 +73,7 @@ export default function AdminProductCard({
                 type="button"
                 disabled={busy}
                 onClick={() => onGenerateImage(product)}
-                className="absolute bottom-2 end-2 z-10 inline-flex items-center gap-1 rounded-full bg-black/65 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm disabled:opacity-50"
+                className="absolute bottom-2 end-2 z-10 inline-flex h-8 items-center gap-1 rounded-full bg-black/65 px-3 text-[11px] font-semibold text-white shadow-sm backdrop-blur-sm transition hover:bg-black/75 disabled:opacity-50"
               >
                 <MaterialIcon
                   name={generating ? 'progress_activity' : 'auto_awesome'}
@@ -91,7 +93,7 @@ export default function AdminProductCard({
                     type="button"
                     disabled={busy}
                     onClick={() => onGenerateImage(product)}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-on-primary shadow-sm disabled:opacity-50"
+                    className="inline-flex h-8 items-center gap-1 rounded-full bg-primary px-3 text-[11px] font-semibold text-on-primary shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
                   >
                     <MaterialIcon
                       name={generating ? 'progress_activity' : 'auto_awesome'}
@@ -105,7 +107,7 @@ export default function AdminProductCard({
                     type="button"
                     disabled={busy}
                     onClick={() => onSuggestImage(product)}
-                    className="inline-flex items-center gap-1 rounded-full bg-surface/90 px-3 py-1 text-[11px] font-semibold text-primary shadow-sm disabled:opacity-50"
+                    className="inline-flex h-8 items-center gap-1 rounded-full border border-outline-variant/80 bg-surface/90 px-3 text-[11px] font-semibold text-on-surface shadow-sm transition hover:bg-surface disabled:opacity-50"
                   >
                     <MaterialIcon
                       name={suggesting ? 'progress_activity' : 'photo_library'}
@@ -133,12 +135,12 @@ export default function AdminProductCard({
       </div>
 
       <div className="flex flex-1 flex-col p-stack-md">
-        <div className="mb-1 flex items-start justify-between gap-3">
-          <h3 className="flex-1 font-display text-headline-lg-mobile font-semibold text-on-surface line-clamp-1">
+        <div className="mb-2 flex flex-col gap-1 sm:mb-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+          <h3 className="min-w-0 break-words font-display text-[1.05rem] font-semibold leading-snug tracking-tight text-on-surface sm:text-lg">
             {product.name}
           </h3>
           <span
-            className={`ml-3 shrink-0 text-body-lg font-bold ${
+            className={`shrink-0 whitespace-nowrap text-base font-bold tabular-nums sm:text-body-lg ${
               available ? 'text-primary' : 'text-on-surface-variant'
             }`}
           >

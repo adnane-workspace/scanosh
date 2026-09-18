@@ -18,7 +18,7 @@ import {
   uploadProductImage,
 } from '../services/product.service.js';
 import { getApiError } from '../utils/apiError.js';
-import { categoryPathLabel, leafCategories, resolveCategorySectionKey } from '../utils/categoryTree.js';
+import { categoryPathLabel, leafCategories, resolveCategorySectionKey, walkPreOrder } from '../utils/categoryTree.js';
 
 const emptyForm = {
   name: '',
@@ -49,13 +49,22 @@ export default function ProductsPage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [availabilityFilter, setAvailabilityFilter] = useState('all');
-  const [missingOnly, setMissingOnly] = useState(false);
-  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || '');
+  const [search, setSearch] = useState(() => (searchParams.get('q') || '').trim());
+  const [categoryFilter, setCategoryFilter] = useState(() => searchParams.get('category') || 'all');
+  const [availabilityFilter, setAvailabilityFilter] = useState(() => searchParams.get('availability') || 'all');
+  const [missingOnly, setMissingOnly] = useState(() => searchParams.get('noimage') === '1');
+  const [page, setPage] = useState(() => Math.max(1, Number(searchParams.get('page')) || 1));
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
-  const skipFilterDebounceRef = useRef(true);
+  const loadRequestIdRef = useRef(0);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      setCategories(await listCategoryOptions());
+    } catch (err) {
+      setError(getApiError(err, t, 'products.loadError'));
+    }
+  }, [t]);
 
   const loadData = useCallback(
     async (silent = false) => {
@@ -65,6 +74,7 @@ export default function ProductsPage() {
       setError('');
 
       try {
+        const requestId = ++loadRequestIdRef.current;
         const params = { page, limit: reviewMode ? 50 : 20 };
 
         if (search.trim()) {
@@ -79,17 +89,16 @@ export default function ProductsPage() {
           params.availability = availabilityFilter;
         }
 
-        const [productResult, categoryItems] = await Promise.all([
-          getProducts(params),
-          listCategoryOptions(),
-        ]);
-        let items = productResult.items || [];
         if (missingOnly) {
-          items = items.filter((item) => !item.image);
+          params.missingImage = true;
         }
-        setProducts(items);
+
+        const productResult = await getProducts(params);
+        if (requestId !== loadRequestIdRef.current) {
+          return;
+        }
+        setProducts(productResult.items || []);
         setPagination(productResult.pagination);
-        setCategories(categoryItems);
       } catch (err) {
         setError(getApiError(err, t, 'products.loadError'));
       } finally {
@@ -102,22 +111,48 @@ export default function ProductsPage() {
   );
 
   useEffect(() => {
-    setPage(1);
-  }, [search, categoryFilter, availabilityFilter, missingOnly]);
+    loadCategories();
+  }, [loadCategories]);
 
   useEffect(() => {
-    if (skipFilterDebounceRef.current) {
-      skipFilterDebounceRef.current = false;
-      loadData();
-      return undefined;
-    }
-
     const timer = window.setTimeout(() => {
-      loadData();
-    }, 300);
+      const next = searchInput.trim();
+      setSearch((current) => {
+        if (current === next) {
+          return current;
+        }
+        setPage(1);
+        return next;
+      });
+    }, 280);
 
     return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
+    loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    const setOrDelete = (key, value, empty = '') => {
+      if (!value || value === empty) {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+    };
+
+    setOrDelete('q', search);
+    setOrDelete('category', categoryFilter, 'all');
+    setOrDelete('availability', availabilityFilter, 'all');
+    setOrDelete('noimage', missingOnly ? '1' : '');
+    setOrDelete('page', page > 1 ? String(page) : '');
+
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [availabilityFilter, categoryFilter, missingOnly, page, search, searchParams, setSearchParams]);
 
   const leafOptions = useMemo(
     () =>
@@ -128,6 +163,20 @@ export default function ProductsPage() {
       })),
     [categories],
   );
+
+  const categoryOptions = useMemo(() => walkPreOrder(categories), [categories]);
+  const hasActiveFilters = Boolean(
+    search || categoryFilter !== 'all' || availabilityFilter !== 'all' || missingOnly,
+  );
+
+  function clearFilters() {
+    setSearchInput('');
+    setSearch('');
+    setCategoryFilter('all');
+    setAvailabilityFilter('all');
+    setMissingOnly(false);
+    setPage(1);
+  }
 
   function handleChange(event) {
     const { name, value, type, checked } = event.target;
@@ -395,22 +444,22 @@ export default function ProductsPage() {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="mb-stack-lg flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-display-md font-bold text-on-surface">
+      <div className="mb-4 flex flex-col gap-3 sm:mb-stack-lg sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="hidden font-display text-display-md font-bold text-on-surface sm:mb-1 sm:block">
             {reviewMode ? t('products.reviewTitle') : t('products.title')}
           </h1>
-          <p className="mt-1 text-on-surface-variant">
+          <p className="mt-1 hidden max-w-2xl text-sm text-on-surface-variant sm:block">
             {reviewMode ? t('products.reviewSubtitle') : t('products.subtitle')}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
           {missingPhotos > 0 || reviewMode ? (
             <button
               type="button"
               disabled={suggestingBatch || loading}
               onClick={handleSuggestMissingBatch}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-label-lg font-semibold tracking-[0.05em] text-on-primary shadow-md transition hover:bg-primary/90 disabled:opacity-50"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-outline-variant bg-surface-container-lowest px-5 text-sm font-semibold tracking-[0.04em] text-on-surface shadow-sm transition hover:border-outline hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 disabled:opacity-50 sm:w-auto"
             >
               <MaterialIcon
                 name={suggestingBatch ? 'progress_activity' : 'auto_awesome'}
@@ -422,7 +471,7 @@ export default function ProductsPage() {
           <button
             type="button"
             onClick={openCreateForm}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-label-lg font-semibold tracking-[0.05em] text-on-primary shadow-md transition-all hover:bg-primary/90"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-5 text-sm font-semibold tracking-[0.04em] text-on-primary shadow-md transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:w-auto sm:px-6"
           >
             <MaterialIcon name="add" />
             {t('products.add')}
@@ -439,12 +488,15 @@ export default function ProductsPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setMissingOnly((value) => !value)}
+              onClick={() => {
+                setMissingOnly((value) => !value);
+                setPage(1);
+              }}
               aria-pressed={missingOnly}
-              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
                 missingOnly
-                  ? 'bg-primary text-on-primary'
-                  : 'border border-outline-variant bg-surface-container-lowest text-on-surface'
+                  ? 'bg-primary text-on-primary shadow-sm'
+                  : 'border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-high'
               }`}
             >
               <MaterialIcon name="hide_image" className="text-[16px]" />
@@ -453,7 +505,7 @@ export default function ProductsPage() {
             <button
               type="button"
               onClick={dismissReviewMode}
-              className="inline-flex h-9 items-center rounded-full border border-outline-variant bg-surface-container-lowest px-3 text-xs font-semibold text-on-surface"
+              className="inline-flex h-9 items-center rounded-full border border-outline-variant bg-surface-container-lowest px-3.5 text-xs font-semibold text-on-surface transition hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
             >
               {t('products.reviewDone')}
             </button>
@@ -472,28 +524,49 @@ export default function ProductsPage() {
         </p>
       ) : null}
 
-      <div className="mb-stack-lg flex flex-col gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 sm:flex-row sm:items-center">
-        <Field
-          size="compact"
-          icon="search"
-          className="min-w-0 flex-1"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={t('products.search')}
-        />
+      <div className="mb-3 flex flex-col gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 sm:mb-4 sm:flex-row sm:items-center">
+        <div className="relative min-w-0 flex-1">
+          <Field
+            size="compact"
+            icon="search"
+            className="min-w-0"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder={t('products.search')}
+            aria-label={t('products.search')}
+          />
+          {searchInput ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchInput('');
+                setSearch('');
+                setPage(1);
+              }}
+              className="absolute end-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high"
+              aria-label={t('common.close')}
+            >
+              <MaterialIcon name="close" className="text-[16px]" />
+            </button>
+          ) : null}
+        </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0 sm:items-center">
           <Field
             as="select"
             size="compact"
             icon="category"
-            className="min-w-0 sm:w-48"
+            className="min-w-0 sm:w-52"
             value={categoryFilter}
-            onChange={(event) => setCategoryFilter(event.target.value)}
+            onChange={(event) => {
+              setCategoryFilter(event.target.value);
+              setPage(1);
+            }}
+            aria-label={t('products.allCategories')}
           >
             <option value="all">{t('products.allCategories')}</option>
-            {categories.map((category) => (
+            {categoryOptions.map((category) => (
               <option key={category._id} value={category._id}>
-                {categoryPathLabel(categories, category._id)}
+                {`${'\u2014 '.repeat(category.depth)}${category.name}`}
               </option>
             ))}
           </Field>
@@ -503,7 +576,10 @@ export default function ProductsPage() {
             icon="inventory_2"
             className="min-w-0 sm:w-40"
             value={availabilityFilter}
-            onChange={(event) => setAvailabilityFilter(event.target.value)}
+            onChange={(event) => {
+              setAvailabilityFilter(event.target.value);
+              setPage(1);
+            }}
             aria-label={t('dashboard.availability')}
           >
             <option value="all">{t('products.availabilityAll')}</option>
@@ -512,12 +588,15 @@ export default function ProductsPage() {
           </Field>
           <button
             type="button"
-            onClick={() => setMissingOnly((value) => !value)}
+            onClick={() => {
+              setMissingOnly((value) => !value);
+              setPage(1);
+            }}
             aria-pressed={missingOnly}
-            className={`col-span-2 inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 text-sm font-semibold transition-colors sm:col-span-1 ${
+            className={`col-span-2 inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:col-span-1 sm:h-11 sm:text-sm ${
               missingOnly
-                ? 'bg-primary text-on-primary'
-                : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
+                ? 'bg-primary text-on-primary shadow-sm'
+                : 'border border-outline-variant/80 bg-surface-container-low text-on-surface hover:bg-surface-container-high'
             }`}
           >
             <MaterialIcon name="hide_image" className="text-[18px]" />
@@ -526,12 +605,41 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-on-surface-variant">
+          {loading
+            ? t('products.loading')
+            : pagination.total === 1
+              ? t('products.results', { count: pagination.total })
+              : t('products.resultsPlural', { count: pagination.total })}
+        </p>
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs font-semibold text-primary transition hover:bg-primary/10"
+          >
+            <MaterialIcon name="filter_alt_off" className="text-[16px]" />
+            {t('products.clearFilters')}
+          </button>
+        ) : null}
+      </div>
+
       {loading ? (
         <p className="text-sm text-on-surface-variant">{t('products.loading')}</p>
       ) : products.length === 0 ? (
-        <p className="rounded-xl bg-surface-container px-6 py-8 text-sm text-on-surface-variant">
-          {t('products.empty')}
-        </p>
+        <div className="rounded-xl bg-surface-container px-6 py-8 text-sm text-on-surface-variant">
+          <p>{hasActiveFilters ? t('products.emptyFiltered') : t('products.empty')}</p>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="mt-3 inline-flex h-9 items-center rounded-full bg-primary px-4 text-xs font-semibold text-on-primary"
+            >
+              {t('products.clearFilters')}
+            </button>
+          ) : null}
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-gutter md:grid-cols-2 xl:grid-cols-3">
           {products.map((product) => (

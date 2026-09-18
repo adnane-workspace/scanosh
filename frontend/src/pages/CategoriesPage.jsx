@@ -34,10 +34,10 @@ function CategoryIdentity({ category, parentName, t }) {
   const isSection = Boolean(category.sectionKey);
 
   return (
-    <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+    <div className="flex min-w-0 items-center gap-3">
       <div
         className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-surface-container text-primary ${
-          isChild ? 'h-10 w-10 rounded-lg' : 'h-12 w-12 rounded-xl shadow-sm'
+          isChild ? 'h-10 w-10 rounded-lg' : 'h-11 w-11 rounded-xl sm:h-12 sm:w-12'
         }`}
       >
         {category.image ? (
@@ -45,66 +45,62 @@ function CategoryIdentity({ category, parentName, t }) {
         ) : (
           <MaterialIcon
             name={isSection ? sectionIcon(category.sectionKey) : categoryIcon(category.name)}
-            className={isChild ? 'text-[20px]' : 'text-[24px]'}
+            className={isChild ? 'text-[20px]' : 'text-[22px]'}
           />
         )}
       </div>
       <div className="min-w-0">
         {isSection ? (
-          <p className="mb-0.5 text-[11px] font-semibold tracking-[0.08em] text-primary uppercase">
+          <p className="mb-0.5 text-[10px] font-semibold tracking-[0.08em] text-primary uppercase sm:text-[11px]">
             {t('categories.sectionLabel')}
           </p>
         ) : isChild ? (
-          <p className="mb-0.5 text-[11px] font-semibold tracking-[0.08em] text-primary uppercase">
+          <p className="mb-0.5 truncate text-[10px] font-semibold tracking-[0.08em] text-primary uppercase sm:text-[11px]">
             {t('categories.subcategory')}
-            {parentName ? ` · ${t('categories.inside', { name: parentName })}` : ''}
+            {parentName ? ` · ${parentName}` : ''}
           </p>
-        ) : (
-          <p className="mb-0.5 text-[11px] font-semibold tracking-[0.08em] text-on-surface-variant uppercase">
-            {t('categories.rootLabel')}
-          </p>
-        )}
-        <h3 className={`truncate font-semibold tracking-tight text-on-surface ${isChild ? 'text-base' : 'text-lg'}`}>
+        ) : null}
+        <h3 className="truncate text-[0.95rem] font-semibold tracking-tight text-on-surface sm:text-lg">
           {category.name}
         </h3>
-        <p className="mt-0.5 truncate text-sm text-on-surface-variant">
-          {category.description || t('categories.noDescription')}
-        </p>
+        {category.description ? (
+          <p className="mt-0.5 hidden truncate text-sm text-on-surface-variant sm:block">{category.description}</p>
+        ) : null}
       </div>
     </div>
   );
 }
 
+const iconBtn =
+  'inline-flex h-8 w-8 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-lowest hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 disabled:pointer-events-none disabled:opacity-25';
+
 function CategoryActions({ category, canAddChild, onEdit, onDelete, onAddChild, hideAddChild = false, t }) {
   return (
-    <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
+    <>
       {canAddChild && !hideAddChild ? (
         <button
           type="button"
           title={t('categories.addChild', { name: category.name })}
+          aria-label={t('categories.addChild', { name: category.name })}
           onClick={() => onAddChild(category)}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
+          className={iconBtn}
         >
-          <MaterialIcon name="subdirectory_arrow_right" className="text-[20px]" />
+          <MaterialIcon name="subdirectory_arrow_right" className="text-[18px]" />
         </button>
       ) : null}
-      <button
-        type="button"
-        title={t('common.edit')}
-        onClick={() => onEdit(category)}
-        className="flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
-      >
-        <MaterialIcon name="edit" className="text-[20px]" />
+      <button type="button" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => onEdit(category)} className={iconBtn}>
+        <MaterialIcon name="edit" className="text-[18px]" />
       </button>
       <button
         type="button"
         title={t('common.delete')}
+        aria-label={t('common.delete')}
         onClick={() => onDelete(category)}
-        className="flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+        className={`${iconBtn} hover:bg-error-container hover:text-on-error-container`}
       >
-        <MaterialIcon name="delete" className="text-[20px]" />
+        <MaterialIcon name="delete" className="text-[18px]" />
       </button>
-    </div>
+    </>
   );
 }
 
@@ -526,18 +522,15 @@ export default function CategoriesPage() {
             }
           }}
         >
-          <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
             <span
               className="hidden cursor-grab text-on-surface-variant md:inline-flex active:cursor-grabbing"
               onClick={(event) => event.stopPropagation()}
             >
               <MaterialIcon name="drag_handle" className="text-[20px]" />
             </span>
-            {isChild && !category.sectionKey ? (
-              <MaterialIcon name="subdirectory_arrow_right" className="hidden shrink-0 text-primary sm:inline-flex" />
-            ) : null}
             <span
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold sm:h-8 sm:w-8 sm:text-sm ${
                 isChild ? 'bg-primary/12 text-primary' : 'bg-surface-container-high text-on-surface'
               }`}
             >
@@ -546,41 +539,45 @@ export default function CategoriesPage() {
             <CategoryIdentity category={category} parentName={parentName} t={t} />
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end sm:gap-3">
-            <div className="flex flex-wrap gap-2">
+          <div className="flex items-center justify-between gap-2 border-t border-outline-variant/60 pt-2 sm:border-0 sm:pt-0 sm:justify-end sm:gap-3">
+            <div className="flex min-w-0 flex-wrap gap-1.5">
               {childCount > 0 ? (
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary sm:px-3 sm:text-xs">
                   {childCount === 1
                     ? t('categories.childrenOne')
                     : t('categories.children', { count: childCount })}
                 </span>
               ) : null}
               {!category.sectionKey ? (
-                <span className="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface">
+                <span className="rounded-full bg-surface-container px-2.5 py-1 text-[11px] font-semibold text-on-surface sm:px-3 sm:text-xs">
                   {count > 1 ? t('categories.itemsPlural', { count }) : t('categories.items', { count })}
                 </span>
               ) : null}
             </div>
-            <div className="flex items-center" onClick={(event) => event.stopPropagation()}>
+            <div
+              className="flex shrink-0 items-center rounded-full border border-outline-variant/80 bg-surface-container p-0.5"
+              onClick={(event) => event.stopPropagation()}
+            >
               <div className="flex md:hidden">
                 <button
                   type="button"
                   aria-label={t('categories.moveUp', { name: category.name })}
                   disabled={reordering || siblingIndex === 0}
                   onClick={() => moveCategory(category, -1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant disabled:opacity-30"
+                  className={iconBtn}
                 >
-                  <MaterialIcon name="keyboard_arrow_up" />
+                  <MaterialIcon name="keyboard_arrow_up" className="text-[18px]" />
                 </button>
                 <button
                   type="button"
                   aria-label={t('categories.moveDown', { name: category.name })}
                   disabled={reordering || siblingIndex === siblings.length - 1}
                   onClick={() => moveCategory(category, 1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant disabled:opacity-30"
+                  className={iconBtn}
                 >
-                  <MaterialIcon name="keyboard_arrow_down" />
+                  <MaterialIcon name="keyboard_arrow_down" className="text-[18px]" />
                 </button>
+                <span className="mx-0.5 my-1.5 w-px bg-outline-variant/80" aria-hidden />
               </div>
               <CategoryActions
                 category={category}
@@ -600,24 +597,22 @@ export default function CategoriesPage() {
 
   return (
     <div className="relative flex w-full flex-col">
-      <div className="relative z-10 mb-stack-lg flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="mb-1 font-display text-display-md font-bold tracking-tight text-on-surface lg:text-display-lg">
+      <div className="relative z-10 mb-4 flex flex-col gap-3 sm:mb-stack-lg sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="hidden font-display text-display-md font-bold tracking-tight text-on-surface sm:mb-1 sm:block lg:text-display-lg">
             {t('categories.title')}
           </h1>
-          <p className="max-w-2xl text-on-surface-variant">{t('categories.subtitleSections')}</p>
+          <p className="mt-1 hidden max-w-2xl text-sm text-on-surface-variant sm:block">{t('categories.subtitleSections')}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={openSectionForm}
-            disabled={sectionRoots.length >= MAX_MENU_SECTIONS}
-            className="group inline-flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest px-5 py-3 text-on-surface transition-all duration-300 hover:bg-surface-container-high disabled:opacity-50"
-          >
-            <MaterialIcon name="add" className="text-[20px]" />
-            <span className="text-label-lg font-semibold tracking-[0.05em]">{t('categories.addSection')}</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={openSectionForm}
+          disabled={sectionRoots.length >= MAX_MENU_SECTIONS}
+          className="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-outline-variant bg-surface-container-lowest px-5 text-sm font-semibold tracking-[0.04em] text-on-surface shadow-sm transition hover:border-outline hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 disabled:opacity-50 sm:w-auto"
+        >
+          <MaterialIcon name="add" className="text-[20px]" />
+          {t('categories.addSection')}
+        </button>
       </div>
 
       {error ? (
@@ -641,19 +636,19 @@ export default function CategoriesPage() {
                 return (
                   <section
                     key={section._id}
-                    className={`rounded-[18px] border bg-surface-container-lowest p-4 sm:p-5 ${
+                    className={`rounded-[18px] border bg-surface-container-lowest p-3 sm:p-5 ${
                       sectionVisible ? 'border-outline-variant' : 'border-dashed border-outline-variant/80 opacity-75'
                     }`}
                   >
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-[11px] font-semibold tracking-[0.08em] text-primary uppercase">
+                    <div className="mb-3 flex flex-col gap-3 sm:mb-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold tracking-[0.08em] text-primary uppercase sm:text-[11px]">
                           {t('categories.sectionLabel')}
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-lg font-semibold text-on-surface">{section.name}</h2>
+                          <h2 className="truncate text-base font-semibold text-on-surface sm:text-lg">{section.name}</h2>
                           <span
-                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-[11px] ${
                               sectionVisible
                                 ? 'bg-tertiary/15 text-tertiary'
                                 : 'bg-surface-container-high text-on-surface-variant'
@@ -662,47 +657,49 @@ export default function CategoriesPage() {
                             {sectionVisible ? t('categories.sectionVisible') : t('categories.sectionHidden')}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm text-on-surface-variant">{t('categories.sectionVisibleHint')}</p>
+                        <p className="mt-1 hidden text-sm text-on-surface-variant sm:block">{t('categories.sectionVisibleHint')}</p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-2.5">
                         <button
                           type="button"
                           role="switch"
                           aria-checked={sectionVisible}
                           aria-label={t('categories.sectionVisible')}
                           onClick={() => handleToggleSectionVisibility(sectionKey, !sectionVisible)}
-                          className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${
-                            sectionVisible ? 'bg-primary' : 'bg-outline-variant'
+                          className={`flex h-9 w-14 shrink-0 items-center rounded-full px-1 shadow-inner transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
+                            sectionVisible ? 'justify-end bg-primary' : 'justify-start bg-outline-variant'
                           }`}
                         >
-                          <span
-                            className={`absolute top-1 left-1 h-6 w-6 rounded-full bg-white transition-transform ${
-                              sectionVisible ? 'translate-x-6' : ''
-                            }`}
-                          />
+                          <span className="h-6 w-6 rounded-full bg-white shadow-sm" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => startEdit(section)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface"
-                        >
-                          <MaterialIcon name="edit" className="text-[18px]" />
-                          {t('categories.editSection')}
-                        </button>
-                        {sectionRoots.length > 1 ? (
+                        <div className="flex rounded-full border border-outline-variant/80 bg-surface-container p-0.5">
                           <button
                             type="button"
-                            onClick={() => handleDelete(section)}
-                            className="inline-flex items-center gap-2 rounded-xl border border-error/30 px-4 py-2 text-sm font-semibold text-error"
+                            onClick={() => startEdit(section)}
+                            title={t('categories.editSection')}
+                            aria-label={t('categories.editSection')}
+                            className={`${iconBtn} sm:h-8 sm:w-auto sm:gap-1.5 sm:px-3`}
                           >
-                            <MaterialIcon name="delete" className="text-[18px]" />
-                            {t('common.delete')}
+                            <MaterialIcon name="edit" className="text-[18px]" />
+                            <span className="hidden text-xs font-semibold tracking-[0.02em] sm:inline">{t('categories.editSection')}</span>
                           </button>
-                        ) : null}
+                          {sectionRoots.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(section)}
+                              title={t('common.delete')}
+                              aria-label={t('common.delete')}
+                              className={`${iconBtn} hover:bg-error-container hover:text-on-error-container sm:h-8 sm:w-auto sm:gap-1.5 sm:px-3`}
+                            >
+                              <MaterialIcon name="delete" className="text-[18px]" />
+                              <span className="hidden text-xs font-semibold tracking-[0.02em] sm:inline">{t('common.delete')}</span>
+                            </button>
+                          ) : null}
+                        </div>
                         <button
                           type="button"
                           onClick={() => openCreateForm(section._id)}
-                          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary"
+                          className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-3 text-xs font-semibold tracking-[0.04em] text-on-primary shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:flex-none sm:px-4 sm:text-sm"
                         >
                           <MaterialIcon name="add" className="text-[18px]" />
                           {t('categories.addInSection')}
@@ -757,7 +754,7 @@ export default function CategoriesPage() {
           <button type="button" className="absolute inset-0 bg-on-surface/40" aria-label={t('common.close')} onClick={closeSectionForm} />
           <form
             onSubmit={handleCreateSection}
-            className="relative z-10 w-full rounded-t-2xl bg-surface-container-lowest p-6 shadow-xl sm:max-w-md sm:rounded-2xl"
+            className="relative z-10 w-full rounded-t-2xl bg-surface-container-lowest p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:max-w-md sm:rounded-2xl sm:p-6 sm:pb-6"
           >
             <h2 className="font-display text-headline-md font-semibold text-on-surface">{t('categories.addSection')}</h2>
             <p className="mt-1 text-sm text-on-surface-variant">{t('categories.addSectionHint')}</p>
@@ -778,18 +775,18 @@ export default function CategoriesPage() {
                 autoFocus
               />
             </label>
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={closeSectionForm}
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-on-surface-variant"
+                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-on-surface-variant transition hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
               >
                 {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={sectionSaving}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-60"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold tracking-[0.04em] text-on-primary shadow-md transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 disabled:opacity-60"
               >
                 {sectionSaving ? t('common.saving') : t('categories.addSection')}
               </button>

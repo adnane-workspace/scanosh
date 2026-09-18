@@ -115,5 +115,9 @@ export const listProductsSchema = z.object({
     search: z.string().trim().max(120).optional().default(''),
     categoryId: objectIdSchema.optional(),
     availability: z.enum(['all', 'available', 'unavailable']).optional().default('all'),
+    missingImage: z
+      .union([z.boolean(), z.string()])
+      .optional()
+      .transform((value) => value === true || value === 'true' || value === '1'),
   }),
 });

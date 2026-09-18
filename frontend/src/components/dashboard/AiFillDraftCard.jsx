@@ -167,8 +167,9 @@ export default function AiFillDraftCard({
               <button
                 type="button"
                 onClick={onRemove}
-                className="self-end text-[11px] font-semibold text-[#8a9199] hover:text-error"
+                className="mt-0.5 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full border border-red-200 bg-red-50 text-xs font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
               >
+                <MaterialIcon name="delete" className="text-[16px]" />
                 {t('aiFill.removeProduct')}
               </button>
             ) : null}

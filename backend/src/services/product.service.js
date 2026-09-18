@@ -6,6 +6,7 @@ import { invalidatePublicMenu } from './menuCache.service.js';
 import { deleteCloudinaryImage, deleteReplacedImage, normalizeImageUrl } from './storage.service.js';
 import { assertLeafCategory } from './category.service.js';
 import { collectDescendantIds } from '../utils/categoryTree.js';
+import { productSearchWhere } from '../utils/productSearch.js';
 
 function requireCafeId(user) {
   if (!user.cafeId) {
@@ -106,17 +107,22 @@ export async function listProducts(user, query = {}) {
   const { page, limit, skip } = parsePaginationQuery(query);
   const search = String(query.search || '').trim();
   const availability = query.availability;
+  const searchWhere = productSearchWhere(search);
 
   const where = { cafeId };
 
-  if (search) {
-    where.name = { contains: search, mode: 'insensitive' };
+  if (searchWhere) {
+    Object.assign(where, searchWhere);
   }
 
   if (availability === 'available') {
     where.available = true;
   } else if (availability === 'unavailable') {
     where.available = false;
+  }
+
+  if (query.missingImage) {
+    where.image = '';
   }
 
   if (query.categoryId) {

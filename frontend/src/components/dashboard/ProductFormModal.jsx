@@ -32,7 +32,7 @@ export default function ProductFormModal({
         aria-label={t('common.close')}
         onClick={onClose}
       />
-      <section className="relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-surface-container-lowest p-6 shadow-xl sm:max-w-2xl sm:rounded-2xl">
+      <section className="relative z-10 max-h-[min(92vh,100dvh)] w-full overflow-y-auto rounded-t-2xl bg-surface-container-lowest p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:max-w-2xl sm:rounded-2xl sm:p-6 sm:pb-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-display text-headline-md font-semibold text-on-surface">
@@ -115,7 +115,7 @@ export default function ProductFormModal({
                 </div>
               )}
               <div className="flex flex-col gap-2">
-                <label className="inline-flex cursor-pointer rounded-full bg-primary px-4 py-2 text-label-lg font-semibold tracking-[0.05em] text-on-primary">
+                <label className="inline-flex h-10 cursor-pointer items-center rounded-full bg-primary px-4 text-sm font-semibold tracking-[0.04em] text-on-primary shadow-sm transition hover:bg-primary/90">
                   {uploading ? t('settings.uploading') : t('productForm.choosePhoto')}
                   <input
                     type="file"
@@ -149,18 +149,18 @@ export default function ProductFormModal({
               }
             />
           </div>
-          <div className="mt-2 flex flex-wrap gap-3 md:col-span-2">
+          <div className="mt-2 flex flex-col-reverse gap-2 md:col-span-2 sm:flex-row sm:flex-wrap sm:gap-3">
             <button
               type="submit"
               disabled={saving || uploading || categories.length === 0}
-              className="rounded-full bg-primary px-6 py-3 text-label-lg font-semibold tracking-[0.05em] text-on-primary shadow-md disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-label-lg font-semibold tracking-[0.05em] text-on-primary shadow-md transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 disabled:opacity-60"
             >
               {saving ? t('common.saving') : editing ? t('productForm.update') : t('productForm.create')}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full bg-surface-container-high px-6 py-3 text-label-lg font-semibold tracking-[0.05em] text-on-surface"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-surface-container-high px-6 text-label-lg font-semibold tracking-[0.05em] text-on-surface transition hover:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
             >
               {t('common.cancel')}
             </button>
