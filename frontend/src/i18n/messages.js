@@ -373,8 +373,6 @@ export const messages = {
       goProducts: 'Voir les produits',
       goCategories: 'Voir les catégories',
       alreadyPublished: 'Cet import a déjà été publié.',
-      llmFallbackWarning:
-        'Le LLM n’a pas répondu : résultat approximatif (heuristique). Vérifiez bien avant d’ajouter au menu.',
       sectionLabel: 'Section',
       sectionAll: 'Tous',
       noSectionMatch: 'Aucune catégorie dans cette section.',
@@ -1650,8 +1648,6 @@ export const messages = {
       goProducts: 'عرض المنتجات',
       goCategories: 'عرض التصنيفات',
       alreadyPublished: 'تم نشر هذا الاستيراد مسبقاً.',
-      llmFallbackWarning:
-        'لم يستجب LLM: نتيجة تقريبية. راجع جيداً قبل الإضافة للقائمة.',
       sectionLabel: 'القسم',
       sectionAll: 'الكل',
       noSectionMatch: 'لا توجد تصنيفات في هذا القسم.',

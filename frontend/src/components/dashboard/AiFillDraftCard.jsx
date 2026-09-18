@@ -64,7 +64,7 @@ export default function AiFillDraftCard({
                 className={generatingNow ? 'animate-spin text-[22px]' : 'text-[22px]'}
               />
             </span>
-            <span className="px-3 text-center text-sm font-semibold text-[#0d1b2a]">
+            <span className="px-3 text-center text-[13px] font-semibold leading-snug text-[#0d1b2a] sm:text-sm">
               {photosMode
                 ? generating
                   ? t('aiFill.generatingThisPhoto')
@@ -98,22 +98,24 @@ export default function AiFillDraftCard({
         ) : null}
 
         {!isPublished && photosMode ? (
-          <div className="absolute inset-x-3 bottom-3 flex items-center gap-1.5">
+          <div className="absolute inset-x-2 bottom-2 flex flex-wrap items-center gap-1.5 sm:inset-x-3 sm:bottom-3">
             {product.image ? (
               <button
                 type="button"
                 disabled={busy || generatingNow}
                 onClick={onGenerate}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white px-3 text-[12px] font-semibold text-[#0d1b2a] shadow-sm disabled:opacity-50"
+                className="inline-flex h-9 max-w-full items-center gap-1.5 rounded-full bg-white px-2.5 text-[11px] font-semibold text-[#0d1b2a] shadow-sm disabled:opacity-50 sm:px-3 sm:text-[12px]"
               >
                 <MaterialIcon
                   name={generatingNow ? 'progress_activity' : 'auto_awesome'}
                   className={generatingNow ? 'animate-spin text-[16px]' : 'text-[16px]'}
                 />
-                {generatingNow ? t('aiFill.generatingThisPhoto') : t('aiFill.regenerateThisPhoto')}
+                <span className="truncate">
+                  {generatingNow ? t('aiFill.generatingThisPhoto') : t('aiFill.regenerateThisPhoto')}
+                </span>
               </button>
             ) : null}
-            <span className="ms-auto flex gap-1">
+            <span className="ms-auto flex shrink-0 gap-1">
               <IconAction label={t('aiFill.chooseLibrary')} disabled={busy} onClick={onPickLibrary} icon="photo_library" />
               <IconAction label={t('aiFill.uploadPhoto')} disabled={busy} onClick={onUpload} icon="upload" />
               {product.image ? (
@@ -126,18 +128,20 @@ export default function AiFillDraftCard({
 
       <div className="flex flex-1 flex-col gap-2 p-3.5">
         {photosMode ? (
-          <p className="truncate text-sm font-semibold text-[#0d1b2a]">{product.name || t('aiFill.productName')}</p>
+          <p className="break-words text-sm font-semibold leading-snug text-[#0d1b2a]">
+            {product.name || t('aiFill.productName')}
+          </p>
         ) : (
           <>
-            <div className="grid grid-cols-[minmax(0,1fr)_5.25rem] gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-[minmax(0,1fr)_6rem]">
               <input
                 value={product.name}
                 disabled={isPublished}
                 onChange={(event) => onChange({ name: event.target.value })}
                 placeholder={t('aiFill.productName')}
-                className="h-10 rounded-xl border-0 bg-[#f4f5f6] px-3 text-sm font-semibold text-[#0d1b2a] outline-none focus:bg-white focus:ring-1 focus:ring-[#0d1b2a]/20 disabled:opacity-70"
+                className="h-10 min-w-0 rounded-xl border-0 bg-[#f4f5f6] px-3 text-sm font-semibold text-[#0d1b2a] outline-none focus:bg-white focus:ring-1 focus:ring-[#0d1b2a]/20 disabled:opacity-70"
               />
-              <div className="relative">
+              <div className="relative min-[420px]:max-w-[6rem]">
                 <input
                   type="number"
                   min="0"

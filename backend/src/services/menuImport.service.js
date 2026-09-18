@@ -25,6 +25,16 @@ function requireCafeId(user) {
   return user.cafeId;
 }
 
+function sanitizeDraftMenuForClient(draft) {
+  if (!draft || typeof draft !== 'object') return draft ?? null;
+  const meta = draft.meta && typeof draft.meta === 'object' ? { ...draft.meta } : {};
+  delete meta.llmError;
+  if (typeof meta.parser === 'string') {
+    meta.parser = meta.parser.replace(/\+llm-fallback\b/g, '');
+  }
+  return { ...draft, meta };
+}
+
 function toImportResponse(row) {
   return {
     _id: row.id,
@@ -34,7 +44,7 @@ function toImportResponse(row) {
     mergeLevel: row.mergeLevel,
     rawText: row.rawText || '',
     rawBlocks: Array.isArray(row.rawBlocks) ? row.rawBlocks : [],
-    draftMenu: row.draftMenu ?? null,
+    draftMenu: sanitizeDraftMenuForClient(row.draftMenu),
     provider: row.provider || '',
     errorMessage: row.errorMessage || '',
     durationMs: row.durationMs ?? null,

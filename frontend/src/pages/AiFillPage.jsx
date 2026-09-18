@@ -53,31 +53,31 @@ function WizardFooter({
   extra,
 }) {
   return (
-    <div className="sticky bottom-3 z-30 mx-auto mt-6 max-w-5xl">
-      <div className="flex items-center gap-2 rounded-2xl border border-black/8 bg-white/90 p-2 shadow-[0_12px_40px_rgba(13,27,42,0.12)] backdrop-blur-md">
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex h-11 shrink-0 items-center rounded-xl px-4 text-sm font-semibold text-[#5c6570] hover:bg-[#f4f5f6]"
-          >
-            {backLabel}
-          </button>
-        ) : (
-          <span />
-        )}
-        <div className="min-w-0 flex-1">{extra}</div>
+    <div className="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 mx-auto mt-6 w-full max-w-5xl">
+      <div className="flex flex-col gap-2 rounded-2xl border border-black/8 bg-white/95 p-2 shadow-[0_12px_40px_rgba(13,27,42,0.12)] backdrop-blur-md sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-1">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex h-11 shrink-0 items-center rounded-xl px-3 text-sm font-semibold text-[#5c6570] hover:bg-[#f4f5f6] sm:px-4"
+            >
+              {backLabel}
+            </button>
+          ) : null}
+          <div className="min-w-0 flex-1">{extra}</div>
+        </div>
         <button
           type="button"
           disabled={primaryDisabled}
           onClick={onPrimary}
-          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#0d1b2a] px-5 text-sm font-semibold text-white disabled:opacity-45"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0d1b2a] px-4 text-sm font-semibold text-white disabled:opacity-45 sm:w-auto sm:shrink-0 sm:px-5"
         >
           <MaterialIcon
             name={primaryBusy ? 'progress_activity' : primaryIcon}
             className={primaryBusy ? 'animate-spin text-[18px]' : 'text-[18px]'}
           />
-          {primaryLabel}
+          <span className="truncate">{primaryLabel}</span>
         </button>
       </div>
     </div>
@@ -661,17 +661,17 @@ export default function AiFillPage() {
   }, [draft, defaultSectionKey]);
 
   return (
-    <div className="relative mx-auto max-w-5xl space-y-6 pb-24">
-      <header className="space-y-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="relative mx-auto max-w-5xl space-y-5 pb-[calc(8.5rem+env(safe-area-inset-bottom))] sm:space-y-6 sm:pb-24">
+      <header className="space-y-4 sm:space-y-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 max-w-2xl">
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase">
+            <p className="hidden text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase sm:block">
               {t('aiFill.kicker')}
             </p>
-            <h1 className="mt-1 font-display text-[1.75rem] font-bold tracking-tight text-on-surface sm:text-[2rem]">
+            <h1 className="hidden font-display text-[1.75rem] font-bold tracking-tight text-on-surface sm:mt-1 sm:block sm:text-[2rem]">
               {t('aiFill.title')}
             </h1>
-            <p className="mt-2 max-w-lg text-sm leading-relaxed text-on-surface-variant">
+            <p className="text-sm leading-relaxed text-on-surface-variant sm:mt-2 sm:max-w-lg">
               {t('aiFill.subtitleShort')}
             </p>
           </div>
@@ -686,7 +686,7 @@ export default function AiFillPage() {
               <button
                 type="button"
                 onClick={startNewImport}
-                className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant bg-surface-container-lowest px-3.5 py-2 text-xs font-semibold text-on-surface transition hover:bg-surface-container"
+                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-full border border-outline-variant bg-surface-container-lowest px-3.5 text-xs font-semibold text-on-surface transition hover:bg-surface-container sm:w-auto"
               >
                 <MaterialIcon name="add_a_photo" className="text-[16px]" />
                 {t('aiFill.startOver')}
@@ -697,7 +697,7 @@ export default function AiFillPage() {
 
         <nav
           aria-label={t('aiFill.stepsNav')}
-          className="rounded-2xl border border-black/6 bg-white px-2 py-3 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:px-4"
+          className="rounded-2xl border border-black/6 bg-white px-1 py-2.5 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:px-4 sm:py-3"
         >
           <ol className="grid grid-cols-4">
             {steps.map((item, index) => {
@@ -720,7 +720,7 @@ export default function AiFillPage() {
                     disabled={locked}
                     onClick={() => goToStep(item.id)}
                     title={locked ? t('aiFill.stepLocked') : item.label}
-                    className={`relative z-[1] flex flex-col items-center gap-1.5 rounded-xl px-1 py-1 transition ${
+                    className={`relative z-[1] flex w-full flex-col items-center gap-1 rounded-xl px-0.5 py-1 transition sm:gap-1.5 sm:px-1 ${
                       locked ? 'cursor-not-allowed opacity-40' : 'hover:opacity-90'
                     }`}
                   >
@@ -740,7 +740,7 @@ export default function AiFillPage() {
                       )}
                     </span>
                     <span
-                      className={`hidden text-center text-[11px] font-semibold sm:block ${
+                      className={`max-w-full px-0.5 text-center text-[10px] leading-tight font-semibold sm:text-[11px] ${
                         active ? 'text-on-surface' : 'text-on-surface-variant'
                       }`}
                     >
@@ -782,7 +782,7 @@ export default function AiFillPage() {
       {/* Stage 1 - Upload */}
       {wizardStep === 1 && !result ? (
         <section className="animate-[fadeIn_0.35s_ease] space-y-5">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden">
             {[
               { icon: 'photo_camera', title: t('aiFill.how1Title'), hint: t('aiFill.how1Hint') },
               { icon: 'edit_note', title: t('aiFill.how2Title'), hint: t('aiFill.how2Hint') },
@@ -790,12 +790,12 @@ export default function AiFillPage() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="flex items-start gap-3 rounded-2xl border border-black/6 bg-white px-4 py-3.5 shadow-[0_8px_24px_rgba(13,27,42,0.04)]"
+                className="flex min-w-[min(100%,16.5rem)] shrink-0 items-start gap-3 rounded-2xl border border-black/6 bg-white px-3.5 py-3 shadow-[0_8px_24px_rgba(13,27,42,0.04)] sm:min-w-0 sm:px-4 sm:py-3.5"
               >
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0d1b2a] text-white">
+                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0d1b2a] text-white sm:h-10 sm:w-10">
                   <MaterialIcon name={item.icon} className="text-[20px]" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-on-surface">{item.title}</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-on-surface-variant">{item.hint}</p>
                 </div>
@@ -822,7 +822,7 @@ export default function AiFillPage() {
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
               onClick={() => inputRef.current?.click()}
-              className={`relative flex min-h-[18rem] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed px-4 py-10 text-center transition-all duration-200 ${
+              className={`relative flex min-h-[11rem] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed px-3 py-6 text-center transition-all duration-200 sm:min-h-[18rem] sm:px-4 sm:py-10 ${
                 dragOver
                   ? 'scale-[1.01] border-[#0d1b2a] bg-[#0d1b2a]/6'
                   : previewUrl
@@ -835,20 +835,20 @@ export default function AiFillPage() {
                   <img
                     src={previewUrl}
                     alt=""
-                    className="max-h-64 w-auto rounded-xl object-contain shadow-[0_16px_36px_rgba(13,27,42,0.16)]"
+                    className="max-h-36 w-auto rounded-xl object-contain shadow-[0_16px_36px_rgba(13,27,42,0.16)] sm:max-h-64"
                   />
-                  <div>
-                    <p className="truncate text-sm font-semibold text-on-surface">{file?.name}</p>
+                  <div className="min-w-0 max-w-full">
+                    <p className="break-all text-sm font-semibold text-on-surface">{file?.name}</p>
                     <p className="mt-0.5 text-xs text-on-surface-variant">{t('aiFill.changeImage')}</p>
                   </div>
                 </div>
               ) : (
                 <>
-                  <span className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0d1b2a] text-white shadow-sm">
-                    <MaterialIcon name="add_a_photo" className="text-[32px]" />
+                  <span className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0d1b2a] text-white shadow-sm sm:mb-4 sm:h-16 sm:w-16">
+                    <MaterialIcon name="add_a_photo" className="text-[28px] sm:text-[32px]" />
                   </span>
-                  <p className="text-base font-semibold text-on-surface">{t('aiFill.dropTitle')}</p>
-                  <p className="mt-1.5 max-w-sm text-sm text-on-surface-variant">{t('aiFill.dropHint')}</p>
+                  <p className="text-sm font-semibold text-on-surface sm:text-base">{t('aiFill.dropTitle')}</p>
+                  <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-on-surface-variant sm:text-sm">{t('aiFill.dropHint')}</p>
                 </>
               )}
               <input
@@ -861,12 +861,12 @@ export default function AiFillPage() {
             </div>
 
             {running ? (
-              <div className="mt-4 overflow-hidden rounded-2xl bg-[#0d1b2a] px-4 py-4 text-white">
-                <div className="flex items-center gap-3 text-sm">
-                  <MaterialIcon name="progress_activity" className="animate-spin text-[22px]" />
+              <div className="mt-4 overflow-hidden rounded-2xl bg-[#0d1b2a] px-3 py-3.5 text-white sm:px-4 sm:py-4">
+                <div className="flex items-start gap-3 text-sm sm:items-center">
+                  <MaterialIcon name="progress_activity" className="mt-0.5 shrink-0 animate-spin text-[22px] sm:mt-0" />
                   <div className="min-w-0">
                     <p className="font-semibold">{t('aiFill.processingTitle')}</p>
-                    <p className="text-white/70">{t('aiFill.runningHint')}</p>
+                    <p className="text-white/70 leading-relaxed">{t('aiFill.runningHint')}</p>
                   </div>
                 </div>
                 <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/15">
@@ -913,7 +913,7 @@ export default function AiFillPage() {
                 <p className="text-[11px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
                   {t('aiFill.sourcePhoto')}
                 </p>
-                <p className="mt-1 truncate text-lg font-semibold text-on-surface">
+                <p className="mt-1 break-words text-base font-semibold text-on-surface sm:text-lg">
                   {file?.name || t('aiFill.sourcePhotoHint')}
                 </p>
                 <p className="mt-2 text-sm text-on-surface-variant">
@@ -958,7 +958,7 @@ export default function AiFillPage() {
                   type="button"
                   disabled={suggestingPhotos || !selectedCounts.products}
                   onClick={() => handleSuggestPhotos({ overwrite: Boolean(photoSummary) })}
-                  className="inline-flex h-10 items-center gap-2 rounded-full bg-[#f4f5f6] px-4 text-sm font-semibold text-[#0d1b2a] disabled:opacity-50"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-[#f4f5f6] px-4 text-sm font-semibold text-[#0d1b2a] disabled:opacity-50 sm:w-auto"
                 >
                   <MaterialIcon
                     name={suggestingPhotos ? 'progress_activity' : 'auto_awesome'}
@@ -980,15 +980,14 @@ export default function AiFillPage() {
               )}
             </div>
 
-            <div className="mt-4">
-              <div className="flex items-center justify-between gap-3 text-sm">
+              <div className="mt-4 flex flex-col gap-1.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-semibold text-on-surface">
                   {t('aiFill.photoCoverage', {
                     done: selectedCounts.withPhoto,
                     total: selectedCounts.products || 0,
                   })}
                 </p>
-                <p className="text-xs text-on-surface-variant">
+                <p className="text-xs leading-relaxed text-on-surface-variant sm:text-end">
                   {photoSummary
                     ? t('aiFill.suggestPhotosSuccess', {
                         updated: photoSummary.updated,
@@ -1019,7 +1018,6 @@ export default function AiFillPage() {
                   }}
                 />
               </div>
-            </div>
           </div>
         </section>
       ) : null}
@@ -1031,7 +1029,7 @@ export default function AiFillPage() {
           className="animate-[fadeIn_0.35s_ease] space-y-8"
         >
           {wizardStep === 2 ? (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div>
               <h2 className="font-display text-lg font-semibold text-on-surface">
                 {isPublished ? t('aiFill.reviewTitlePublished') : t('aiFill.reviewTitle')}
@@ -1051,7 +1049,7 @@ export default function AiFillPage() {
           </div>
           ) : null}
 
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-black/6 bg-white px-4 py-3 shadow-[0_8px_24px_rgba(13,27,42,0.04)]">
+          <div className="mb-4 flex flex-col gap-2 rounded-2xl border border-black/6 bg-white px-3 py-3 shadow-[0_8px_24px_rgba(13,27,42,0.04)] sm:flex-row sm:flex-wrap sm:items-center sm:px-4">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-on-surface">
                 {selectedCounts.products}/{selectedCounts.totalProducts} {t('aiFill.selectedProducts')}
@@ -1062,7 +1060,7 @@ export default function AiFillPage() {
               </p>
             </div>
             {!isPublished && wizardStep === 2 ? (
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1">
                 <button
                   type="button"
                   onClick={() => setAllSelected(true)}
@@ -1081,16 +1079,9 @@ export default function AiFillPage() {
             ) : null}
           </div>
 
-          {String(draft.meta?.parser || '').includes('llm-fallback') || draft.meta?.llmError ? (
-            <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
-              {t('aiFill.llmFallbackWarning')}
-              {draft.meta?.llmError ? ` (${draft.meta.llmError})` : ''}
-            </p>
-          ) : null}
-
           <div className="space-y-3">
               {draft.categories?.length ? (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {[
                     { id: 'all', label: t('aiFill.sectionAll'), count: sectionCounts.all },
                     ...sectionOptions.map((section) => ({
@@ -1103,7 +1094,7 @@ export default function AiFillPage() {
                       key={item.id}
                       type="button"
                       onClick={() => setSectionFilter(item.id)}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                         sectionFilter === item.id
                           ? 'bg-primary text-on-primary'
                           : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
@@ -1141,8 +1132,8 @@ export default function AiFillPage() {
                     sectionOptions.find((item) => item.key === sectionKey)?.name || sectionKey;
                   return (
                     <section key={cat.id} className="space-y-4">
-                      <div className="flex flex-wrap items-end justify-between gap-3 px-1">
-                        <div>
+                      <div className="flex flex-col gap-2 px-1 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-3">
+                        <div className="min-w-0">
                           <p className="text-[11px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
                             {sectionName}
                           </p>
@@ -1150,7 +1141,7 @@ export default function AiFillPage() {
                             value={cat.name}
                             disabled={isPublished}
                             onChange={(event) => updateCategory(cat.id, { name: event.target.value })}
-                            className="mt-1 w-full min-w-[12rem] bg-transparent font-display text-2xl font-semibold tracking-tight text-on-surface outline-none disabled:opacity-70"
+                            className="mt-1 w-full min-w-0 bg-transparent font-display text-xl font-semibold tracking-tight text-on-surface outline-none disabled:opacity-70 sm:text-2xl"
                           />
                           <p className="mt-1 text-sm text-on-surface-variant">
                             {selectedInCat}/{productCount} {t('aiFill.productsShort')}
@@ -1163,7 +1154,7 @@ export default function AiFillPage() {
                               updateCategory(cat.id, { sectionKey: event.target.value })
                             }
                             aria-label={t('aiFill.sectionLabel')}
-                            className="h-9 rounded-full bg-surface-container px-3 text-xs font-semibold text-on-surface outline-none"
+                            className="h-9 w-full rounded-full bg-surface-container px-3 text-xs font-semibold text-on-surface outline-none sm:w-auto"
                           >
                             {sectionOptions.map((section) => (
                               <option key={section.key} value={section.key}>
@@ -1228,7 +1219,7 @@ export default function AiFillPage() {
                   type="button"
                   disabled={busy}
                   onClick={handleSaveDraft}
-                  className="hidden h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-[#5c6570] hover:bg-[#f4f5f6] disabled:opacity-60 sm:inline-flex"
+                  className="inline-flex h-11 w-full min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-sm font-semibold text-[#5c6570] hover:bg-[#f4f5f6] disabled:opacity-60 sm:w-auto sm:px-3"
                 >
                   <MaterialIcon name="save" className="text-[18px]" />
                   {saving ? t('aiFill.saving') : t('aiFill.stickySave')}
@@ -1245,7 +1236,7 @@ export default function AiFillPage() {
               onPrimary={() => goToStep(4)}
               primaryDisabled={busy || !selectedCounts.products}
               extra={
-                <p className="truncate text-xs font-semibold text-on-surface-variant">
+                <p className="text-xs font-semibold leading-snug text-on-surface-variant sm:truncate">
                   {t('aiFill.photoCoverage', {
                     done: selectedCounts.withPhoto,
                     total: selectedCounts.products || 0,
@@ -1274,7 +1265,7 @@ export default function AiFillPage() {
                 </p>
                 <Link
                   to="/app/products?review=1"
-                  className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-[#0d1b2a]"
+                  className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-[#0d1b2a] sm:w-auto"
                 >
                   {t('aiFill.goReviewAll')}
                 </Link>
@@ -1293,7 +1284,7 @@ export default function AiFillPage() {
                 <ul className="mt-3 divide-y divide-black/6 overflow-hidden rounded-2xl border border-black/8">
                   {selectedProductsList.map(({ cat, prod }) => (
                     <li key={prod.id} className="flex items-center gap-3 bg-white px-3 py-2.5">
-                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#f4f5f6]">
+                      <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#f4f5f6] sm:h-12 sm:w-12">
                         {prod.image ? (
                           <CloudinaryImage
                             src={prod.image}
@@ -1308,8 +1299,8 @@ export default function AiFillPage() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-on-surface">{prod.name}</p>
-                        <p className="truncate text-xs text-on-surface-variant">
+                        <p className="break-words text-sm font-semibold leading-snug text-on-surface">{prod.name}</p>
+                        <p className="mt-0.5 break-words text-xs text-on-surface-variant">
                           {cat.name}
                           {prod.price ? ` · ${prod.price} ${t('aiFill.currency')}` : ''}
                         </p>
