@@ -152,8 +152,6 @@ export default function RegisterPage() {
                 </p>
               ) : null}
 
-              <p className="text-sm text-on-surface-variant">{t('auth.emailDeliveryHint')}</p>
-
               <AuthField
                 id="code"
                 label={t('auth.resetCode')}

@@ -94,7 +94,6 @@ export default function LoginPage() {
             <h2 className="font-display text-headline-lg font-semibold tracking-tight text-on-surface sm:text-4xl">
               {t('auth.loginTitle')}
             </h2>
-            <p className="mt-2 text-on-surface-variant">{t('auth.loginSubtitle')}</p>
           </div>
 
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>

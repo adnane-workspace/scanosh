@@ -19,11 +19,9 @@ export default function AuthBrandPanel() {
       </div>
 
       <div className="relative z-10 max-w-md">
-        <p className="text-label-md font-semibold tracking-[0.18em] text-[#e0e1dd]/80 uppercase">{t('auth.digitalMenu')}</p>
-        <h1 className="mt-4 font-display text-5xl font-semibold leading-[1.15] tracking-tight xl:text-6xl">
+        <h1 className="font-display text-5xl font-semibold leading-[1.15] tracking-tight xl:text-6xl">
           {t('auth.headline')}
         </h1>
-        <p className="mt-5 text-lg leading-relaxed text-[#e0e1dd]/72">{t('auth.tagline')}</p>
       </div>
 
       <ul className="relative z-10 space-y-4 text-sm text-[#e0e1dd]/80">

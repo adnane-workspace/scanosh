@@ -37,7 +37,7 @@ function AuthChrome({ title, subtitle, children, footer }) {
             <h2 className="font-display text-headline-lg font-semibold tracking-tight text-on-surface sm:text-4xl">
               {title}
             </h2>
-            <p className="mt-2 text-on-surface-variant">{subtitle}</p>
+            {subtitle ? <p className="mt-2 text-on-surface-variant">{subtitle}</p> : null}
           </div>
           {children}
           {footer}
@@ -159,8 +159,6 @@ export default function ForgotPasswordPage() {
             </p>
           ) : null}
 
-          <p className="text-sm text-on-surface-variant">{t('auth.emailDeliveryHint')}</p>
-
           <AuthField
             id="code"
             label={t('auth.resetCode')}
@@ -267,7 +265,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthChrome title={t('auth.resetTitle')} subtitle={t('auth.resetSubtitle')} footer={footer}>
+    <AuthChrome title={t('auth.resetTitle')} footer={footer}>
       <form className="flex flex-col gap-4" onSubmit={sendCode}>
         <AuthField
           id="email"
@@ -288,8 +286,6 @@ export default function ForgotPasswordPage() {
             {error}
           </p>
         ) : null}
-
-        <p className="text-sm text-on-surface-variant">{t('auth.emailDeliveryHint')}</p>
 
         <button
           type="submit"
