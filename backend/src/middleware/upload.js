@@ -36,8 +36,12 @@ export const menuImportImageUpload = multer({
 });
 
 export function handleUploadError(err, _req, _res, next) {
-  if (err?.code === 'LIMIT_FILE_SIZE') {
+  if (err?.code === 'LIMIT_FILE_SIZE' || (err?.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE')) {
     return next(new ApiError(400, 'Image too large (max 4–5MB)', null, 'IMAGE_TOO_LARGE'));
+  }
+
+  if (err?.name === 'MulterError') {
+    return next(new ApiError(400, err.message || 'Upload failed', null, 'IMAGE_UPLOAD_FAILED'));
   }
 
   return next(err);

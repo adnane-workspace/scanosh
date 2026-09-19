@@ -36,4 +36,20 @@ describe('ApiError', () => {
     expect(res.body.code).toBe('CATEGORY_MAX_DEPTH');
     expect(res.body.details).toEqual({ max: 3 });
   });
+
+  test('maps Prisma unique conflicts to 409', () => {
+    const res = mockRes();
+    errorHandler({ code: 'P2002', meta: { target: ['slug'] }, message: 'Unique constraint' }, {}, res, () => {});
+
+    expect(res.statusCode).toBe(409);
+    expect(res.body.code).toBe('SLUG_IN_USE');
+  });
+
+  test('maps oversized uploads to IMAGE_TOO_LARGE', () => {
+    const res = mockRes();
+    errorHandler({ name: 'MulterError', code: 'LIMIT_FILE_SIZE' }, {}, res, () => {});
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.code).toBe('IMAGE_TOO_LARGE');
+  });
 });

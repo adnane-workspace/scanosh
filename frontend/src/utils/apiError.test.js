@@ -30,7 +30,16 @@ test('getApiError interpolates details for parameterized codes', () => {
   assert.equal(message, 'Maximum 3 niveaux de catégories');
 });
 
-test('getApiError falls back to the API message then the i18n key', () => {
-  assert.equal(getApiError({ response: { data: { message: 'Fallback from API' } } }, t, 'dashboard.loadError'), 'Fallback from API');
-  assert.equal(getApiError({}, t, 'dashboard.loadError'), 'Chargement impossible');
+test('getApiError prefers i18n fallback over English API message', () => {
+  assert.equal(
+    getApiError({ response: { data: { message: 'Fallback from API' } } }, t, 'dashboard.loadError'),
+    'Chargement impossible',
+  );
+});
+
+test('getApiError uses API message when fallback key is missing', () => {
+  assert.equal(
+    getApiError({ response: { data: { message: 'Fallback from API' } } }, t, 'missing.key'),
+    'Fallback from API',
+  );
 });

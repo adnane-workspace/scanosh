@@ -9,18 +9,15 @@ function detailsVars(details) {
 export function getApiError(err, t, fallbackKey, vars) {
   const data = err?.response?.data;
   const code = data?.code;
+  const mergedVars = { ...detailsVars(data.details), ...vars };
 
   if (code) {
     const key = `apiErrors.${code}`;
-    const translated = t(key, { ...detailsVars(data.details), ...vars });
+    const translated = t(key, mergedVars);
 
     if (translated && translated !== key) {
       return translated;
     }
-  }
-
-  if (data?.message) {
-    return data.message;
   }
 
   if (err?.code === 'ECONNABORTED' || /timeout/i.test(String(err?.message || ''))) {
@@ -39,5 +36,16 @@ export function getApiError(err, t, fallbackKey, vars) {
     }
   }
 
-  return t(fallbackKey, vars);
+  if (fallbackKey) {
+    const translated = t(fallbackKey, vars);
+    if (translated && translated !== fallbackKey) {
+      return translated;
+    }
+  }
+
+  if (data?.message) {
+    return data.message;
+  }
+
+  return fallbackKey ? t(fallbackKey, vars) : t('apiErrors.INTERNAL_ERROR', vars);
 }
