@@ -44,27 +44,17 @@ export default function LandingShowcase() {
             }`}
           >
             {tab === 'menu' ? (
-              <div className="grid items-center gap-6 lg:grid-cols-[auto_1fr] lg:gap-12">
-                <div className="mx-auto w-full max-w-[17rem] overflow-hidden rounded-[1.5rem] bg-[#0d1b2a] shadow-xl sm:w-[230px] sm:max-w-none sm:rounded-[1.7rem]">
-                  <img src="/landing/pepperoni.jpg" alt="" loading="lazy" decoding="async" className="h-32 w-full object-cover sm:h-36" />
-                  <div className="space-y-3 p-4">
-                    <p className="font-display text-base font-bold text-[#e0e1dd]">{t('landing.phoneMenu')}</p>
-                    {[
-                      { name: t('landing.dishOne'), meta: t('landing.dishOneDesc'), img: '/landing/pepperoni.jpg' },
-                      { name: t('landing.dishTwo'), meta: t('landing.dishTwoDesc'), img: '/landing/jus-peche.jpg' },
-                      { name: t('landing.demoDish3'), meta: t('landing.dishThreeDesc'), img: '/landing/jus-grenadine.jpg' },
-                    ].map((dish) => (
-                      <div key={dish.name} className="flex items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-[#e0e1dd]">{dish.name}</p>
-                          <p className="text-xs text-[#778da9]">{dish.meta}</p>
-                        </div>
-                        <img src={dish.img} alt="" loading="lazy" decoding="async" className="h-10 w-10 rounded-lg object-cover" />
-                      </div>
-                    ))}
-                  </div>
+              <div>
+                <div className="mx-auto max-w-[22rem] overflow-hidden rounded-[1.5rem] border border-[#0d1b2a]/8 bg-[#0d1b2a] shadow-lg">
+                  <img
+                    src="/landing/showcase-menu.png"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="h-auto w-full object-cover object-top"
+                  />
                 </div>
-                <p className="text-sm leading-relaxed text-[#0d1b2a]/70 sm:max-w-md sm:text-lg">{t('landing.showMenuBody')}</p>
+                <p className="mt-4 text-sm text-[#0d1b2a]/65 sm:text-base">{t('landing.showMenuBody')}</p>
               </div>
             ) : null}
 
