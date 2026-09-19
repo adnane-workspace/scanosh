@@ -19,7 +19,7 @@ function TabRail({ items, activeId, onSelect }) {
 
   return (
     <div
-      className="flex gap-1.5 overflow-x-auto overscroll-x-contain px-4 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2 sm:px-6 sm:py-3 lg:px-8 [&::-webkit-scrollbar]:hidden"
+      className="flex gap-1.5 overflow-x-auto overscroll-x-contain px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2 sm:px-6 sm:py-3 lg:px-8 [&::-webkit-scrollbar]:hidden"
       role="tablist"
     >
       {items.map((item) => {
@@ -33,10 +33,10 @@ function TabRail({ items, activeId, onSelect }) {
             role="tab"
             aria-selected={active}
             onClick={() => onSelect(item)}
-            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-sm transition-all duration-200 ${
+            className={`max-w-[80vw] shrink-0 truncate rounded-full px-3 py-1.5 text-[13px] transition-all duration-200 sm:max-w-none sm:px-4 sm:py-2 sm:text-sm ${
               active
-                ? 'bg-[var(--menu-tab-active-bg)] font-semibold text-[var(--menu-tab-active-text)] shadow-sm'
-                : 'bg-transparent font-medium text-[var(--menu-tab-inactive-text)] hover:bg-[var(--menu-tab-hover-bg)] hover:text-on-surface'
+                ? 'bg-[var(--menu-tab-active-bg)] font-semibold text-[var(--menu-tab-active-text)] shadow-[0_6px_14px_rgba(13,27,42,0.16)]'
+                : 'bg-[var(--menu-chrome-pill-bg)] font-medium text-[var(--menu-tab-inactive-text)] ring-1 ring-[var(--menu-chrome-pill-ring)] hover:text-on-surface'
             }`}
           >
             {item.name}
@@ -53,7 +53,7 @@ export default function CategoryTabs({ items, activeId, onSelect }) {
   }
 
   return (
-    <div className="sticky top-[calc(3.75rem+env(safe-area-inset-top))] z-30 border-b border-[var(--menu-chrome-border)] bg-[var(--menu-chrome-bg)] backdrop-blur-2xl transition-colors duration-500 sm:top-[calc(4.5rem+env(safe-area-inset-top))]">
+    <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-30 border-b border-[var(--menu-chrome-border)] bg-[var(--menu-chrome-bg)] backdrop-blur-2xl transition-colors duration-500 sm:top-[calc(4.5rem+env(safe-area-inset-top))]">
       <TabRail items={items} activeId={activeId} onSelect={onSelect} />
     </div>
   );

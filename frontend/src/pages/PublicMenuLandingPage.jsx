@@ -142,63 +142,70 @@ export default function PublicMenuLandingPage() {
         />
       )}
 
-      <div className="pointer-events-none absolute inset-0 bg-black/40" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/25" />
+      <div className="pointer-events-none absolute inset-0 bg-black/30" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/80" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
 
-      <div className="absolute left-0 top-0 z-20 px-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6">
-        <MenuDeveloperBadge to={paths.developer} />
-      </div>
-
-      <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-lg flex-col items-center justify-center px-5 py-8 text-center min-[480px]:px-6 sm:max-w-xl sm:px-8 sm:py-12">
-        <div className="flex w-full min-h-0 flex-col items-center">
+      <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-lg flex-col px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-center sm:max-w-xl sm:px-8">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
           {cafe.logo ? (
-            <CloudinaryImage
-              src={cafe.logo}
-              alt=""
-              preset="logoHero"
-              width={144}
-              height={144}
-              className="h-16 w-16 shrink-0 rounded-full object-cover shadow-[0_12px_32px_rgba(0,0,0,0.35)] ring-[3px] ring-white sm:h-[clamp(4.5rem,16vmin,8.5rem)] sm:w-[clamp(4.5rem,16vmin,8.5rem)]"
-            />
+            <div className="rounded-full bg-white/12 p-1 shadow-[0_16px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/35 backdrop-blur-sm">
+              <CloudinaryImage
+                src={cafe.logo}
+                alt=""
+                preset="logoHero"
+                width={160}
+                height={160}
+                className="h-[5.25rem] w-[5.25rem] rounded-full object-cover ring-2 ring-white sm:h-[clamp(5.5rem,16vmin,8rem)] sm:w-[clamp(5.5rem,16vmin,8rem)]"
+              />
+            </div>
           ) : (
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/15 font-display text-2xl font-semibold text-white ring-[3px] ring-white/80 sm:h-[clamp(4.5rem,16vmin,8.5rem)] sm:w-[clamp(4.5rem,16vmin,8.5rem)] sm:text-[clamp(1.35rem,6vmin,2.5rem)]">
+            <div className="flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-full bg-white/12 font-display text-3xl font-semibold text-white ring-2 ring-white/85 sm:h-[clamp(5.5rem,16vmin,8rem)] sm:w-[clamp(5.5rem,16vmin,8rem)] sm:text-[clamp(1.5rem,6vmin,2.5rem)]">
               {cafe.name.slice(0, 1)}
             </div>
           )}
 
-          <h1 className="mt-3 max-w-full shrink-0 line-clamp-2 break-words text-balance font-display text-[1.65rem] leading-[1.15] font-semibold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:mt-5 sm:text-[clamp(1.75rem,7vmin,3.25rem)] sm:leading-[1.1]">
+          <h1 className="mt-5 max-w-[16rem] break-words font-display text-[2rem] leading-[1.05] font-semibold tracking-[0.06em] text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.45)] sm:mt-6 sm:max-w-md sm:text-[clamp(2.1rem,6.5vmin,3.1rem)]">
             {cafe.name}
           </h1>
 
+          <span className="mt-4 h-px w-10 bg-[#e8d5a8]/80" aria-hidden />
+
           {(showAddress || showPhone) && (
-            <div className="mt-3 flex max-w-md flex-col items-center gap-1.5 text-sm text-white/90 sm:mt-4">
+            <div className="mt-4 flex max-w-xs flex-col items-center gap-2 text-[13px] text-white/85 sm:max-w-md sm:text-sm">
               {showAddress ? (
                 <a
                   href={mapsHref(cafe)}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex max-w-full items-center gap-1.5 hover:text-white"
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/12 hover:bg-white/14"
                 >
-                  <MaterialIcon name="location_on" className="shrink-0 text-[18px] text-[#e8d5a8]" />
+                  <MaterialIcon name="location_on" className="shrink-0 text-[16px] text-[#e8d5a8]" />
                   <span className="truncate">{cafe.address || t('menu.directions')}</span>
                 </a>
               ) : null}
               {showPhone ? (
-                <a href={telHref(cafe.phone)} className="inline-flex items-center gap-1.5 hover:text-white">
-                  <MaterialIcon name="call" className="text-[18px] text-[#e8d5a8]" />
+                <a
+                  href={telHref(cafe.phone)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1.5 ring-1 ring-white/12 hover:bg-white/14"
+                >
+                  <MaterialIcon name="call" className="text-[16px] text-[#e8d5a8]" />
                   {cafe.phone}
                 </a>
               ) : null}
             </div>
           )}
+        </div>
 
+        <div className="flex shrink-0 flex-col items-center gap-5 pb-1 pt-4">
           <Link
             to={menuDestination}
-            className="mt-5 inline-flex min-h-11 w-full max-w-[16rem] shrink-0 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#0d1b2a] shadow-[0_12px_32px_rgba(0,0,0,0.28)] transition-transform hover:bg-[#f7f6f3] active:scale-[0.98] sm:mt-7 sm:min-h-12 sm:max-w-none sm:w-auto sm:min-w-52 sm:px-7 sm:py-3.5"
+            className="inline-flex h-12 w-full max-w-[17.5rem] items-center justify-center gap-2 rounded-full bg-white px-8 text-[15px] font-semibold tracking-[0.02em] text-[#0d1b2a] shadow-[0_14px_36px_rgba(0,0,0,0.32)] transition hover:bg-[#f7f6f3] active:scale-[0.98] sm:h-[3.25rem] sm:max-w-[19rem]"
           >
-            <span className="tracking-wide">{t('menu.viewMenu')}</span>
-            <MaterialIcon name="arrow_forward" className="text-[20px]" />
+            <span>{t('menu.viewMenu')}</span>
+            <MaterialIcon name="arrow_forward" className="text-[18px]" />
           </Link>
+          <MenuDeveloperBadge to={paths.developer} />
         </div>
       </div>
     </LandingShell>

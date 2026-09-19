@@ -77,7 +77,7 @@ export default function PublicProductSheet({ product, onClose, shareTitle, share
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-6 sm:pb-7">
+        <div className="flex min-h-0 flex-1 flex-col px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-6 sm:pb-7">
           <p className="font-display text-[1.65rem] font-semibold leading-none tracking-tight text-[#b8945a] sm:text-[1.85rem]">
             {formatPrice(product.price, locale)}
           </p>

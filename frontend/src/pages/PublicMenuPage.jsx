@@ -26,9 +26,10 @@ import {
 import { normalizeMenuUi, getSectionCard } from '../utils/menuUi.js';
 import { applyCardAppearance } from '../utils/menuTheme.js';
 
-const productGridClass = 'grid min-w-0 grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
-const productListClass = 'flex flex-col gap-3 sm:gap-4';
-const contentClass = 'mx-auto max-w-6xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8';
+const productGridClass = 'grid min-w-0 grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
+const productListClass = 'flex flex-col gap-2.5 sm:gap-4';
+const contentClass =
+  'mx-auto max-w-6xl px-3 py-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-8';
 
 function MenuStatus({ title, message }) {
   return (
@@ -299,7 +300,7 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
           {isSectionMode ? section?.name : t('menu.categories')}
         </p>
         <h1
-          className="mb-5 break-words text-[1.35rem] font-semibold tracking-tight text-on-surface sm:mb-6 sm:text-2xl"
+          className="mb-4 min-w-0 break-words text-[1.2rem] font-semibold leading-snug tracking-tight text-on-surface sm:mb-6 sm:text-2xl"
           style={{ textShadow: 'var(--menu-heading-shadow)' }}
         >
           {selection.category?.name}

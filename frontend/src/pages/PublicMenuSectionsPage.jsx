@@ -53,9 +53,9 @@ function SectionCard({ section, to }) {
   return (
     <Link
       to={to}
-      className="group flex items-center gap-4 rounded-[1.25rem] border border-white/12 bg-white/[0.07] p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all active:scale-[0.99] sm:gap-5 sm:p-4"
+      className="group flex min-w-0 items-center gap-3 rounded-[1.25rem] border border-white/12 bg-white/[0.07] p-3 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all active:scale-[0.99] sm:gap-5 sm:p-4"
     >
-      <div className="relative h-[4.25rem] w-[4.25rem] shrink-0 overflow-hidden rounded-2xl ring-1 ring-white/10 sm:h-[4.75rem] sm:w-[4.75rem]">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl ring-1 ring-white/10 sm:h-[4.75rem] sm:w-[4.75rem]">
         {section.image ? (
           <CloudinaryImage
             src={section.image}
@@ -71,7 +71,7 @@ function SectionCard({ section, to }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <h2 className="text-[1.05rem] font-semibold leading-snug tracking-tight text-white sm:text-lg">
+        <h2 className="break-words text-[1.05rem] font-semibold leading-snug tracking-tight text-white sm:text-lg">
           {section.name}
         </h2>
         {section.description ? (
@@ -82,7 +82,7 @@ function SectionCard({ section, to }) {
       </div>
 
       <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${theme.accent} transition-transform group-hover:translate-x-0.5`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10 ${theme.accent} transition-transform group-hover:translate-x-0.5`}
       >
         <MaterialIcon name="arrow_forward" className="text-[20px] rtl:scale-x-[-1]" />
       </span>
@@ -172,8 +172,8 @@ export default function PublicMenuSectionsPage() {
       <div className="pointer-events-none absolute inset-0 bg-black/50" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/45 via-black/30 to-black/75" />
 
-      <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-lg flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:max-w-md sm:px-6">
-        <div className="flex items-center py-3">
+      <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-lg flex-col px-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(0.5rem,env(safe-area-inset-top))] sm:max-w-md sm:px-6">
+        <div className="flex items-center justify-between py-2 sm:py-3">
           <Link
             to={paths.home}
             className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/16"
@@ -181,26 +181,27 @@ export default function PublicMenuSectionsPage() {
           >
             <MaterialIcon name="arrow_back" className="text-[22px] rtl:scale-x-[-1]" />
           </Link>
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col justify-center">
-          <div className="mb-8 text-center sm:mb-10">
+          <Link to={paths.home} className="shrink-0" aria-label={cafe.name}>
             {cafe.logo ? (
               <CloudinaryImage
                 src={cafe.logo}
                 alt=""
-                preset="logoHero"
-                width={80}
-                height={80}
-                className="mx-auto h-[4.25rem] w-[4.25rem] rounded-full object-cover shadow-[0_10px_28px_rgba(0,0,0,0.35)] ring-2 ring-white/85"
+                preset="logo"
+                width={48}
+                height={48}
+                className="h-9 w-9 rounded-full object-cover ring-2 ring-white/80 sm:h-10 sm:w-10"
               />
             ) : (
-              <div className="mx-auto flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full bg-white/10 text-xl font-semibold text-white ring-2 ring-white/75">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white ring-2 ring-white/70 sm:h-10 sm:w-10">
                 {cafe.name.slice(0, 1)}
-              </div>
+              </span>
             )}
-            <p className="mt-4 text-sm font-medium tracking-wide text-white/70">{cafe.name}</p>
-            <h1 className="mt-2 text-balance text-[clamp(1.45rem,5vw,1.85rem)] font-semibold leading-tight tracking-tight text-white">
+          </Link>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto">
+          <div className="mb-6 px-2 text-center sm:mb-10">
+            <h1 className="text-balance text-[clamp(1.35rem,5.5vw,1.85rem)] font-semibold leading-tight tracking-tight text-white">
               {t('menu.sectionsTitle')}
             </h1>
           </div>
