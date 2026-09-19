@@ -64,16 +64,27 @@ export default function AdminProductCard({
         </button>
       </div>
 
-      <div className={`relative h-48 w-full bg-surface-container-highest ${available ? '' : 'grayscale-[30%]'}`}>
+      <div className={`relative aspect-square w-full bg-[#ebe8e2] ${available ? '' : 'grayscale-[30%]'}`}>
         {product.image ? (
           <>
-            <CloudinaryImage src={product.image} alt="" preset="productCard" className="h-full w-full object-cover" />
+            <div className="absolute inset-0 p-2.5 sm:p-3">
+              <div className="h-full w-full overflow-hidden rounded-[1.15rem] bg-white shadow-[0_8px_24px_rgba(13,27,42,0.08)] ring-1 ring-black/5">
+                <CloudinaryImage
+                  src={product.image}
+                  alt=""
+                  preset="productCard"
+                  widths={[720, 1080, 1440]}
+                  sizes="(max-width: 768px) 92vw, (max-width: 1280px) 44vw, 360px"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            </div>
             {canGenerate ? (
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => onGenerateImage(product)}
-                className="absolute bottom-2 end-2 z-10 inline-flex h-8 items-center gap-1 rounded-full bg-black/65 px-3 text-[11px] font-semibold text-white shadow-sm backdrop-blur-sm transition hover:bg-black/75 disabled:opacity-50"
+                className="absolute bottom-4 end-4 z-10 inline-flex h-8 items-center gap-1 rounded-full bg-black/65 px-3 text-[11px] font-semibold text-white shadow-sm backdrop-blur-sm transition hover:bg-black/75 disabled:opacity-50"
               >
                 <MaterialIcon
                   name={generating ? 'progress_activity' : 'auto_awesome'}

@@ -183,7 +183,7 @@ export const IMAGE_PRESETS = {
     crop: 'fill',
     gravity: 'auto',
     sharpen: 50,
-    quality: 'auto:good',
+    quality: 'auto:best',
     sizes: '(max-width: 640px) 48vw, (max-width: 1024px) 30vw, 320px',
     lazy: true,
   },
