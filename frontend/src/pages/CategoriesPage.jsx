@@ -15,6 +15,7 @@ import { MAX_MENU_SECTIONS, sectionIcon, slugifySectionKey } from '../utils/menu
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import CloudinaryImage from '../components/ui/CloudinaryImage.jsx';
 import CategoryFormModal from '../components/dashboard/CategoryFormModal.jsx';
+import ConfirmDialog from '../components/ui/ConfirmDialog.jsx';
 import { clearPublicMenuCache } from '../hooks/usePublicMenu.js';
 import { useLocale } from '../hooks/useLocale.js';
 import { getMyCafe, updateMyCafe } from '../services/cafe.service.js';
@@ -124,6 +125,8 @@ export default function CategoriesPage() {
   const [dragId, setDragId] = useState(null);
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) {
@@ -286,13 +289,17 @@ export default function CategoriesPage() {
     }
   }
 
-  async function handleDelete(category) {
-    const confirmed = window.confirm(t('categories.deleteConfirm', { name: category.name }));
+  function handleDelete(category) {
+    setPendingDelete(category);
+  }
 
-    if (!confirmed) {
+  async function confirmDelete() {
+    const category = pendingDelete;
+    if (!category || deleting) {
       return;
     }
 
+    setDeleting(true);
     setError('');
 
     try {
@@ -303,9 +310,12 @@ export default function CategoriesPage() {
         closeForm();
       }
 
+      setPendingDelete(null);
       await loadData(true);
     } catch (err) {
       setError(getApiError(err, t, 'categories.deleteError'));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -747,6 +757,22 @@ export default function CategoriesPage() {
         onSubmit={handleSubmit}
         onImageChange={handleImageChange}
         onClearImage={() => setForm((current) => ({ ...current, image: '' }))}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title={t('categories.deleteTitle')}
+        description={pendingDelete ? t('categories.deleteHint', { name: pendingDelete.name }) : ''}
+        confirmLabel={t('common.delete')}
+        confirmingLabel={t('common.deleting')}
+        cancelLabel={t('common.cancel')}
+        confirming={deleting}
+        onCancel={() => {
+          if (!deleting) {
+            setPendingDelete(null);
+          }
+        }}
+        onConfirm={confirmDelete}
       />
 
       {isSectionFormOpen ? (

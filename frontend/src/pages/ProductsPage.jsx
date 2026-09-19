@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import AdminProductCard from '../components/dashboard/AdminProductCard.jsx';
 import MediaImagePickerModal from '../components/dashboard/MediaImagePickerModal.jsx';
 import ProductFormModal from '../components/dashboard/ProductFormModal.jsx';
+import ConfirmDialog from '../components/ui/ConfirmDialog.jsx';
 import Field from '../components/ui/Field.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import Pagination from '../components/ui/Pagination.jsx';
@@ -49,6 +50,8 @@ export default function ProductsPage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || '');
   const [search, setSearch] = useState(() => (searchParams.get('q') || '').trim());
   const [categoryFilter, setCategoryFilter] = useState(() => searchParams.get('category') || 'all');
@@ -309,13 +312,17 @@ export default function ProductsPage() {
     }
   }
 
-  async function handleDelete(product) {
-    const confirmed = window.confirm(t('products.deleteConfirm', { name: product.name }));
+  function handleDelete(product) {
+    setPendingDelete(product);
+  }
 
-    if (!confirmed) {
+  async function confirmDelete() {
+    const product = pendingDelete;
+    if (!product || deleting) {
       return;
     }
 
+    setDeleting(true);
     setError('');
 
     try {
@@ -325,9 +332,12 @@ export default function ProductsPage() {
         closeForm();
       }
 
+      setPendingDelete(null);
       await loadData(true);
     } catch (err) {
       setError(getApiError(err, t, 'products.deleteError'));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -687,6 +697,22 @@ export default function ProductsPage() {
         onSubmit={handleSubmit}
         onImageChange={handleImageChange}
         onClearImage={() => setForm((current) => ({ ...current, image: '' }))}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title={t('products.deleteTitle')}
+        description={pendingDelete ? t('products.deleteHint', { name: pendingDelete.name }) : ''}
+        confirmLabel={t('common.delete')}
+        confirmingLabel={t('common.deleting')}
+        cancelLabel={t('common.cancel')}
+        confirming={deleting}
+        onCancel={() => {
+          if (!deleting) {
+            setPendingDelete(null);
+          }
+        }}
+        onConfirm={confirmDelete}
       />
     </div>
   );

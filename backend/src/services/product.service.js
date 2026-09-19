@@ -140,7 +140,7 @@ export async function listProducts(user, query = {}) {
     prisma.product.findMany({
       where,
       include: categoryInclude(),
-      orderBy: [{ order: 'asc' }, { name: 'asc' }],
+      orderBy: [{ createdAt: 'desc' }, { updatedAt: 'desc' }],
       skip,
       take: limit,
     }),
