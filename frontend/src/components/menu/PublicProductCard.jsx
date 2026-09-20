@@ -3,7 +3,7 @@ import { useProductImageReady } from '../../hooks/useProductImageReady.js';
 import CloudinaryImage from '../ui/CloudinaryImage.jsx';
 import { formatPrice } from '../../utils/format.js';
 
-export default function PublicProductCard({ product, onSelect, showDescription = true }) {
+export default function PublicProductCard({ product, onSelect, showDescription = true, index = 0 }) {
   const { locale } = useLocale();
   const ready = useProductImageReady(product.image);
 
@@ -15,12 +15,15 @@ export default function PublicProductCard({ product, onSelect, showDescription =
     <button
       type="button"
       onClick={() => onSelect(product)}
-      className="flex h-full min-w-0 flex-col overflow-hidden bg-[var(--menu-card-bg)] text-start shadow-[var(--menu-card-shadow)] ring-1 ring-[var(--menu-card-ring)] transition-transform duration-200 animate-[fadeIn_0.35s_ease] active:scale-[0.985]"
-      style={{ borderRadius: 'var(--menu-card-radius)' }}
+      className="menu-product-enter menu-product-card flex h-full min-w-0 flex-col overflow-hidden bg-[var(--menu-card-bg)] text-start shadow-[var(--menu-card-shadow)] ring-1 ring-[var(--menu-card-ring)] transition-[transform,box-shadow] duration-300 ease-out active:scale-[0.985]"
+      style={{
+        borderRadius: 'var(--menu-card-radius)',
+        '--product-delay': `${Math.min(index, 14) * 45}ms`,
+      }}
     >
       <div className="px-2 pt-2 sm:px-0 sm:pt-0">
         <div className="mx-auto aspect-square w-full overflow-hidden rounded-[calc(var(--menu-card-radius)-0.4rem)] bg-surface-container sm:rounded-none sm:aspect-[var(--menu-card-image-ratio,1/1)]">
-          <CloudinaryImage src={product.image} alt="" preset="productCard" className="h-full w-full object-cover" />
+          <CloudinaryImage src={product.image} alt="" preset="productCard" className="h-full w-full object-cover will-change-transform" />
         </div>
       </div>
       <div className="flex flex-1 flex-col px-2.5 py-2.5 sm:px-3.5 sm:py-3.5">

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { LoadingIndicator } from './components/application/loading-indicator/loading-indicator.jsx';
 import AuthLayout from './layouts/AuthLayout.jsx';
 import PublicLayout from './layouts/PublicLayout.jsx';
 import DashboardLegacyRedirect from './components/common/DashboardLegacyRedirect.jsx';
@@ -52,6 +53,17 @@ const SEO_DOCUMENT_PATHS = getSeoDocumentPaths();
 
 function RouteFallback() {
   const { t } = useLocale();
+  const { pathname } = useLocation();
+  const host = parseHost(typeof window !== 'undefined' ? window.location.hostname : '');
+  const isPublicMenu = host.kind === 'menu' || String(pathname || '').startsWith('/menu/');
+
+  if (isPublicMenu) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0d1b2a] text-white">
+        <LoadingIndicator type="dot-circle" size="md" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

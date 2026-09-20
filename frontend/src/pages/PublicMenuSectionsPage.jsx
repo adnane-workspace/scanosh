@@ -8,6 +8,7 @@ import { useLocale } from '../hooks/useLocale.js';
 import { getMenuPaths } from '../utils/hosts.js';
 import { resolveMenuBackdrop } from '../utils/menuUi.js';
 import { getActiveSections, getSectionMenuDestination, sectionIcon } from '../utils/menuSections.js';
+import PublicMenuLoading from '../components/menu/PublicMenuLoading.jsx';
 
 const SECTION_FALLBACK = {
   accent: 'bg-white/15 text-white',
@@ -127,9 +128,7 @@ export default function PublicMenuSectionsPage() {
   if (loading) {
     return (
       <SectionsShell>
-        <div className="flex h-full items-center justify-center">
-          <div className="h-12 w-12 animate-pulse rounded-full bg-white/20" />
-        </div>
+        <PublicMenuLoading />
       </SectionsShell>
     );
   }

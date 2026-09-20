@@ -25,6 +25,7 @@ import {
 } from '../utils/menuSections.js';
 import { normalizeMenuUi, getSectionCard } from '../utils/menuUi.js';
 import { applyCardAppearance } from '../utils/menuTheme.js';
+import PublicMenuLoading from '../components/menu/PublicMenuLoading.jsx';
 
 const productGridClass = 'grid min-w-0 grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
 const productListClass = 'flex flex-col gap-2.5 sm:gap-4';
@@ -36,23 +37,6 @@ function MenuStatus({ title, message }) {
     <div className="flex min-h-[50vh] flex-col items-center justify-center px-6 text-center">
       <h1 className="text-xl font-semibold text-on-surface md:text-2xl">{title}</h1>
       <p className="mt-2 max-w-md text-sm text-on-surface-variant md:text-base">{message}</p>
-    </div>
-  );
-}
-
-function MenuSkeleton() {
-  return (
-    <div className={`${contentClass} animate-pulse`}>
-      <div className="mb-5 flex gap-2 overflow-hidden">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-9 w-24 shrink-0 rounded-full bg-[#ebe8e2]" />
-        ))}
-      </div>
-      <div className={productGridClass}>
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="aspect-[3/4] rounded-[1.35rem] bg-[#ebe8e2]" />
-        ))}
-      </div>
     </div>
   );
 }
@@ -171,7 +155,7 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
     return frame(
       <>
         <PublicMenuHeader cafe={cafe} slug={slug} backTo={landingPath} backLabel={t('menu.home')} />
-        <MenuSkeleton />
+        <PublicMenuLoading className="text-on-surface" />
       </>,
     );
   }
@@ -307,8 +291,12 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
         </h1>
 
         {products.length ? (
-          <div className={useListLayout ? productListClass : productGridClass} style={cardStyle}>
-            {products.map((product) => {
+          <div
+            key={activeCategoryId}
+            className={useListLayout ? productListClass : productGridClass}
+            style={cardStyle}
+          >
+            {products.map((product, index) => {
               const item = sectionKey === 'cafe' ? { ...product, description: '' } : product;
               return useListLayout ? (
                 <PublicProductListItem
@@ -316,6 +304,7 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
                   product={item}
                   onSelect={openProduct}
                   showDescription={showCardDescription}
+                  index={index}
                 />
               ) : (
                 <PublicProductCard
@@ -323,6 +312,7 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
                   product={item}
                   onSelect={openProduct}
                   showDescription={showCardDescription}
+                  index={index}
                 />
               );
             })}

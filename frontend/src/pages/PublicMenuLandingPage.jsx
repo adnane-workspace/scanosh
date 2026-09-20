@@ -12,6 +12,7 @@ import { getMenuPaths } from '../utils/hosts.js';
 import { hasCoordinates, mapsHref } from '../utils/location.js';
 import { normalizeMenuUi, resolveMenuBackdrop } from '../utils/menuUi.js';
 import { getSectionMenuDestination } from '../utils/menuSections.js';
+import PublicMenuLoading from '../components/menu/PublicMenuLoading.jsx';
 
 function telHref(phone) {
   return `tel:${String(phone).replace(/[^\d+]/g, '')}`;
@@ -89,9 +90,7 @@ export default function PublicMenuLandingPage() {
   if (loading) {
     return (
       <LandingShell>
-        <div className="flex h-full items-center justify-center">
-          <div className="h-16 w-16 animate-pulse rounded-full bg-white/20" />
-        </div>
+        <PublicMenuLoading />
       </LandingShell>
     );
   }
