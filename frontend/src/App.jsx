@@ -41,6 +41,7 @@ const PublicMenuSectionsPage = lazy(() => import('./pages/PublicMenuSectionsPage
 const PublicMenuPage = lazy(() => import('./pages/PublicMenuPage.jsx'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
 const TrialLeadsPage = lazy(() => import('./pages/TrialLeadsPage.jsx'));
+const ReviewsPage = lazy(() => import('./pages/ReviewsPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 const PublicMenuSettingsPage = lazy(() => import('./pages/PublicMenuSettingsPage.jsx'));
 const SiteLandingPage = lazy(() => import('./pages/SiteLandingPage.jsx'));
@@ -137,6 +138,7 @@ function ProductRoutes() {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="ai-fill" element={<AiFillPage />} />
           <Route path="menu" element={<PublicMenuSettingsPage />} />
+          <Route path="reviews" element={<ReviewsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Route>

@@ -487,6 +487,7 @@ export async function deletePlatformCafe(cafeId, actor) {
     await tx.category.updateMany({ where: { cafeId }, data: { parentId: null } });
     await tx.category.deleteMany({ where: { cafeId } });
     await tx.qrChangeRequest.deleteMany({ where: { cafeId } });
+    await tx.feedback.deleteMany({ where: { cafeId } });
     await tx.user.deleteMany({ where: { cafeId, role: 'admin' } });
     await tx.cafe.delete({ where: { id: cafeId } });
   });

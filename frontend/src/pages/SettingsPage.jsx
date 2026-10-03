@@ -25,6 +25,7 @@ function toCafeForm(cafe = {}) {
     logo: cafe.logo || '',
     address: cafe.address || '',
     phone: cafe.phone || '',
+    googleReviewUrl: cafe.googleReviewUrl || '',
     latitude: cafe.latitude ?? null,
     longitude: cafe.longitude ?? null,
   };
@@ -429,6 +430,31 @@ export default function SettingsPage() {
                     className="w-full rounded-xl bg-surface-container-low px-4 py-3.5 text-on-surface outline-none ring-1 ring-transparent focus:ring-2 focus:ring-primary"
                   />
                 </div>
+              </SectionCard>
+
+              <SectionCard icon="star" title={t('settings.googleTitle')} subtitle={t('settings.googleHint')}>
+                <SettingsField id="googleReviewUrl" label={t('settings.googleUrl')} icon="link" hint={t('settings.googleUrlHint')}>
+                  <input
+                    id="googleReviewUrl"
+                    name="googleReviewUrl"
+                    value={form.googleReviewUrl}
+                    onChange={handleChange}
+                    placeholder="https://g.page/r/... ou ChIJ..."
+                    className={inputClass}
+                    inputMode="url"
+                    autoComplete="off"
+                  />
+                  {String(form.googleReviewUrl || '').trim().startsWith('https://') ? (
+                    <a
+                      href={String(form.googleReviewUrl).trim()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex text-sm font-semibold text-primary underline-offset-2 hover:underline"
+                    >
+                      {t('settings.googleTest')}
+                    </a>
+                  ) : null}
+                </SettingsField>
               </SectionCard>
 
               <SectionCard icon="place" title={t('settings.contact')} subtitle={t('settings.contactHint')}>

@@ -19,6 +19,7 @@ export const updateCafeSchema = z.object({
       cover: z.string().trim().max(2048).optional(),
       address: z.string().trim().max(200).optional(),
       phone: z.string().trim().max(30).optional(),
+      googleReviewUrl: z.string().trim().max(500).optional(),
       latitude: z.number().min(-90).max(90).nullable().optional(),
       longitude: z.number().min(-180).max(180).nullable().optional(),
       menuUi: z

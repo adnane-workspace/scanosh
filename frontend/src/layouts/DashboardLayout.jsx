@@ -35,6 +35,7 @@ const headerSubtitleKeys = {
   '/app/products': 'header.products',
   '/app/ai-fill': 'header.aiFill',
   '/app/menu': 'header.publicMenu',
+  '/app/reviews': 'header.reviews',
   '/app/settings': 'header.settings',
   '/platform': 'header.dashboard',
   '/platform/settings': 'header.settings',

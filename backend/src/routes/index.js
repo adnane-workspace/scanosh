@@ -3,6 +3,7 @@ import { authRouter } from './auth.routes.js';
 import { cafeRouter } from './cafe.routes.js';
 import { categoryRouter } from './category.routes.js';
 import { dashboardRouter } from './dashboard.routes.js';
+import { feedbackRouter } from './feedback.routes.js';
 import { healthRouter } from './health.routes.js';
 import { menuImportRouter } from './menuImport.routes.js';
 import { menuRouter } from './menu.routes.js';
@@ -23,6 +24,7 @@ router.use('/me/categories', categoryRouter);
 router.use('/me/products', productRouter);
 router.use('/me/menu-imports', menuImportRouter);
 router.use('/me/stats', dashboardRouter);
+router.use('/me/feedback', feedbackRouter);
 
 router.use('/cafe', cafeRouter);
 router.use('/categories', categoryRouter);

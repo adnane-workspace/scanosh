@@ -34,6 +34,7 @@ test('mapLegacyDashboardPath keeps bookmarks working', () => {
   assert.equal(mapLegacyDashboardPath('/dashboard', { role: 'superadmin' }), '/platform');
   assert.equal(mapLegacyDashboardPath('/dashboard/products', { role: 'admin' }), '/app/products');
   assert.equal(mapLegacyDashboardPath('/dashboard/cafes/abc', { role: 'superadmin' }), '/platform/cafes/abc');
+  assert.equal(mapLegacyDashboardPath('/dashboard/reviews', { role: 'admin' }), '/app/reviews');
   assert.equal(mapLegacyDashboardPath('/dashboard/settings', { role: 'admin' }), '/app/settings');
   assert.equal(mapLegacyDashboardPath('/dashboard/settings', { role: 'superadmin' }), '/platform/settings');
 });

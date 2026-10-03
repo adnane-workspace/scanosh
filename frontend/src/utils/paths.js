@@ -40,7 +40,7 @@ export function landingSectionId(pathname) {
 }
 
 const PLATFORM_PREFIXES = ['cafes', 'logs', 'storage', 'trials'];
-const APP_PREFIXES = ['products', 'categories'];
+const APP_PREFIXES = ['products', 'categories', 'reviews'];
 
 export function mapLegacyDashboardPath(pathname, user) {
   const rest = String(pathname || '').replace(/^\/dashboard\/?/, '');

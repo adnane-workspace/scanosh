@@ -118,10 +118,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="grid min-h-screen bg-background text-on-surface lg:grid-cols-2">
+    <main className="grid min-h-screen grid-rows-[auto_1fr] bg-background text-on-surface lg:grid-cols-2 lg:grid-rows-1">
       <AuthBrandPanel />
 
-      <section className="relative flex min-h-screen items-center justify-center overflow-y-auto px-4 py-10 sm:px-8">
+      <section className="relative flex items-center justify-center overflow-y-auto px-4 py-10 sm:px-8 lg:min-h-screen">
         <div className="pointer-events-none absolute top-0 right-0 h-64 w-64 rounded-full bg-primary/8 blur-[90px] lg:hidden" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-48 w-48 rounded-full bg-tertiary/10 blur-[80px] lg:hidden" />
 

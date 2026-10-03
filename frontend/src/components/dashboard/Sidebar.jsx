@@ -36,6 +36,7 @@ export default function Sidebar({ cafe, role, onLogout, onNavigate }) {
         { to: '/app/products', label: t('nav.products'), icon: 'lunch_dining' },
         { to: '/app/ai-fill', label: t('nav.aiFill'), icon: 'auto_awesome' },
         { to: '/app/menu', label: t('nav.publicMenu'), icon: 'menu_book' },
+        { to: '/app/reviews', label: t('nav.reviews'), icon: 'reviews' },
         { to: '/app/settings', label: t('nav.settings'), icon: 'settings' },
       ];
   const menuUrl = cafe?.slug ? getPublicMenuUrl(cafe.slug) : '';

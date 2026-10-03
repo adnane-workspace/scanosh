@@ -4,6 +4,7 @@ import { assertUsableSlug, slugify } from '../utils/slug.js';
 import { recordActivity } from './activity.service.js';
 import { invalidatePublicMenu } from './menuCache.service.js';
 import { toQrStatus } from './qr.service.js';
+import { extractGooglePlaceId, normalizeGoogleReviewUrl } from '../utils/googleReviewUrl.js';
 import { normalizeMenuUi, finalizeMenuUi } from '../utils/menuUi.js';
 import { deleteReplacedImage, normalizeImageUrl } from './storage.service.js';
 
@@ -27,6 +28,7 @@ function toCafeResponse(cafe) {
     latitude: cafe.latitude,
     longitude: cafe.longitude,
     slug: cafe.slug,
+    googleReviewUrl: cafe.googleReviewUrl || '',
     menuUi: normalizeMenuUi(cafe.menuUi),
     isActive: cafe.isActive,
     createdAt: cafe.createdAt,
@@ -88,6 +90,17 @@ export async function updateMyCafe(user, payload) {
 
   if (payload.phone !== undefined) {
     data.phone = payload.phone;
+  }
+
+  if (payload.googleReviewUrl !== undefined) {
+    const googleReviewUrl = normalizeGoogleReviewUrl(payload.googleReviewUrl);
+
+    if (googleReviewUrl === null) {
+      throw new ApiError(400, 'Invalid Google review URL', null, 'GOOGLE_REVIEW_URL_INVALID');
+    }
+
+    data.googleReviewUrl = googleReviewUrl;
+    data.googlePlaceId = extractGooglePlaceId(googleReviewUrl) || null;
   }
 
   if (payload.latitude !== undefined) {

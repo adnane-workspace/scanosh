@@ -82,6 +82,8 @@ model Cafe {
   qrChangeAllowed Boolean       @default(false)
   trialRole       CafeTrialRole @default(none)
   isDemo          Boolean       @default(false)
+  googleReviewUrl String        @default("") @db.VarChar(500)
+  googlePlaceId   String?       @db.VarChar(120)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   users           User[]
@@ -90,9 +92,26 @@ model Cafe {
   activityLogs    ActivityLog[]
   qrChangeRequests QrChangeRequest[]
   menuImports     MenuImport[]
+  feedbacks       Feedback[]
 
   @@index([trialRole])
   @@index([isDemo])
+}
+
+model Feedback {
+  id         String   @id @default(uuid())
+  cafeId     String
+  cafe       Cafe     @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  rating     Int
+  comment    String   @default("") @db.VarChar(1000)
+  sentiment  String?  @db.VarChar(20)
+  tags       Json     @default("[]")
+  aiSummary  Json?
+  ipHash     String   @default("") @db.VarChar(64)
+  createdAt  DateTime @default(now())
+
+  @@index([cafeId, createdAt])
+  @@index([cafeId, rating])
 }
 
 model MenuImport {

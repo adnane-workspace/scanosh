@@ -25,6 +25,7 @@ import {
 } from '../utils/menuSections.js';
 import { normalizeMenuUi, getSectionCard } from '../utils/menuUi.js';
 import { applyCardAppearance } from '../utils/menuTheme.js';
+import MenuFeedback from '../components/menu/MenuFeedback.jsx';
 import PublicMenuLoading from '../components/menu/PublicMenuLoading.jsx';
 
 const productGridClass = 'grid min-w-0 grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
@@ -320,6 +321,13 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
         ) : (
           <MenuStatus title={t('menu.emptyTitle')} message={t('menu.empty')} />
         )}
+
+        <MenuFeedback
+          slug={slug}
+          googleReviewUrl={cafe?.googleReviewUrl || ''}
+          categoryId={activeCategoryId || ''}
+          productId={selectedProduct?.id || ''}
+        />
       </div>
 
       <PublicProductSheet
