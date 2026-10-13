@@ -98,6 +98,7 @@ async function loadPublicMenu(slug) {
       longitude: true,
       menuUi: true,
       isActive: true,
+      feedbackEnabled: true,
       googleReviewUrl: true,
     },
   });
@@ -167,7 +168,8 @@ async function loadPublicMenu(slug) {
         phone: cafe.phone || '',
         latitude: cafe.latitude,
         longitude: cafe.longitude,
-        googleReviewUrl: cafe.googleReviewUrl || '',
+        feedbackEnabled: cafe.feedbackEnabled !== false,
+        googleReviewUrl: cafe.feedbackEnabled === false ? '' : cafe.googleReviewUrl || '',
         menuUi,
       },
       categories: categoryTree,

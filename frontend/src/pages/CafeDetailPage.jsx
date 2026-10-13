@@ -104,6 +104,25 @@ export default function CafeDetailPage() {
     }
   }
 
+  async function handleToggleFeedback() {
+    if (!cafe) {
+      return;
+    }
+
+    setPending(true);
+    setError('');
+
+    try {
+      const updated = await updatePlatformCafe(cafe._id, { feedbackEnabled: cafe.feedbackEnabled === false });
+      setCafe((current) => ({ ...current, ...updated }));
+      toast.success(updated.feedbackEnabled === false ? t('platform.reviewsDisabled') : t('platform.reviewsEnabled'));
+    } catch (err) {
+      setError(getApiError(err, t, 'platform.updateError'));
+    } finally {
+      setPending(false);
+    }
+  }
+
   async function handleToggleDemo() {
     if (!cafe) {
       return;
@@ -300,6 +319,19 @@ export default function CafeDetailPage() {
               className="rounded-xl bg-surface-container-high px-5 py-2.5 text-sm font-semibold text-on-surface disabled:opacity-60"
             >
               {cafe.isActive ? t('platform.deactivate') : t('platform.activate')}
+            </button>
+          </div>
+
+          <div className="space-y-3 border-t border-outline-variant/30 pt-5">
+            <h2 className="text-lg font-semibold text-on-surface">{t('platform.reviewsTitle')}</h2>
+            <p className="text-sm text-on-surface-variant">{t('platform.reviewsHint')}</p>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={handleToggleFeedback}
+              className="rounded-xl bg-surface-container-high px-5 py-2.5 text-sm font-semibold text-on-surface disabled:opacity-60"
+            >
+              {cafe.feedbackEnabled === false ? t('platform.enableReviews') : t('platform.disableReviews')}
             </button>
           </div>
 

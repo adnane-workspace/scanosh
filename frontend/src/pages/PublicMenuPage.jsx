@@ -322,12 +322,14 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
           <MenuStatus title={t('menu.emptyTitle')} message={t('menu.empty')} />
         )}
 
-        <MenuFeedback
-          slug={slug}
-          googleReviewUrl={cafe?.googleReviewUrl || ''}
-          categoryId={activeCategoryId || ''}
-          productId={selectedProduct?.id || ''}
-        />
+        {cafe?.feedbackEnabled === false ? null : (
+          <MenuFeedback
+            slug={slug}
+            googleReviewUrl={cafe?.googleReviewUrl || ''}
+            categoryId={activeCategoryId || ''}
+            productId={selectedProduct?.id || ''}
+          />
+        )}
       </div>
 
       <PublicProductSheet

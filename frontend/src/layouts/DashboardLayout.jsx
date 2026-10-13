@@ -121,6 +121,36 @@ export default function DashboardLayout() {
     loadStats();
   }, [isSuperAdmin, location.pathname, loadStats]);
 
+  useEffect(() => {
+    if (isSuperAdmin) {
+      return undefined;
+    }
+
+    const refresh = () => {
+      if (document.visibilityState === 'visible') {
+        loadStats(true);
+      }
+    };
+
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [isSuperAdmin, loadStats]);
+
+  useEffect(() => {
+    if (isSuperAdmin || stats.cafe?.feedbackEnabled !== false) {
+      return;
+    }
+
+    if (location.pathname === '/app/reviews' || location.pathname.startsWith('/app/reviews/')) {
+      navigate('/app', { replace: true });
+    }
+  }, [isSuperAdmin, stats.cafe?.feedbackEnabled, location.pathname, navigate]);
+
   const refreshStats = useCallback(() => loadStats(true), [loadStats]);
   const refreshPlatformOverview = useCallback(() => loadPlatformOverview(true), [loadPlatformOverview]);
 

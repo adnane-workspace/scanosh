@@ -1,0 +1,1 @@
+ALTER TABLE "Cafe" ADD COLUMN "feedbackEnabled" BOOLEAN NOT NULL DEFAULT true;

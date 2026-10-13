@@ -29,6 +29,7 @@ function toCafeResponse(cafe) {
     longitude: cafe.longitude,
     slug: cafe.slug,
     googleReviewUrl: cafe.googleReviewUrl || '',
+    feedbackEnabled: cafe.feedbackEnabled !== false,
     menuUi: normalizeMenuUi(cafe.menuUi),
     isActive: cafe.isActive,
     createdAt: cafe.createdAt,

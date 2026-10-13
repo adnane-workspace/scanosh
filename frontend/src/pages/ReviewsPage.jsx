@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import StatCard from '../components/dashboard/StatCard.jsx';
 import Pagination from '../components/ui/Pagination.jsx';
 import { useLocale } from '../hooks/useLocale.js';
@@ -23,6 +23,7 @@ function chipClass(active) {
 
 export default function ReviewsPage() {
   const { t, locale } = useLocale();
+  const navigate = useNavigate();
   const [period, setPeriod] = useState('30d');
   const [rating, setRating] = useState(null);
   const [page, setPage] = useState(1);
@@ -32,24 +33,41 @@ export default function ReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [googleReviewUrl, setGoogleReviewUrl] = useState(null);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     getMyCafe()
       .then((cafe) => {
-        if (!cancelled) {
-          setGoogleReviewUrl(cafe?.googleReviewUrl || '');
+        if (cancelled) {
+          return;
         }
+
+        if (cafe?.feedbackEnabled === false) {
+          navigate('/app', { replace: true });
+          return;
+        }
+
+        setGoogleReviewUrl(cafe?.googleReviewUrl || '');
+        setAllowed(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) {
+          setAllowed(true);
+        }
+      });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
+    if (!allowed) {
+      return undefined;
+    }
+
     let cancelled = false;
     setLoading(true);
     setError('');
@@ -68,9 +86,16 @@ export default function ReviewsPage() {
         setPagination(list.pagination);
       })
       .catch((err) => {
-        if (!cancelled) {
-          setError(getApiError(err, t, 'reviews.loadError'));
+        if (cancelled) {
+          return;
         }
+
+        if (err?.response?.data?.code === 'FEEDBACK_DISABLED') {
+          navigate('/app', { replace: true });
+          return;
+        }
+
+        setError(getApiError(err, t, 'reviews.loadError'));
       })
       .finally(() => {
         if (!cancelled) {
@@ -81,7 +106,7 @@ export default function ReviewsPage() {
     return () => {
       cancelled = true;
     };
-  }, [period, rating, page, t]);
+  }, [allowed, period, rating, page, t, navigate]);
 
   const tone = deltaTone(stats?.satisfactionDelta || 0);
   const deltaValue = Math.abs(stats?.satisfactionDelta || 0);

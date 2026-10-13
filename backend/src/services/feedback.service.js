@@ -88,7 +88,7 @@ export async function createPublicFeedback({ slug, rating, comment = '', ip }) {
 
   const cafe = await prisma.cafe.findUnique({
     where: { slug },
-    select: { id: true, isActive: true, isDemo: true, googleReviewUrl: true },
+    select: { id: true, isActive: true, isDemo: true, feedbackEnabled: true, googleReviewUrl: true },
   });
 
   if (!cafe) {
@@ -101,6 +101,10 @@ export async function createPublicFeedback({ slug, rating, comment = '', ip }) {
 
   if (cafe.isDemo) {
     throw new ApiError(403, 'Feedback is unavailable for this menu', null, 'FEEDBACK_UNAVAILABLE');
+  }
+
+  if (cafe.feedbackEnabled === false) {
+    throw new ApiError(403, 'Feedback is disabled', null, 'FEEDBACK_DISABLED');
   }
 
   const ipHash = hashFeedbackIp(ip);
@@ -146,7 +150,19 @@ function listWhere(cafeId, { rating, period }) {
   return where;
 }
 
+async function assertFeedbackEnabled(cafeId) {
+  const cafe = await prisma.cafe.findUnique({
+    where: { id: cafeId },
+    select: { feedbackEnabled: true },
+  });
+
+  if (!cafe || cafe.feedbackEnabled === false) {
+    throw new ApiError(403, 'Feedback is disabled', null, 'FEEDBACK_DISABLED');
+  }
+}
+
 export async function listCafeFeedback(cafeId, query = {}) {
+  await assertFeedbackEnabled(cafeId);
   const pagination = parsePaginationQuery(query);
   const where = listWhere(cafeId, query);
   const [total, items] = await Promise.all([
@@ -169,6 +185,7 @@ export async function listCafeFeedback(cafeId, query = {}) {
 }
 
 export async function getCafeFeedbackStats(cafeId, period = '30d') {
+  await assertFeedbackEnabled(cafeId);
   const range = periodRange(period);
   const [current, previous] = await Promise.all([
     prisma.feedback.groupBy({

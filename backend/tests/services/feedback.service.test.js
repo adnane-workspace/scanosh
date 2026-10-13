@@ -61,6 +61,16 @@ describe('createPublicFeedback', () => {
       statusCode: 403,
       code: 'FEEDBACK_UNAVAILABLE',
     });
+
+    const disabled = await createCafe({ feedbackEnabled: false });
+    await expect(createPublicFeedback({ slug: disabled.slug, rating: 5, ip: '1.1.1.1' })).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'FEEDBACK_DISABLED',
+    });
+    await expect(listCafeFeedback(disabled.id, { period: '30d' })).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'FEEDBACK_DISABLED',
+    });
   });
 
   test('limits repeated submissions from the same address', async () => {

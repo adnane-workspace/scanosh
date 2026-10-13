@@ -176,6 +176,7 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState('');
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [feedbackEnabled, setFeedbackEnabled] = useState(true);
   const lastSavedRef = useRef(cafeSnapshot(emptyForm));
 
   const isSuperAdmin = user?.role === 'superadmin';
@@ -206,6 +207,7 @@ export default function SettingsPage() {
           const next = toCafeForm(cafe);
           lastSavedRef.current = cafeSnapshot(next);
           setForm(next);
+          setFeedbackEnabled(cafe.feedbackEnabled !== false);
           setQr(cafe.qr || null);
         }
       })
@@ -234,6 +236,7 @@ export default function SettingsPage() {
     const next = toCafeForm(cafe);
     lastSavedRef.current = cafeSnapshot(next);
     setForm(next);
+    setFeedbackEnabled(cafe.feedbackEnabled !== false);
     setQr(cafe.qr || null);
     clearPublicMenuCache(cafe.slug);
   }
@@ -432,6 +435,7 @@ export default function SettingsPage() {
                 </div>
               </SectionCard>
 
+              {feedbackEnabled ? (
               <SectionCard icon="star" title={t('settings.googleTitle')} subtitle={t('settings.googleHint')}>
                 <SettingsField id="googleReviewUrl" label={t('settings.googleUrl')} icon="link" hint={t('settings.googleUrlHint')}>
                   <input
@@ -456,6 +460,7 @@ export default function SettingsPage() {
                   ) : null}
                 </SettingsField>
               </SectionCard>
+              ) : null}
 
               <SectionCard icon="place" title={t('settings.contact')} subtitle={t('settings.contactHint')}>
                 <div className="grid gap-5 sm:grid-cols-2">

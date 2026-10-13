@@ -145,10 +145,14 @@ export const updatePlatformCafeSchema = z.object({
       isActive: z.boolean().optional(),
       trialRole: z.enum(['none', 'playground', 'template']).optional(),
       isDemo: z.boolean().optional(),
+      feedbackEnabled: z.boolean().optional(),
     })
     .refine(
       (value) =>
-        value.isActive !== undefined || value.trialRole !== undefined || value.isDemo !== undefined,
+        value.isActive !== undefined ||
+        value.trialRole !== undefined ||
+        value.isDemo !== undefined ||
+        value.feedbackEnabled !== undefined,
       {
         message: 'At least one field is required',
       },

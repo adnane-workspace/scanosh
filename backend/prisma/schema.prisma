@@ -82,6 +82,7 @@ model Cafe {
   qrChangeAllowed Boolean       @default(false)
   trialRole       CafeTrialRole @default(none)
   isDemo          Boolean       @default(false)
+  feedbackEnabled Boolean       @default(true)
   googleReviewUrl String        @default("") @db.VarChar(500)
   googlePlaceId   String?       @db.VarChar(120)
   createdAt       DateTime      @default(now())

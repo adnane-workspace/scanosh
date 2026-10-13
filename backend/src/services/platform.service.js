@@ -30,6 +30,7 @@ function toPlatformCafe(cafe, counts) {
     qrGeneratedAt: cafe.qrGeneratedAt || null,
     trialRole: cafe.trialRole || 'none',
     isDemo: Boolean(cafe.isDemo),
+    feedbackEnabled: cafe.feedbackEnabled !== false,
     ...ownerFromUsers(cafe.users),
   };
 }
@@ -216,7 +217,7 @@ export async function listPlatformCafes(query = {}) {
 export async function updatePlatformCafe(cafeId, payload, actor) {
   const cafe = await prisma.cafe.findUnique({
     where: { id: cafeId },
-    select: { id: true, name: true, slug: true, isActive: true, isDemo: true },
+    select: { id: true, name: true, slug: true, isActive: true, isDemo: true, feedbackEnabled: true },
   });
 
   if (!cafe) {
@@ -235,6 +236,10 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
 
   if (payload.isDemo !== undefined) {
     data.isDemo = payload.isDemo;
+  }
+
+  if (payload.feedbackEnabled !== undefined) {
+    data.feedbackEnabled = payload.feedbackEnabled;
   }
 
   if (payload.isActive === false) {
@@ -274,6 +279,7 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
       qrGeneratedAt: true,
       trialRole: true,
       isDemo: true,
+      feedbackEnabled: true,
       ...ownerSelect,
     },
   });
@@ -283,7 +289,7 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
     prisma.category.count({ where: { cafeId } }),
   ]);
 
-  if (payload.isActive !== undefined) {
+  if (payload.isActive !== undefined || payload.feedbackEnabled !== undefined) {
     invalidatePublicMenu(cafeId, [cafe.slug]);
   }
 
@@ -305,6 +311,9 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
     if (payload.isDemo !== undefined) {
       fields.push('isDemo');
     }
+    if (payload.feedbackEnabled !== undefined) {
+      fields.push('feedbackEnabled');
+    }
 
     await recordActivity({
       action: 'cafe_updated',
@@ -316,6 +325,7 @@ export async function updatePlatformCafe(cafeId, payload, actor) {
         fields,
         trialRole: payload.trialRole,
         isDemo: payload.isDemo,
+        feedbackEnabled: payload.feedbackEnabled,
       },
     });
   }

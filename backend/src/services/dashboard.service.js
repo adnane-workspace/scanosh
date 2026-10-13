@@ -64,6 +64,7 @@ export async function getDashboardStats(user) {
           latitude: true,
           longitude: true,
           qrGeneratedAt: true,
+          feedbackEnabled: true,
         },
       }),
     ]);
@@ -96,6 +97,7 @@ export async function getDashboardStats(user) {
           phone: cafe.phone || '',
           latitude: cafe.latitude,
           longitude: cafe.longitude,
+          feedbackEnabled: cafe.feedbackEnabled !== false,
           qr: toQrStatus(cafe),
         }
       : null,
