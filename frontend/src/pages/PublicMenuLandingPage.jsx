@@ -61,10 +61,12 @@ function LandingStatus({ title, message }) {
 export default function PublicMenuLandingPage() {
   const slug = useMenuSlug();
   const { t } = useLocale();
-  const { menu, loading, errorStatus } = usePublicMenu(slug);
+  const { menu, loading, errorStatus } = usePublicMenu(slug, { view: 'landing' });
   const paths = getMenuPaths(slug);
 
-  const productCount = countPublicProducts(menu?.categories);
+  const productCount = Number.isFinite(menu?.productCount)
+    ? menu.productCount
+    : countPublicProducts(menu?.categories);
   const indexable = Boolean(menu?.cafe && productCount > 0);
   const menuDestination = getSectionMenuDestination(menu, paths);
 

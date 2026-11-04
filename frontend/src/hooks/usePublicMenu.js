@@ -1,36 +1,44 @@
 import { useEffect, useState } from 'react';
-import { getPublicMenu } from '../services/menu.service.js';
+import { getPublicMenu, getPublicMenuView } from '../services/menu.service.js';
 import { APP_NAME } from '../utils/constants.js';
 
 const CACHE_TTL_MS = 20 * 1000;
 const menuCache = new Map();
 
-function readCache(slug) {
-  const entry = menuCache.get(slug);
+function cacheKey(slug, view, section, categoryId) {
+  return `${slug}|${view}|${section}|${categoryId}`;
+}
+
+function readCache(key) {
+  const entry = menuCache.get(key);
 
   if (!entry) {
     return null;
   }
 
   if (Date.now() - entry.at > CACHE_TTL_MS) {
-    menuCache.delete(slug);
+    menuCache.delete(key);
     return null;
   }
 
   return entry.data;
 }
 
-function writeCache(slug, data) {
-  menuCache.set(slug, { data, at: Date.now() });
+function writeCache(key, data) {
+  menuCache.set(key, { data, at: Date.now() });
 }
 
 export function clearPublicMenuCache(slug) {
-  if (slug) {
-    menuCache.delete(slug);
+  if (!slug) {
+    menuCache.clear();
     return;
   }
 
-  menuCache.clear();
+  for (const key of menuCache.keys()) {
+    if (key === slug || key.startsWith(`${slug}|`)) {
+      menuCache.delete(key);
+    }
+  }
 }
 
 export function countPublicProducts(categories = []) {
@@ -64,28 +72,35 @@ export function setPageMeta({ title, description, robots = 'index,follow' }) {
   robotsMeta.content = robots;
 }
 
-export function usePublicMenu(slug) {
-  const cached = readCache(slug);
+export function usePublicMenu(slug, { view = 'full', section = '', categoryId = '' } = {}) {
+  const key = cacheKey(slug, view, section, categoryId);
+  const cached = readCache(key);
   const [menu, setMenu] = useState(cached);
   const [loading, setLoading] = useState(!cached);
   const [errorStatus, setErrorStatus] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    const existing = readCache(slug);
+    const existing = readCache(key);
 
     if (existing) {
       setMenu(existing);
       setLoading(false);
       setErrorStatus(null);
-    } else {
-      setLoading(true);
-      setErrorStatus(null);
+      return undefined;
     }
 
-    getPublicMenu(slug)
+    setLoading(true);
+    setErrorStatus(null);
+
+    const request =
+      view === 'full'
+        ? getPublicMenu(slug)
+        : getPublicMenuView(slug, { view, section, categoryId });
+
+    request
       .then((data) => {
-        writeCache(slug, data);
+        writeCache(key, data);
 
         if (!cancelled) {
           setMenu(data);
@@ -106,7 +121,7 @@ export function usePublicMenu(slug) {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [categoryId, key, section, slug, view]);
 
   return { menu, loading, errorStatus };
 }

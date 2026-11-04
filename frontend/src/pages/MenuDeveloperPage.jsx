@@ -30,7 +30,7 @@ function useLockPageScroll() {
 export default function MenuDeveloperPage() {
   const slug = useMenuSlug();
   const { t } = useLocale();
-  const { menu } = usePublicMenu(slug);
+  const { menu } = usePublicMenu(slug, { view: 'landing' });
   const paths = getMenuPaths(slug);
   const backdrop = resolveMenuBackdrop(menu?.cafe || {});
 

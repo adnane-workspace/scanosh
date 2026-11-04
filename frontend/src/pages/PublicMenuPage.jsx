@@ -49,11 +49,6 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
   const navigate = useNavigate();
   const { t, locale } = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { menu, loading, errorStatus } = usePublicMenu(slug);
-  const selectedProductId = searchParams.get('product');
-  const paths = getMenuPaths(slug);
-  const activeSections = useMemo(() => getActiveSections(menu), [menu]);
-  // UUID category ids also match the section-key pattern — treat them as flat catalog ids.
   const sectionKey =
     fixedSectionKey ||
     (sectionKeyParam && !isLegacyCategoryId(sectionKeyParam) && isMenuSectionKey(sectionKeyParam)
@@ -63,6 +58,14 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
   const flatCategoryId = isSectionMode
     ? null
     : categoryId || (isLegacyCategoryId(sectionKeyParam) ? sectionKeyParam : null);
+  const { menu, loading, errorStatus } = usePublicMenu(slug, {
+    view: 'category',
+    section: sectionKey || '',
+    categoryId: (isSectionMode ? categoryId : flatCategoryId) || '',
+  });
+  const selectedProductId = searchParams.get('product');
+  const paths = getMenuPaths(slug);
+  const activeSections = useMemo(() => getActiveSections(menu), [menu]);
 
   const section = useMemo(
     () => (isSectionMode ? findSectionByKey(menu, sectionKey) : null),
@@ -152,7 +155,7 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
     );
   }
 
-  if (loading) {
+  if (loading && !menu) {
     return frame(
       <>
         <PublicMenuHeader cafe={cafe} slug={slug} backTo={landingPath} backLabel={t('menu.home')} />
@@ -255,7 +258,9 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
 
   const tabItems = isSectionMode ? section?.children || [] : getFlatCatalogCategories(menu.categories);
   const activeCategoryId = selection.category?.id;
-  const products = (selection.products || []).filter((product) => product.image);
+  const productsPending =
+    Boolean(activeCategoryId) && String(menu?.loadedCategoryId || '') !== String(activeCategoryId);
+  const products = productsPending ? [] : (selection.products || []).filter((product) => product.image);
   const backTo = isSectionMode
     ? activeSections.length > 1
       ? paths.sections
@@ -291,7 +296,9 @@ export default function PublicMenuPage({ fixedSectionKey = null }) {
           {selection.category?.name}
         </h1>
 
-        {products.length ? (
+        {productsPending ? (
+          <PublicMenuLoading className="text-on-surface" />
+        ) : products.length ? (
           <div
             key={activeCategoryId}
             className={useListLayout ? productListClass : productGridClass}

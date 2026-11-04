@@ -95,7 +95,7 @@ export default function PublicMenuSectionsPage() {
   const slug = useMenuSlug();
   const navigate = useNavigate();
   const { t } = useLocale();
-  const { menu, loading, errorStatus } = usePublicMenu(slug);
+  const { menu, loading, errorStatus } = usePublicMenu(slug, { view: 'sections' });
   const paths = getMenuPaths(slug);
   const cafe = menu?.cafe;
   const activeSections = useMemo(() => getActiveSections(menu), [menu]);
