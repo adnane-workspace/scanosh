@@ -36,7 +36,7 @@ export const getMenu = asyncHandler(async (req, res) => {
 
   res.setHeader(
     'Cache-Control',
-    view ? 'public, max-age=30, stale-while-revalidate=120' : 'private, no-store',
+    view ? 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' : 'private, no-store',
   );
   res.status(200).json({
     success: true,

@@ -7,10 +7,14 @@ import ThemeToggle from '../components/ui/ThemeToggle.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useLocale } from '../hooks/useLocale.js';
+import { registerMessages } from '../context/locale-context.js';
+import { messages } from '../i18n/messages.js';
 import { APP_NAME } from '../utils/constants.js';
 import { getDashboardStats } from '../services/dashboard.service.js';
 import { getPlatformOverview } from '../services/platform.service.js';
 import { getApiError } from '../utils/apiError.js';
+
+registerMessages(messages);
 
 const emptyStats = {
   totalProducts: 0,

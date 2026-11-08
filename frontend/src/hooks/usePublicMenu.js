@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { getPublicMenu, getPublicMenuView } from '../services/menu.service.js';
 import { APP_NAME } from '../utils/constants.js';
+import { isAppPath, parseHost } from '../utils/hosts.js';
+import { getActiveSections, isLegacyCategoryId, isMenuSectionKey } from '../utils/menuSections.js';
 
-const CACHE_TTL_MS = 20 * 1000;
+const CACHE_TTL_MS = 60 * 1000;
 const menuCache = new Map();
+const inflightCache = new Map();
 
 function cacheKey(slug, view, section, categoryId) {
   return `${slug}|${view}|${section}|${categoryId}`;
@@ -28,15 +31,176 @@ function writeCache(key, data) {
   menuCache.set(key, { data, at: Date.now() });
 }
 
+function fetchWithDedup(slug, { view = 'full', section = '', categoryId = '' } = {}) {
+  const key = cacheKey(slug, view, section, categoryId);
+  const existing = readCache(key);
+
+  if (existing) {
+    return Promise.resolve(existing);
+  }
+
+  const inflight = inflightCache.get(key);
+
+  if (inflight) {
+    return inflight;
+  }
+
+  const request = (
+    view === 'full'
+      ? getPublicMenu(slug)
+      : getPublicMenuView(slug, { view, section, categoryId })
+  )
+    .then((data) => {
+      writeCache(key, data);
+      inflightCache.delete(key);
+      scheduleNextStepPrefetch(slug, view, data);
+      return data;
+    })
+    .catch((error) => {
+      inflightCache.delete(key);
+      throw error;
+    });
+
+  inflightCache.set(key, request);
+  return request;
+}
+
+function scheduleNextStepPrefetch(slug, view, data) {
+  if (typeof window === 'undefined' || !data) {
+    return;
+  }
+
+  if (view === 'landing') {
+    window.setTimeout(() => {
+      const activeSections = getActiveSections(data);
+
+      if (activeSections.length > 1) {
+        prefetchPublicMenu(slug, { view: 'sections' });
+        return;
+      }
+
+      if (activeSections.length === 1) {
+        const firstSection = activeSections[0];
+        const firstCategory = firstSection.children?.[0];
+        prefetchPublicMenu(slug, {
+          view: 'category',
+          section: firstSection.key,
+          categoryId: firstCategory?.id || '',
+        });
+        return;
+      }
+
+      prefetchPublicMenu(slug, { view: 'category', section: '', categoryId: '' });
+    }, 60);
+  } else if (view === 'sections') {
+    window.setTimeout(() => {
+      const activeSections = getActiveSections(data);
+      const firstSection = activeSections[0];
+
+      if (firstSection) {
+        const firstCategory = firstSection.children?.[0];
+        prefetchPublicMenu(slug, {
+          view: 'category',
+          section: firstSection.key,
+          categoryId: firstCategory?.id || '',
+        });
+      }
+    }, 80);
+  }
+}
+
+export function prefetchPublicMenu(slug, options = {}) {
+  if (!slug) {
+    return;
+  }
+
+  fetchWithDedup(slug, options).catch(() => {
+    // Ignore background prefetch errors; active page hook handles errors.
+  });
+}
+
+export function primePublicMenuFromLocation() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const { hostname, pathname } = window.location;
+  const host = parseHost(hostname);
+  let slug = null;
+  let subPath = pathname || '/';
+
+  if (host.kind === 'menu' && host.slug) {
+    if (isAppPath(subPath)) {
+      return;
+    }
+    slug = host.slug;
+  } else if (subPath.startsWith('/menu/')) {
+    const match = subPath.match(/^\/menu\/([^/]+)(?:\/(.*))?$/);
+    if (!match) {
+      return;
+    }
+    slug = match[1];
+    subPath = match[2] ? `/${match[2]}` : '/';
+  }
+
+  if (!slug) {
+    return;
+  }
+
+  const segments = subPath.split('/').filter(Boolean);
+
+  if (segments.length === 0 || (segments.length === 1 && segments[0] === 'developer')) {
+    prefetchPublicMenu(slug, { view: 'landing' });
+    return;
+  }
+
+  if (segments.length === 1 && segments[0] === 'sections') {
+    prefetchPublicMenu(slug, { view: 'sections' });
+    return;
+  }
+
+  if (segments.length === 1 && segments[0] === 'categories') {
+    prefetchPublicMenu(slug, { view: 'category', section: '', categoryId: '' });
+    return;
+  }
+
+  if (segments.length === 2 && segments[0] !== 'menu') {
+    const [seg1, seg2] = segments;
+    const isSection = !isLegacyCategoryId(seg1) && isMenuSectionKey(seg1);
+    prefetchPublicMenu(slug, {
+      view: 'category',
+      section: isSection ? seg1 : '',
+      categoryId: seg2,
+    });
+    return;
+  }
+
+  if (segments.length === 1) {
+    const seg = segments[0];
+    if (isLegacyCategoryId(seg)) {
+      prefetchPublicMenu(slug, { view: 'category', section: '', categoryId: seg });
+    } else if (isMenuSectionKey(seg)) {
+      prefetchPublicMenu(slug, { view: 'category', section: seg, categoryId: '' });
+    }
+  }
+}
+
 export function clearPublicMenuCache(slug) {
   if (!slug) {
     menuCache.clear();
+    inflightCache.clear();
     return;
   }
 
   for (const key of menuCache.keys()) {
     if (key === slug || key.startsWith(`${slug}|`)) {
       menuCache.delete(key);
+    }
+  }
+
+  for (const key of inflightCache.keys()) {
+    if (key === slug || key.startsWith(`${slug}|`)) {
+      inflightCache.delete(key);
     }
   }
 }
@@ -93,15 +257,8 @@ export function usePublicMenu(slug, { view = 'full', section = '', categoryId = 
     setLoading(true);
     setErrorStatus(null);
 
-    const request =
-      view === 'full'
-        ? getPublicMenu(slug)
-        : getPublicMenuView(slug, { view, section, categoryId });
-
-    request
+    fetchWithDedup(slug, { view, section, categoryId })
       .then((data) => {
-        writeCache(key, data);
-
         if (!cancelled) {
           setMenu(data);
         }

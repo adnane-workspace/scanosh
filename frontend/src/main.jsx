@@ -6,7 +6,10 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { LocaleProvider } from './context/LocaleContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
+import { primePublicMenuFromLocation } from './hooks/usePublicMenu.js';
 import './index.css';
+
+primePublicMenuFromLocation();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

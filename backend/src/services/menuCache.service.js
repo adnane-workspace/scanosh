@@ -1,52 +1,61 @@
-const TTL_MS = 5 * 60 * 1000;
+const DEV_TTL_MS = 5 * 60 * 1000;
+const PROD_TTL_MS = 30 * 1000;
 const menus = new Map();
 
 function cacheEnabled() {
-  return process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
+  return process.env.NODE_ENV !== 'test';
 }
 
-export function readPublicMenuCache(slug) {
+function getTtlMs() {
+  return process.env.NODE_ENV === 'production' || process.env.VERCEL ? PROD_TTL_MS : DEV_TTL_MS;
+}
+
+function buildKey(slug, subKey = 'full') {
+  return subKey && subKey !== 'full' ? `${slug}|${subKey}` : slug;
+}
+
+export function readPublicMenuCache(slug, subKey = 'full') {
   if (!cacheEnabled()) {
     return null;
   }
-  const entry = menus.get(slug);
+  const key = buildKey(slug, subKey);
+  const entry = menus.get(key);
 
   if (!entry) {
     return null;
   }
 
-  if (Date.now() - entry.at > TTL_MS) {
-    menus.delete(slug);
+  if (Date.now() - entry.at > getTtlMs()) {
+    menus.delete(key);
     return null;
   }
 
   return entry;
 }
 
-export function writePublicMenuCache(slug, cafeId, data) {
+export function writePublicMenuCache(slug, cafeId, data, subKey = 'full') {
   if (!cacheEnabled()) {
     return;
   }
 
-  menus.set(slug, {
+  menus.set(buildKey(slug, subKey), {
     cafeId,
+    slug,
     data,
     at: Date.now(),
   });
 }
 
 export function invalidatePublicMenu(cafeId, slugs = []) {
-  if (cafeId) {
-    for (const [key, entry] of menus) {
-      if (entry.cafeId === cafeId) {
-        menus.delete(key);
-      }
-    }
-  }
+  const slugSet = new Set(slugs.filter(Boolean));
 
-  for (const slug of slugs) {
-    if (slug) {
-      menus.delete(slug);
+  for (const [key, entry] of menus) {
+    if (
+      (cafeId && entry.cafeId === cafeId) ||
+      (entry.slug && slugSet.has(entry.slug)) ||
+      slugSet.has(key)
+    ) {
+      menus.delete(key);
     }
   }
 }

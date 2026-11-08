@@ -4,7 +4,6 @@
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "private, no-store" },
         { "key": "Vary", "value": "Origin" }
       ]
     }

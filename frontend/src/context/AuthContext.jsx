@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { fetchCurrentUser, loginRequest, logoutRequest, verifyEmailRequest } from '../services/auth.service.js';
 import { TOKEN_STORAGE_KEY, USER_STORAGE_KEY } from '../utils/constants.js';
 import { parseHost } from '../utils/hosts.js';
 import { AuthContext } from './auth-context.js';
+
+function loadAuthService() {
+  return import('../services/auth.service.js');
+}
 
 function readStoredUser() {
   try {
@@ -38,6 +41,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     try {
       if (localStorage.getItem(TOKEN_STORAGE_KEY)) {
+        const { logoutRequest } = await loadAuthService();
         await logoutRequest();
       }
     } catch {
@@ -50,6 +54,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (email, password) => {
+    const { loginRequest } = await loadAuthService();
     const { token: nextToken, user: nextUser } = await loginRequest({ email, password });
     persistSession(nextToken, nextUser);
     setToken(nextToken);
@@ -58,6 +63,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const verifyEmail = useCallback(async (email, code) => {
+    const { verifyEmailRequest } = await loadAuthService();
     const { token: nextToken, user: nextUser } = await verifyEmailRequest({ email, code });
     persistSession(nextToken, nextUser);
     setToken(nextToken);
@@ -80,7 +86,8 @@ export function AuthProvider({ children }) {
 
     let cancelled = false;
 
-    fetchCurrentUser()
+    loadAuthService()
+      .then(({ fetchCurrentUser }) => fetchCurrentUser())
       .then((nextUser) => {
         if (!cancelled) {
           persistSession(token, nextUser);

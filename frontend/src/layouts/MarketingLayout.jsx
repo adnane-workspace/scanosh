@@ -7,8 +7,12 @@ import AsciiWave from '../components/landing/AsciiWave.jsx';
 import BrandLogo from '../components/ui/BrandLogo.jsx';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
+import { registerMessages } from '../context/locale-context.js';
 import { useLocale } from '../hooks/useLocale.js';
+import { messages } from '../i18n/messages.js';
 import { APP_NAME, DEVELOPER_NAME, DEVELOPER_URL } from '../utils/constants.js';
+
+registerMessages(messages);
 import {
   LANDING_BLOG,
   LANDING_CONTACT,

@@ -220,10 +220,11 @@ export const IMAGE_PRESETS = {
     lazy: false,
   },
   cover: {
-    widths: [800, 1200, 1600],
+    widths: [480, 640, 800, 1200, 1600],
     crop: 'fill',
     gravity: 'auto',
-    quality: 'auto:good',
+    quality: 'auto:eco',
+    sharpen: 0,
     sizes: '100vw',
     lazy: false,
   },

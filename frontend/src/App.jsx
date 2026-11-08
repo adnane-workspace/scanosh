@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { LoadingIndicator } from './components/application/loading-indicator/loading-indicator.jsx';
-import AuthLayout from './layouts/AuthLayout.jsx';
 import PublicLayout from './layouts/PublicLayout.jsx';
 import DashboardLegacyRedirect from './components/common/DashboardLegacyRedirect.jsx';
 import DemoMenuRedirect from './components/common/DemoMenuRedirect.jsx';
@@ -9,9 +8,12 @@ import ExternalRedirect from './components/common/ExternalRedirect.jsx';
 import LandingSeoRedirect from './components/common/LandingSeoRedirect.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import { MenuSlugProvider } from './context/MenuSlugContext.jsx';
-import { getSeoDocumentPaths } from './content/seo/index.js';
+import { SEO_DOCUMENT_PATHS } from './content/seo/paths.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useLocale } from './hooks/useLocale.js';
+import PublicMenuLandingPage from './pages/PublicMenuLandingPage.jsx';
+import PublicMenuSectionsPage from './pages/PublicMenuSectionsPage.jsx';
+import PublicMenuPage from './pages/PublicMenuPage.jsx';
 import {
   buildTenantOrigin,
   currentLocationParts,
@@ -22,6 +24,7 @@ import {
 } from './utils/hosts.js';
 import { getHomePath } from './utils/paths.js';
 
+const AuthLayout = lazy(() => import('./layouts/AuthLayout.jsx'));
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout.jsx'));
 const ActivityLogsPage = lazy(() => import('./pages/ActivityLogsPage.jsx'));
 const StoragePage = lazy(() => import('./pages/StoragePage.jsx'));
@@ -35,10 +38,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
 const ProductsPage = lazy(() => import('./pages/ProductsPage.jsx'));
 const AiFillPage = lazy(() => import('./pages/AiFillPage.jsx'));
-const PublicMenuLandingPage = lazy(() => import('./pages/PublicMenuLandingPage.jsx'));
 const MenuDeveloperPage = lazy(() => import('./pages/MenuDeveloperPage.jsx'));
-const PublicMenuSectionsPage = lazy(() => import('./pages/PublicMenuSectionsPage.jsx'));
-const PublicMenuPage = lazy(() => import('./pages/PublicMenuPage.jsx'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
 const TrialLeadsPage = lazy(() => import('./pages/TrialLeadsPage.jsx'));
 const ReviewsPage = lazy(() => import('./pages/ReviewsPage.jsx'));
@@ -49,8 +49,6 @@ const BlogIndexPage = lazy(() => import('./pages/BlogIndexPage.jsx'));
 const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
 const ContactPage = lazy(() => import('./pages/ContactPage.jsx'));
 const SeoDocumentPage = lazy(() => import('./pages/SeoDocumentPage.jsx'));
-
-const SEO_DOCUMENT_PATHS = getSeoDocumentPaths();
 
 function RouteFallback() {
   const { t } = useLocale();

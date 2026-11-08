@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { getSeoDocumentPaths, getSeoPage, getSeoPaths, SEO_PAGES } from './index.js';
+import { SEO_DOCUMENT_PATHS } from './paths.js';
 
 test('SEO pages have unique paths', () => {
   const paths = getSeoPaths();
@@ -20,4 +21,5 @@ test('document routes exclude custom tarifs and contact pages', () => {
   assert.equal(docs.has('/confidentialite'), true);
   assert.equal(docs.has('/menu-digital'), true);
   assert.equal(SEO_PAGES.length > 30, true);
+  assert.deepEqual(SEO_DOCUMENT_PATHS, getSeoDocumentPaths());
 });

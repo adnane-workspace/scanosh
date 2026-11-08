@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LOCALES, messages } from '../i18n/messages.js';
+import { LOCALES, publicMessages } from '../i18n/publicMessages.js';
 import { LOCALE_STORAGE_KEY } from '../utils/constants.js';
-import { LocaleContext } from './locale-context.js';
+import { parseHost } from '../utils/hosts.js';
+import { getActiveMessages, LocaleContext, registerMessages, subscribeMessages } from './locale-context.js';
 
 const SUPPORTED = new Set(LOCALES.map((item) => item.id));
+
+function isPublicMenuSurface() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  const host = parseHost(window.location.hostname);
+  if (host.kind === 'menu') {
+    return true;
+  }
+  return String(window.location.pathname || '').startsWith('/menu/');
+}
 
 function localeMeta(id) {
   return LOCALES.find((item) => item.id === id) || LOCALES[0];
@@ -20,9 +32,9 @@ function applyDocumentLocale(id) {
   document.documentElement.dir = meta.dir;
 }
 
-function lookup(locale, key) {
+function lookupIn(catalog, locale, key) {
   const parts = key.split('.');
-  let node = messages[locale] || messages.fr;
+  let node = catalog[locale] || catalog.fr;
 
   for (const part of parts) {
     node = node?.[part];
@@ -32,13 +44,18 @@ function lookup(locale, key) {
     return node;
   }
 
-  node = messages.fr;
+  node = catalog.fr;
 
   for (const part of parts) {
     node = node?.[part];
   }
 
-  return typeof node === 'string' ? node : key;
+  return typeof node === 'string' ? node : null;
+}
+
+function lookup(locale, key) {
+  const active = getActiveMessages();
+  return lookupIn(active, locale, key) ?? lookupIn(publicMessages, locale, key) ?? key;
 }
 
 function interpolate(text, vars) {
@@ -51,6 +68,21 @@ function interpolate(text, vars) {
 
 export function LocaleProvider({ children }) {
   const [locale, setLocaleState] = useState(readLocale);
+  const [catalogVersion, setCatalogVersion] = useState(() => (getActiveMessages() === publicMessages ? 0 : 1));
+
+  useEffect(() => {
+    const unsubscribe = subscribeMessages(() => setCatalogVersion((v) => v + 1));
+
+    if (getActiveMessages() === publicMessages && !isPublicMenuSurface()) {
+      import('../i18n/messages.js').then((mod) => {
+        if (mod?.messages) {
+          registerMessages(mod.messages);
+        }
+      });
+    }
+
+    return unsubscribe;
+  }, []);
 
   const setLocale = useCallback((next) => {
     const value = SUPPORTED.has(next) ? next : 'fr';
@@ -59,7 +91,13 @@ export function LocaleProvider({ children }) {
     setLocaleState(value);
   }, []);
 
-  const t = useCallback((key, vars) => interpolate(lookup(locale, key), vars), [locale]);
+  const t = useCallback(
+    (key, vars) => {
+      void catalogVersion;
+      return interpolate(lookup(locale, key), vars);
+    },
+    [locale, catalogVersion],
+  );
 
   const value = useMemo(() => ({ locale, setLocale, t, dir: localeMeta(locale).dir }), [locale, setLocale, t]);
 

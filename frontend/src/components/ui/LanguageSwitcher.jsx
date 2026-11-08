@@ -1,4 +1,4 @@
-import { LOCALES } from '../../i18n/messages.js';
+import { LOCALES } from '../../i18n/publicMessages.js';
 import { useLocale } from '../../hooks/useLocale.js';
 
 export default function LanguageSwitcher({ compact = false, className = '', onDark = false, tone = 'default' }) {

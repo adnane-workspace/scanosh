@@ -146,61 +146,80 @@ function firstChildRef(section) {
   return first?.id ? [{ id: first.id }] : [];
 }
 
-async function requirePublicCafe(slug) {
-  const cafe = await prisma.cafe.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      logo: true,
-      cover: true,
-      address: true,
-      phone: true,
-      latitude: true,
-      longitude: true,
-      menuUi: true,
-      isActive: true,
-      feedbackEnabled: true,
-      googleReviewUrl: true,
-    },
-  });
+async function loadCafeOutline(slug) {
+  const cached = readPublicMenuCache(slug, 'outline');
 
-  if (!cafe) {
-    throw new ApiError(404, 'Menu not found', null, 'MENU_NOT_FOUND');
+  if (cached) {
+    const { cafe, categories, categoryIds, productCount } = cached.data;
+    return {
+      cafe,
+      categories,
+      productCount,
+      tree: buildOutline(categories, new Set(categoryIds)),
+    };
   }
 
-  if (!cafe.isActive) {
-    throw new ApiError(403, 'Menu unavailable', null, 'MENU_UNAVAILABLE');
-  }
-
-  return cafe;
-}
-
-async function loadOutline(cafeId) {
-  const [categories, productGroups] = await Promise.all([
-    prisma.category.findMany({
-      where: { cafeId },
-      orderBy: [{ order: 'asc' }, { name: 'asc' }],
+  const [cafeRecord, productGroups] = await Promise.all([
+    prisma.cafe.findUnique({
+      where: { slug },
       select: {
         id: true,
         name: true,
         description: true,
-        image: true,
-        parentId: true,
-        sectionKey: true,
+        logo: true,
+        cover: true,
+        address: true,
+        phone: true,
+        latitude: true,
+        longitude: true,
+        menuUi: true,
+        isActive: true,
+        feedbackEnabled: true,
+        googleReviewUrl: true,
+        categories: {
+          orderBy: [{ order: 'asc' }, { name: 'asc' }],
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            image: true,
+            parentId: true,
+            sectionKey: true,
+          },
+        },
       },
     }),
-    prisma.product.findMany({
-      where: { cafeId, available: true },
-      select: { categoryId: true },
-      distinct: ['categoryId'],
+    prisma.product.groupBy({
+      by: ['categoryId'],
+      where: { cafe: { slug }, available: true },
+      _count: { _all: true },
     }),
   ]);
 
+  if (!cafeRecord) {
+    throw new ApiError(404, 'Menu not found', null, 'MENU_NOT_FOUND');
+  }
+
+  if (!cafeRecord.isActive) {
+    throw new ApiError(403, 'Menu unavailable', null, 'MENU_UNAVAILABLE');
+  }
+
+  const { categories, ...cafe } = cafeRecord;
+  const categoryIds = productGroups.map((group) => group.categoryId);
+  const productCount = productGroups.reduce((sum, group) => sum + (group._count?._all || 0), 0);
+
+  writePublicMenuCache(
+    slug,
+    cafe.id,
+    { cafe, categories, categoryIds, productCount },
+    'outline',
+  );
+
   return {
+    cafe,
     categories,
-    tree: buildOutline(categories, new Set(productGroups.map((product) => product.categoryId))),
+    productCount,
+    tree: buildOutline(categories, new Set(categoryIds)),
   };
 }
 
@@ -217,14 +236,16 @@ export async function getPublicMenu(slug) {
 }
 
 export async function getPublicMenuLanding(slug) {
-  const cafe = await requirePublicCafe(slug);
-  const [{ categories, tree }, productCount] = await Promise.all([
-    loadOutline(cafe.id),
-    prisma.product.count({ where: { cafeId: cafe.id, available: true } }),
-  ]);
+  const cached = readPublicMenuCache(slug, 'landing');
+
+  if (cached) {
+    return cached.data;
+  }
+
+  const { cafe, categories, tree, productCount } = await loadCafeOutline(slug);
   const sections = buildPublicSections(tree, normalizeMenuUi(cafe.menuUi));
 
-  return {
+  const data = {
     cafe: toPublicCafe(cafe, categories, { contact: true }),
     productCount,
     sections: sections.map((section) => ({
@@ -232,14 +253,22 @@ export async function getPublicMenuLanding(slug) {
       children: firstChildRef(section),
     })),
   };
+
+  writePublicMenuCache(slug, cafe.id, data, 'landing');
+  return data;
 }
 
 export async function getPublicMenuSections(slug) {
-  const cafe = await requirePublicCafe(slug);
-  const { categories, tree } = await loadOutline(cafe.id);
+  const cached = readPublicMenuCache(slug, 'sections');
+
+  if (cached) {
+    return cached.data;
+  }
+
+  const { cafe, categories, tree } = await loadCafeOutline(slug);
   const sections = buildPublicSections(tree, normalizeMenuUi(cafe.menuUi));
 
-  return {
+  const data = {
     cafe: toPublicCafe(cafe, categories),
     sections: sections.map((section) => ({
       key: section.key,
@@ -249,11 +278,20 @@ export async function getPublicMenuSections(slug) {
       children: firstChildRef(section),
     })),
   };
+
+  writePublicMenuCache(slug, cafe.id, data, 'sections');
+  return data;
 }
 
 export async function getPublicMenuCategory(slug, { section = '', categoryId = '' } = {}) {
-  const cafe = await requirePublicCafe(slug);
-  const { categories, tree } = await loadOutline(cafe.id);
+  const subKey = `category|${section}|${categoryId}`;
+  const cached = readPublicMenuCache(slug, subKey);
+
+  if (cached) {
+    return cached.data;
+  }
+
+  const { cafe, categories, tree } = await loadCafeOutline(slug);
   const menuUi = normalizeMenuUi(cafe.menuUi);
   let loadedCategoryId = null;
 
@@ -303,12 +341,15 @@ export async function getPublicMenuCategory(slug, { section = '', categoryId = '
     }
   }
 
-  return {
+  const data = {
     cafe: toPublicCafe(cafe, categories, { feedback: true }),
     categories: categoryRoots,
     sections: categorySections,
     loadedCategoryId,
   };
+
+  writePublicMenuCache(slug, cafe.id, data, subKey);
+  return data;
 }
 
 function slimCategoryRoots(tree) {
