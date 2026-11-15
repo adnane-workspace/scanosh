@@ -1,6 +1,7 @@
 import { ZodError } from 'zod';
 import { ApiError } from '../utils/ApiError.js';
 import { env } from '../config/env.js';
+import { flattenZodFieldErrors } from '../utils/zodErrors.js';
 
 function mapInfrastructureError(err) {
   if (err?.code === 'LIMIT_FILE_SIZE' || (err?.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE')) {
@@ -51,7 +52,7 @@ export function errorHandler(err, _req, res, _next) {
       success: false,
       code: 'VALIDATION_ERROR',
       message: 'Validation error',
-      details: err.flatten(),
+      details: flattenZodFieldErrors(err),
     });
   }
 

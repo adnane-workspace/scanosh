@@ -17,7 +17,7 @@ export const registerAdmin = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Verification code sent',
+    message: 'Account created',
     data: result,
   });
 });

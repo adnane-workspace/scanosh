@@ -62,15 +62,6 @@ export function AuthProvider({ children }) {
     return nextUser;
   }, []);
 
-  const verifyEmail = useCallback(async (email, code) => {
-    const { verifyEmailRequest } = await loadAuthService();
-    const { token: nextToken, user: nextUser } = await verifyEmailRequest({ email, code });
-    persistSession(nextToken, nextUser);
-    setToken(nextToken);
-    setUser(nextUser);
-    return nextUser;
-  }, []);
-
   const acceptSession = useCallback((nextToken, nextUser) => {
     persistSession(nextToken, nextUser);
     setToken(nextToken);
@@ -130,11 +121,10 @@ export function AuthProvider({ children }) {
       isReady,
       isAuthenticated: Boolean(token),
       login,
-      verifyEmail,
       acceptSession,
       logout,
     }),
-    [token, user, isReady, login, verifyEmail, acceptSession, logout],
+    [token, user, isReady, login, acceptSession, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

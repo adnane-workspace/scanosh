@@ -14,16 +14,13 @@ export const registerSchema = z.object({
     password: z.string().min(8).max(120),
     cafeName: z.string().trim().min(2).max(120),
     locale: z.preprocess((value) => (value === 'en' ? 'fr' : value), z.enum(['fr', 'ar']).optional()),
-    slug: z.preprocess(
-      (value) => (value === '' || value === undefined || value === null ? undefined : value),
-      z
-        .string()
-        .trim()
-        .toLowerCase()
-        .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Invalid slug')
-        .max(80)
-        .optional(),
-    ),
+    slug: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .min(2)
+      .max(80)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Invalid slug'),
   }),
 });
 

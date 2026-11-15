@@ -3,8 +3,9 @@ import { Link, Navigate, useNavigate, useOutletContext } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js';
 import { useLocale } from '../hooks/useLocale.js';
 import { createPlatformCafe } from '../services/platform.service.js';
-import { getApiError } from '../utils/apiError.js';
+import { getApiError, getApiFieldErrors } from '../utils/apiError.js';
 import { getHomePath } from '../utils/paths.js';
+import { isValidSlug, slugify } from '../utils/slug.js';
 import Field from '../components/ui/Field.jsx';
 
 const emptyForm = {
@@ -23,6 +24,8 @@ export default function CreateCafePage() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [slugTouched, setSlugTouched] = useState(false);
 
   if (user?.role !== 'superadmin') {
     return <Navigate to={getHomePath(user)} replace />;
@@ -30,13 +33,53 @@ export default function CreateCafePage() {
 
   function handleChange(event) {
     const { name, value } = event.target;
+    setFieldErrors((current) => (current[name] ? { ...current, [name]: '' } : current));
+
+    if (name === 'slug') {
+      setSlugTouched(true);
+      setForm((current) => ({ ...current, slug: value }));
+      return;
+    }
+
+    if (name === 'cafeName') {
+      setForm((current) => ({
+        ...current,
+        cafeName: value,
+        slug: slugTouched ? current.slug : slugify(value),
+      }));
+      if (!slugTouched) {
+        setFieldErrors((current) => (current.slug ? { ...current, slug: '' } : current));
+      }
+      return;
+    }
+
     setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function validateForm() {
+    const next = {};
+    if (form.ownerName.trim().length < 2) next.ownerName = t('auth.fieldName');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) next.email = t('auth.emailInvalid');
+    if (form.password.length < 8) next.password = t('auth.fieldPassword');
+    if (form.cafeName.trim().length < 2) next.cafeName = t('auth.fieldCafeName');
+    const slug = form.slug.trim().toLowerCase();
+    if (!slug) next.slug = t('auth.fieldSlugRequired');
+    else if (!isValidSlug(slug)) next.slug = t('auth.fieldSlugInvalid');
+    return next;
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setSaving(true);
     setError('');
+
+    const nextFieldErrors = validateForm();
+    if (Object.keys(nextFieldErrors).length) {
+      setFieldErrors(nextFieldErrors);
+      return;
+    }
+
+    setFieldErrors({});
+    setSaving(true);
 
     try {
       const cafe = await createPlatformCafe({
@@ -44,12 +87,17 @@ export default function CreateCafePage() {
         email: form.email,
         password: form.password,
         cafeName: form.cafeName,
-        slug: form.slug.trim() || undefined,
+        slug: form.slug.trim().toLowerCase(),
       });
       await refreshPlatformOverview?.();
       navigate(`/platform/cafes/${cafe._id}`, { replace: true });
     } catch (err) {
-      setError(getApiError(err, t, 'platform.createError'));
+      const nextErrors = getApiFieldErrors(err, t);
+      if (Object.keys(nextErrors).length) {
+        setFieldErrors(nextErrors);
+      } else {
+        setError(getApiError(err, t, 'platform.createError'));
+      }
     } finally {
       setSaving(false);
     }
@@ -72,17 +120,36 @@ export default function CreateCafePage() {
         <p className="rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-error">{error}</p>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="grid gap-4 rounded-2xl bg-surface-container-lowest p-6 shadow-sm ring-1 ring-outline-variant/20">
-        <Field name="cafeName" label={t('platform.cafeName')} icon="storefront" value={form.cafeName} onChange={handleChange} required />
+      <form noValidate onSubmit={handleSubmit} className="grid gap-4 rounded-2xl bg-surface-container-lowest p-6 shadow-sm ring-1 ring-outline-variant/20">
+        <Field
+          name="cafeName"
+          label={t('platform.cafeName')}
+          icon="storefront"
+          value={form.cafeName}
+          onChange={handleChange}
+          error={fieldErrors.cafeName}
+          required
+        />
         <Field
           name="slug"
-          label={t('platform.slugOptional')}
+          label={t('platform.slug')}
           icon="link"
           value={form.slug}
           onChange={handleChange}
           placeholder={t('auth.slugPlaceholder')}
+          hint={t('auth.slugHint')}
+          error={fieldErrors.slug}
+          required
         />
-        <Field name="ownerName" label={t('platform.ownerName')} icon="badge" value={form.ownerName} onChange={handleChange} required />
+        <Field
+          name="ownerName"
+          label={t('platform.ownerName')}
+          icon="badge"
+          value={form.ownerName}
+          onChange={handleChange}
+          error={fieldErrors.ownerName}
+          required
+        />
         <Field
           name="email"
           type="email"
@@ -91,6 +158,7 @@ export default function CreateCafePage() {
           value={form.email}
           onChange={handleChange}
           autoComplete="off"
+          error={fieldErrors.email}
           required
         />
         <Field
@@ -102,6 +170,7 @@ export default function CreateCafePage() {
           onChange={handleChange}
           minLength={8}
           autoComplete="new-password"
+          error={fieldErrors.password}
           required
         />
         <button

@@ -9,13 +9,12 @@ import MaterialIcon from '../components/ui/MaterialIcon.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 import { useLocale } from '../hooks/useLocale.js';
 import { useToast } from '../hooks/useToast.js';
-import { resendVerificationRequest } from '../services/auth.service.js';
 import { getApiError } from '../utils/apiError.js';
 import { getHomePath } from '../utils/paths.js';
 
 export default function LoginPage() {
   const { isAuthenticated, isReady, login, user } = useAuth();
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,17 +54,6 @@ export default function LoginPage() {
       const nextUser = await login(email, password);
       navigate(getHomePath(nextUser), { replace: true });
     } catch (err) {
-      if (err?.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
-        try {
-          await resendVerificationRequest({ email, locale });
-        } catch {
-          // The verify screen still lets the user request a new code.
-        }
-
-        navigate('/register', { replace: true, state: { pendingEmail: email } });
-        return;
-      }
-
       setError(getApiError(err, t, 'auth.loginError'));
     } finally {
       setIsSubmitting(false);

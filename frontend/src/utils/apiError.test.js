@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getApiError } from './apiError.js';
+import { getApiError, getApiFieldErrors } from './apiError.js';
 
 function t(key, vars) {
   const catalog = {
@@ -41,5 +41,39 @@ test('getApiError uses API message when fallback key is missing', () => {
   assert.equal(
     getApiError({ response: { data: { message: 'Fallback from API' } } }, t, 'missing.key'),
     'Fallback from API',
+  );
+});
+
+test('getApiFieldErrors maps slug codes onto the slug field', () => {
+  const catalog = {
+    'apiErrors.SLUG_IN_USE': 'Ce lien public est déjà utilisé. Choisis-en un autre.',
+  };
+  const translate = (key) => catalog[key] || key;
+  assert.deepEqual(
+    getApiFieldErrors({ response: { data: { code: 'SLUG_IN_USE' } } }, translate),
+    { slug: 'Ce lien public est déjà utilisé. Choisis-en un autre.' },
+  );
+});
+
+test('getApiFieldErrors maps validation details to client field messages', () => {
+  const catalog = {
+    'auth.emailInvalid': 'Email invalide',
+    'auth.fieldSlugInvalid': 'Lien public invalide',
+    'apiErrors.VALIDATION_ERROR': 'Vérifie les champs',
+  };
+  const translate = (key) => catalog[key] || key;
+  assert.deepEqual(
+    getApiFieldErrors(
+      {
+        response: {
+          data: {
+            code: 'VALIDATION_ERROR',
+            details: { fieldErrors: { email: ['Invalid email'], slug: ['Invalid slug'] } },
+          },
+        },
+      },
+      translate,
+    ),
+    { email: 'Email invalide', slug: 'Lien public invalide' },
   );
 });

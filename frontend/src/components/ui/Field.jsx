@@ -15,6 +15,7 @@ export default function Field({
   hint,
   size = 'default',
   invalid = false,
+  error = '',
   className = '',
   children,
   ...controlProps
@@ -22,6 +23,9 @@ export default function Field({
   const controlId = id || name;
   const padding = SIZE_CLASS[size] || SIZE_CLASS.default;
   const Tag = as === 'textarea' ? 'textarea' : 'input';
+  const hasError = Boolean(error) || invalid;
+  const hintId = `${controlId}-hint`;
+  const errorId = `${controlId}-error`;
 
   if (as === 'select') {
     return (
@@ -36,7 +40,7 @@ export default function Field({
           name={name}
           icon={icon}
           size={size}
-          invalid={invalid}
+          invalid={hasError}
           value={controlProps.value}
           onChange={controlProps.onChange}
           required={controlProps.required}
@@ -44,7 +48,13 @@ export default function Field({
         >
           {children}
         </SelectMenu>
-        {hint ? <p className="ps-1 text-xs text-on-surface-variant">{hint}</p> : null}
+        {error ? (
+          <p id={errorId} role="alert" className="ps-1 text-xs text-error">
+            {error}
+          </p>
+        ) : hint ? (
+          <p className="ps-1 text-xs text-on-surface-variant">{hint}</p>
+        ) : null}
       </div>
     );
   }
@@ -60,7 +70,7 @@ export default function Field({
         className={`flex rounded-xl bg-surface-container-low ring-1 transition-shadow ${
           as === 'textarea' ? 'items-start' : 'items-center'
         } ${
-          invalid
+          hasError
             ? 'ring-error focus-within:ring-2 focus-within:ring-error'
             : 'ring-transparent focus-within:ring-2 focus-within:ring-primary'
         }`}
@@ -76,7 +86,8 @@ export default function Field({
         <Tag
           id={controlId}
           name={name}
-          aria-invalid={invalid || undefined}
+          aria-invalid={hasError || undefined}
+          aria-describedby={error ? errorId : hint ? hintId : undefined}
           {...controlProps}
           className={`w-full min-w-0 bg-transparent text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${
             as === 'textarea' ? 'min-h-[5.5rem] resize-y' : ''
@@ -84,7 +95,15 @@ export default function Field({
         />
         {children}
       </div>
-      {hint ? <p className="ps-1 text-xs text-on-surface-variant">{hint}</p> : null}
+      {error ? (
+        <p id={errorId} role="alert" className="ps-1 text-xs text-error">
+          {error}
+        </p>
+      ) : hint ? (
+        <p id={hintId} className="ps-1 text-xs text-on-surface-variant">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }

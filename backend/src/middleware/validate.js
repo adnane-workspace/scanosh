@@ -1,4 +1,5 @@
 import { ApiError } from '../utils/ApiError.js';
+import { flattenZodFieldErrors } from '../utils/zodErrors.js';
 
 export function validate(schema) {
   return (req, _res, next) => {
@@ -9,7 +10,7 @@ export function validate(schema) {
     });
 
     if (!result.success) {
-      return next(new ApiError(400, 'Validation error', result.error.flatten(), 'VALIDATION_ERROR'));
+      return next(new ApiError(400, 'Validation error', flattenZodFieldErrors(result.error), 'VALIDATION_ERROR'));
     }
 
     req.validated = result.data;

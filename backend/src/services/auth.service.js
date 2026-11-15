@@ -58,16 +58,6 @@ export async function login({ email, password }) {
   }
 
   if (user.role === 'admin') {
-    if (!user.emailVerifiedAt) {
-      await recordActivity({
-        action: 'auth_login_failed',
-        actorId: user.id,
-        cafeId: user.cafeId,
-        metadata: { email: user.email, reason: 'email_unverified' },
-      });
-      throw new ApiError(403, 'Confirm your email to sign in', null, 'EMAIL_NOT_VERIFIED');
-    }
-
     if (!user.cafeId) {
       await recordActivity({
         action: 'auth_login_failed',
@@ -121,28 +111,18 @@ export function getCurrentUser(user) {
   });
 }
 
-export async function register({ name, email, password, cafeName, slug, locale = 'fr' }) {
+export async function register({ name, email, password, cafeName, slug }) {
   const normalizedEmail = email.toLowerCase();
   const cafeSlug = slugify(slug || cafeName);
   assertUsableSlug(cafeSlug);
 
   const existingUser = await prisma.user.findUnique({
     where: { email: normalizedEmail },
-    select: { id: true, emailVerifiedAt: true },
+    select: { id: true },
   });
 
-  if (existingUser?.emailVerifiedAt) {
+  if (existingUser) {
     throw new ApiError(409, 'Email already in use', null, 'EMAIL_IN_USE');
-  }
-
-  if (existingUser && !existingUser.emailVerifiedAt) {
-    const result = await issueEmailVerification({
-      email: normalizedEmail,
-      userId: existingUser.id,
-      locale,
-    });
-
-    return { email: normalizedEmail, retryAfter: result.retryAfter };
   }
 
   const existingSlug = await prisma.cafe.findUnique({
@@ -172,6 +152,7 @@ export async function register({ name, email, password, cafeName, slug, locale =
         passwordHash,
         role: 'admin',
         cafeId: cafe.id,
+        emailVerifiedAt: new Date(),
       },
     });
 
@@ -193,13 +174,16 @@ export async function register({ name, email, password, cafeName, slug, locale =
     },
   });
 
-  const result = await issueEmailVerification({
-    email: normalizedEmail,
-    userId: user.id,
-    locale,
+  const token = generateToken({
+    sub: user.id,
+    role: user.role,
+    cafeId: user.cafeId,
   });
 
-  return { email: normalizedEmail, retryAfter: result.retryAfter };
+  return {
+    token,
+    user: toPublicUser(user),
+  };
 }
 
 export async function changePassword(userId, { currentPassword, newPassword }) {
