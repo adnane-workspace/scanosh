@@ -18,6 +18,25 @@ function telHref(phone) {
   return `tel:${String(phone).replace(/[^\d+]/g, '')}`;
 }
 
+function SocialIcons() {
+  return (
+    <div className="inline-flex items-center gap-4 text-white/85" aria-hidden="true">
+      <MaterialIcon name="wifi" className="text-[26px]" />
+      <svg viewBox="0 0 24 24" className="h-[26px] w-[26px] fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r=".8" className="fill-current stroke-none" />
+      </svg>
+      <svg viewBox="0 0 24 24" className="h-[26px] w-[26px] fill-current">
+        <path d="M13.4 21v-8h2.7l.4-3.1h-3.1v-2c0-.9.3-1.5 1.6-1.5h1.7V3.6c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.1H7.2V13H10v8h3.4Z" />
+      </svg>
+      <svg viewBox="0 0 24 24" className="h-[26px] w-[26px] fill-current">
+        <path d="M19.6 7.2a5.8 5.8 0 0 1-3.5-1.2v7.2a5.7 5.7 0 1 1-5.7-5.7c.4 0 .8 0 1.2.1v3.2a2.6 2.6 0 1 0 1.5 2.4V2.8h3.1c.2 1.8 1.5 3.2 3.4 3.5v.9Z" />
+      </svg>
+    </div>
+  );
+}
+
 function useLockPageScroll() {
   useEffect(() => {
     const html = document.documentElement;
@@ -199,6 +218,7 @@ export default function PublicMenuLandingPage() {
         </div>
 
         <div className="flex shrink-0 flex-col items-center gap-5 pb-1 pt-4">
+          <SocialIcons />
           <Link
             to={menuDestination}
             className="inline-flex h-12 w-full max-w-[17.5rem] items-center justify-center gap-2 rounded-full bg-white px-8 text-[15px] font-semibold tracking-[0.02em] text-[#0d1b2a] shadow-[0_14px_36px_rgba(0,0,0,0.32)] transition hover:bg-[#f7f6f3] active:scale-[0.98] sm:h-[3.25rem] sm:max-w-[19rem]"
@@ -207,10 +227,6 @@ export default function PublicMenuLandingPage() {
             <MaterialIcon name="arrow_forward" className="text-[18px]" />
           </Link>
           <div className="flex flex-col items-center gap-2">
-            <span className="inline-flex items-center gap-3 text-white/70" aria-hidden="true">
-              <MaterialIcon name="wifi" className="text-[18px]" />
-              <MaterialIcon name="share" className="text-[18px]" />
-            </span>
             <MenuDeveloperBadge to={paths.developer} />
           </div>
         </div>
