@@ -24,6 +24,14 @@ import {
 } from '../utils/menuUi.js';
 import { DEFAULT_SECTION_DEFS, sectionIcon } from '../utils/menuSections.js';
 
+const SOCIAL_PLATFORMS = [
+  { id: 'instagram', label: 'Instagram', icon: 'camera_alt' },
+  { id: 'facebook', label: 'Facebook', icon: 'public' },
+  { id: 'tiktok', label: 'TikTok', icon: 'music_note' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: 'chat' },
+  { id: 'youtube', label: 'YouTube', icon: 'smart_display' },
+];
+
 function draftSnapshot(logo, menuUi) {
   return JSON.stringify({
     logo: logo || '',
@@ -116,6 +124,15 @@ export default function PublicMenuSettingsPage() {
       }
 
       return next;
+    });
+  }
+
+  function patchSocialLink(platform, partial) {
+    patchMenuUi({
+      socialLinks: {
+        ...menuUi.socialLinks,
+        [platform]: { ...menuUi.socialLinks[platform], ...partial },
+      },
     });
   }
 
@@ -347,6 +364,42 @@ export default function PublicMenuSettingsPage() {
               </div>
             </section>
           </div>
+
+          <section className="overflow-hidden rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
+            <div className="mb-5">
+              <h2 className="font-display text-lg font-semibold text-on-surface">{t('publicMenu.socialTitle')}</h2>
+              <p className="mt-1 text-sm text-on-surface-variant">{t('publicMenu.socialHint')}</p>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {SOCIAL_PLATFORMS.map((platform) => {
+                const settings = menuUi.socialLinks[platform.id];
+                return (
+                  <div key={platform.id} className="min-w-0 space-y-3 rounded-2xl border border-black/6 bg-[#fafafa] p-3 sm:p-4">
+                    <SettingsToggle
+                      checked={Boolean(settings.enabled)}
+                      onChange={(enabled) => patchSocialLink(platform.id, { enabled })}
+                      icon={platform.icon}
+                      label={platform.label}
+                      hint={t('publicMenu.socialEnabled')}
+                    />
+                    <label className="block text-xs font-semibold text-on-surface-variant" htmlFor={`social-${platform.id}`}>
+                      {t('publicMenu.socialLinkLabel', { name: platform.label })}
+                    </label>
+                    <input
+                      id={`social-${platform.id}`}
+                      type="url"
+                      inputMode="url"
+                      autoComplete="url"
+                      placeholder="https://"
+                      value={settings.url}
+                      onChange={(event) => patchSocialLink(platform.id, { url: event.target.value })}
+                      className="w-full rounded-xl border border-black/10 bg-white px-3 py-3 text-sm text-on-surface outline-none focus:border-primary"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </div>
       ) : (
         <section className="overflow-hidden rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">

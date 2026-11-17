@@ -3,6 +3,22 @@ import { ACTIVITY_ACTIONS } from '../services/activity.service.js';
 import { uuidSchema } from './id.schema.js';
 import { paginationFields } from './pagination.schema.js';
 
+const socialUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((value) => {
+    if (!value) return true;
+
+    try {
+      const url = new URL(value);
+      return ['http:', 'https:'].includes(url.protocol) && Boolean(url.hostname);
+    } catch {
+      return false;
+    }
+  }, 'Social links must be valid http or https URLs');
+const socialProfileSchema = z.object({ url: socialUrlSchema.optional(), enabled: z.boolean().optional() }).optional();
+
 export const updateCafeSchema = z.object({
   body: z
     .object({
@@ -28,6 +44,15 @@ export const updateCafeSchema = z.object({
           showPhone: z.boolean().optional(),
           showAddress: z.boolean().optional(),
           showLanguage: z.boolean().optional(),
+          socialLinks: z
+            .object({
+              instagram: socialProfileSchema,
+              facebook: socialProfileSchema,
+              tiktok: socialProfileSchema,
+              whatsapp: socialProfileSchema,
+              youtube: socialProfileSchema,
+            })
+            .optional(),
           sectionsEnabled: z.boolean().optional(),
           sectionVisibility: z.record(z.string(), z.boolean()).optional(),
           bgMode: z.enum(['color', 'image', 'default']).optional(),

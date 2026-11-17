@@ -18,6 +18,7 @@ const CARD_LAYOUTS = new Set(['grid', 'list']);
 const CARD_RADII = new Set(['sm', 'md', 'lg']);
 const CARD_RATIOS = new Set(['square', 'portrait', 'landscape']);
 const SECTION_KEY_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SOCIAL_PLATFORMS = ['instagram', 'facebook', 'tiktok', 'whatsapp', 'youtube'];
 
 export const DEFAULT_MENU_BACKGROUND = '#f4f2ee';
 
@@ -118,6 +119,25 @@ export function normalizeMenuUi(value) {
     bgMode = 'color';
   }
 
+  const rawSocialLinks = raw.socialLinks && typeof raw.socialLinks === 'object' && !Array.isArray(raw.socialLinks)
+    ? raw.socialLinks
+    : {};
+  const socialLinks = Object.fromEntries(SOCIAL_PLATFORMS.map((platform) => {
+    const entry = rawSocialLinks[platform] && typeof rawSocialLinks[platform] === 'object'
+      ? rawSocialLinks[platform]
+      : {};
+    let url = typeof entry.url === 'string' ? entry.url.trim().slice(0, 500) : '';
+
+    try {
+      const parsed = new URL(url);
+      if (!['http:', 'https:'].includes(parsed.protocol)) url = '';
+    } catch {
+      url = '';
+    }
+
+    return [platform, { url, enabled: entry.enabled === true }];
+  }));
+
   return {
     theme: raw.theme === 'light' ? 'light' : 'dark',
     showPhone: raw.showPhone !== false,
@@ -129,6 +149,7 @@ export function normalizeMenuUi(value) {
     backgroundColor,
     backgroundImage,
     cardBySection: normalizeCardBySection(raw.cardBySection, raw),
+    socialLinks,
   };
 }
 

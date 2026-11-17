@@ -12,6 +12,13 @@ export const DEFAULT_MENU_UI = {
   backgroundColor: '#f4f2ee',
   backgroundImage: '',
   cardBySection: {},
+  socialLinks: {
+    instagram: { url: '', enabled: false },
+    facebook: { url: '', enabled: false },
+    tiktok: { url: '', enabled: false },
+    whatsapp: { url: '', enabled: false },
+    youtube: { url: '', enabled: false },
+  },
 };
 
 const CARD_LAYOUTS = new Set(['grid', 'list']);
@@ -136,6 +143,20 @@ export function normalizeMenuUi(value) {
     bgMode = 'color';
   }
 
+  const rawSocialLinks = raw.socialLinks && typeof raw.socialLinks === 'object' && !Array.isArray(raw.socialLinks)
+    ? raw.socialLinks
+    : {};
+  const socialLinks = Object.fromEntries(
+    ['instagram', 'facebook', 'tiktok', 'whatsapp', 'youtube'].map((platform) => {
+      const entry = rawSocialLinks[platform] && typeof rawSocialLinks[platform] === 'object'
+        ? rawSocialLinks[platform]
+        : {};
+      const url = typeof entry.url === 'string' ? entry.url.trim().slice(0, 500) : '';
+
+      return [platform, { url, enabled: entry.enabled === true }];
+    }),
+  );
+
   return {
     theme: raw.theme === 'light' ? 'light' : 'dark',
     showPhone: raw.showPhone !== false,
@@ -147,6 +168,7 @@ export function normalizeMenuUi(value) {
     backgroundColor,
     backgroundImage,
     cardBySection: normalizeCardBySection(raw.cardBySection, raw),
+    socialLinks,
   };
 }
 
