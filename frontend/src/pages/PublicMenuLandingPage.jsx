@@ -206,7 +206,13 @@ export default function PublicMenuLandingPage() {
             <span>{t('menu.viewMenu')}</span>
             <MaterialIcon name="arrow_forward" className="text-[18px]" />
           </Link>
-          <MenuDeveloperBadge to={paths.developer} />
+          <div className="flex flex-col items-center gap-2">
+            <span className="inline-flex items-center gap-3 text-white/70" aria-hidden="true">
+              <MaterialIcon name="wifi" className="text-[18px]" />
+              <MaterialIcon name="share" className="text-[18px]" />
+            </span>
+            <MenuDeveloperBadge to={paths.developer} />
+          </div>
         </div>
       </div>
     </LandingShell>
