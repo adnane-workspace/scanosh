@@ -136,6 +136,10 @@ export default function PublicMenuSettingsPage() {
     });
   }
 
+  function patchWifi(partial) {
+    patchMenuUi({ wifi: { ...menuUi.wifi, ...partial } });
+  }
+
   function patchSectionCard(sectionKey, partial) {
     setMenuUi((current) => {
       const next = normalizeMenuUi(current);
@@ -303,6 +307,60 @@ export default function PublicMenuSettingsPage() {
         <PageSkeleton />
       ) : studioTab === 'look' ? (
         <div className="space-y-5">
+          <section className="overflow-hidden rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
+            <div className="mb-5">
+              <h2 className="font-display text-lg font-semibold text-on-surface">{t('publicMenu.wifiTitle')}</h2>
+              <p className="mt-1 text-sm text-on-surface-variant">{t('publicMenu.wifiHint')}</p>
+            </div>
+            <div className="space-y-4">
+              <SettingsToggle
+                checked={Boolean(menuUi.wifi.enabled)}
+                onChange={(enabled) => patchWifi({ enabled })}
+                icon="wifi"
+                label={t('publicMenu.wifiToggle')}
+                hint={t('publicMenu.wifiHint')}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm font-semibold text-on-surface-variant">
+                  {t('publicMenu.wifiName')}
+                  <input
+                    type="text"
+                    maxLength={32}
+                    autoComplete="off"
+                    value={menuUi.wifi.ssid}
+                    onChange={(event) => patchWifi({ ssid: event.target.value })}
+                    className="mt-2 w-full rounded-xl border border-black/10 bg-white px-3 py-3 font-normal text-on-surface outline-none focus:border-primary"
+                  />
+                </label>
+                <label className="block text-sm font-semibold text-on-surface-variant">
+                  {t('publicMenu.wifiSecurity')}
+                  <select
+                    value={menuUi.wifi.security}
+                    onChange={(event) => patchWifi({ security: event.target.value })}
+                    className="mt-2 w-full rounded-xl border border-black/10 bg-white px-3 py-3 font-normal text-on-surface outline-none focus:border-primary"
+                  >
+                    <option value="WPA">{t('publicMenu.wifiWpa')}</option>
+                    <option value="WEP">{t('publicMenu.wifiWep')}</option>
+                    <option value="nopass">{t('publicMenu.wifiOpen')}</option>
+                  </select>
+                </label>
+                {menuUi.wifi.security !== 'nopass' ? (
+                  <label className="block text-sm font-semibold text-on-surface-variant sm:col-span-2">
+                    {t('publicMenu.wifiPassword')}
+                    <input
+                      type="password"
+                      maxLength={63}
+                      autoComplete="new-password"
+                      value={menuUi.wifi.password}
+                      onChange={(event) => patchWifi({ password: event.target.value })}
+                      className="mt-2 w-full rounded-xl border border-black/10 bg-white px-3 py-3 font-normal text-on-surface outline-none focus:border-primary"
+                    />
+                  </label>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
           <section className="overflow-hidden rounded-3xl border border-black/6 bg-white p-4 shadow-[0_8px_28px_rgba(13,27,42,0.05)] sm:p-6">
             <div className="mb-5">
               <h2 className="font-display text-lg font-semibold text-on-surface">{t('publicMenu.backgroundTitle')}</h2>

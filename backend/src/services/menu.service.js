@@ -118,6 +118,11 @@ function findOutlineNode(nodes, categoryId) {
 
 function toPublicCafe(cafe, categories, { contact = false, feedback = false } = {}) {
   const menuUi = normalizeMenuUi(cafe.menuUi);
+  if (!menuUi.wifi.enabled || !menuUi.wifi.ssid) {
+    menuUi.wifi = { enabled: false, ssid: '', password: '', security: menuUi.wifi.security };
+  } else if (menuUi.wifi.security === 'nopass') {
+    menuUi.wifi.password = '';
+  }
   const payload = {
     name: cafe.name,
     description: cafe.description || '',

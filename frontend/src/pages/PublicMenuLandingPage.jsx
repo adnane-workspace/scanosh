@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MenuDeveloperBadge from '../components/menu/MenuDeveloperBadge.jsx';
 import MaterialIcon from '../components/ui/MaterialIcon.jsx';
@@ -18,7 +18,106 @@ function telHref(phone) {
   return `tel:${String(phone).replace(/[^\d+]/g, '')}`;
 }
 
-function SocialIcons({ links }) {
+function escapeWifiValue(value) {
+  return String(value || '').replace(/[\\;,:"]/g, '\\$&');
+}
+
+function WifiAccessModal({ wifi, onClose, t }) {
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const security = wifi.security || 'WPA';
+    const password = security === 'nopass' ? '' : `P:${escapeWifiValue(wifi.password)};`;
+    const payload = `WIFI:T:${security};S:${escapeWifiValue(wifi.ssid)};${password};`;
+
+    import('qrcode')
+      .then(({ default: QRCode }) => QRCode.toDataURL(payload, {
+        width: 320,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#0d1b2a', light: '#ffffff' },
+      }))
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setError(t('wifi.generateError'));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [wifi.password, wifi.security, wifi.ssid, t]);
+
+  async function copyPassword() {
+    try {
+      await navigator.clipboard.writeText(wifi.password);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError(t('wifi.copyError'));
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-6">
+      <button type="button" className="absolute inset-0 bg-black/65" aria-label={t('common.close')} onClick={onClose} />
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wifi-dialog-title"
+        className="relative z-10 max-h-[92svh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 text-[#0d1b2a] shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-6"
+      >
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 id="wifi-dialog-title" className="font-display text-xl font-semibold">{t('wifi.title')}</h2>
+            <p className="mt-1 text-sm text-slate-600">{t('wifi.connectHint')}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label={t('common.close')} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+            <MaterialIcon name="close" />
+          </button>
+        </div>
+
+        {error ? <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+
+        <div className="flex flex-col items-center gap-3">
+          <div className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+            {qrDataUrl ? <img src={qrDataUrl} alt={`${t('wifi.title')} ${wifi.ssid}`} className="h-48 w-48" /> : (
+              <div className="flex h-48 w-48 items-center justify-center text-sm text-slate-500">{t('common.loading')}</div>
+            )}
+          </div>
+          <p className="text-center text-xs text-slate-500">{t('wifi.qrHint')}</p>
+        </div>
+
+        <dl className="mt-4 space-y-3 rounded-2xl bg-slate-50 p-4 text-sm">
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('wifi.network')}</dt>
+            <dd className="mt-1 break-all font-semibold">{wifi.ssid}</dd>
+          </div>
+          {wifi.security === 'nopass' ? (
+            <p className="text-slate-600">{t('wifi.openNetwork')}</p>
+          ) : (
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('wifi.password')}</dt>
+              <dd className="mt-1 flex items-center justify-between gap-3">
+                <span className="break-all font-semibold">{wifi.password}</span>
+                <button type="button" onClick={copyPassword} className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white px-2.5 py-2 text-xs font-semibold ring-1 ring-slate-200">
+                  <MaterialIcon name={copied ? 'check' : 'content_copy'} className="text-base" />
+                  {copied ? t('wifi.copied') : t('wifi.copyPassword')}
+                </button>
+              </dd>
+            </div>
+          )}
+        </dl>
+      </section>
+    </div>
+  );
+}
+
+function SocialIcons({ links, wifi, onWifiClick, wifiLabel }) {
   const activeNetworks = [
     {
       id: 'instagram',
@@ -68,10 +167,15 @@ function SocialIcons({ links }) {
       ),
     },
   ].filter(({ id }) => links?.[id]?.enabled && links[id].url);
+  const showWifi = wifi?.enabled && wifi.ssid;
 
   return (
     <div className="inline-flex items-center gap-4 text-white/85">
-      <MaterialIcon name="wifi" className="text-[26px]" />
+      {showWifi ? (
+        <button type="button" onClick={onWifiClick} aria-label={wifiLabel} className="transition hover:scale-110 hover:text-white">
+          <MaterialIcon name="wifi" className="text-[28px]" />
+        </button>
+      ) : null}
       {activeNetworks.map(({ id, label, icon }) => (
         <a
           key={id}
@@ -129,6 +233,7 @@ function LandingStatus({ title, message }) {
 }
 
 export default function PublicMenuLandingPage() {
+  const [wifiOpen, setWifiOpen] = useState(false);
   const slug = useMenuSlug();
   const { t } = useLocale();
   const { menu, loading, errorStatus } = usePublicMenu(slug, { view: 'landing' });
@@ -269,7 +374,12 @@ export default function PublicMenuLandingPage() {
         </div>
 
         <div className="flex shrink-0 flex-col items-center gap-5 pb-1 pt-4">
-          <SocialIcons links={ui.socialLinks} />
+          <SocialIcons
+            links={ui.socialLinks}
+            wifi={ui.wifi}
+            wifiLabel={t('wifi.title')}
+            onWifiClick={() => setWifiOpen(true)}
+          />
           <Link
             to={menuDestination}
             className="inline-flex h-12 w-full max-w-[17.5rem] items-center justify-center gap-2 rounded-full bg-white px-8 text-[15px] font-semibold tracking-[0.02em] text-[#0d1b2a] shadow-[0_14px_36px_rgba(0,0,0,0.32)] transition hover:bg-[#f7f6f3] active:scale-[0.98] sm:h-[3.25rem] sm:max-w-[19rem]"
@@ -282,6 +392,7 @@ export default function PublicMenuLandingPage() {
           </div>
         </div>
       </div>
+      {wifiOpen ? <WifiAccessModal wifi={ui.wifi} onClose={() => setWifiOpen(false)} t={t} /> : null}
     </LandingShell>
   );
 }

@@ -18,6 +18,12 @@ const socialUrlSchema = z
     }
   }, 'Social links must be valid http or https URLs');
 const socialProfileSchema = z.object({ url: socialUrlSchema.optional(), enabled: z.boolean().optional() }).optional();
+const wifiSettingsSchema = z.object({
+  enabled: z.boolean().optional(),
+  ssid: z.string().trim().max(32).optional(),
+  password: z.string().max(63).optional(),
+  security: z.enum(['WPA', 'WEP', 'nopass']).optional(),
+}).optional();
 
 export const updateCafeSchema = z.object({
   body: z
@@ -53,6 +59,7 @@ export const updateCafeSchema = z.object({
               youtube: socialProfileSchema,
             })
             .optional(),
+          wifi: wifiSettingsSchema,
           sectionsEnabled: z.boolean().optional(),
           sectionVisibility: z.record(z.string(), z.boolean()).optional(),
           bgMode: z.enum(['color', 'image', 'default']).optional(),
@@ -81,6 +88,14 @@ export const updateCafeSchema = z.object({
     .refine((value) => Object.keys(value).length > 0, {
       message: 'At least one field is required',
     })
+    .refine((value) => {
+      const wifi = value.menuUi?.wifi;
+      if (!wifi?.enabled) return true;
+      if (!wifi.ssid?.trim()) return false;
+      if (wifi.security === 'WPA' && (wifi.password || '').length < 8) return false;
+      if (wifi.security === 'WEP' && !(wifi.password || '').length) return false;
+      return true;
+    }, { message: 'Enabled Wi-Fi requires a network name and a valid password' })
     .refine(
       (value) => {
         const hasLat = value.latitude !== undefined && value.latitude !== null;

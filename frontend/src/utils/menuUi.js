@@ -19,6 +19,7 @@ export const DEFAULT_MENU_UI = {
     whatsapp: { url: '', enabled: false },
     youtube: { url: '', enabled: false },
   },
+  wifi: { enabled: false, ssid: '', password: '', security: 'WPA' },
 };
 
 const CARD_LAYOUTS = new Set(['grid', 'list']);
@@ -156,6 +157,13 @@ export function normalizeMenuUi(value) {
       return [platform, { url, enabled: entry.enabled === true }];
     }),
   );
+  const rawWifi = raw.wifi && typeof raw.wifi === 'object' && !Array.isArray(raw.wifi) ? raw.wifi : {};
+  const wifi = {
+    enabled: rawWifi.enabled === true,
+    ssid: typeof rawWifi.ssid === 'string' ? rawWifi.ssid.trim().slice(0, 32) : '',
+    password: typeof rawWifi.password === 'string' ? rawWifi.password.slice(0, 63) : '',
+    security: ['WPA', 'WEP', 'nopass'].includes(rawWifi.security) ? rawWifi.security : 'WPA',
+  };
 
   return {
     theme: raw.theme === 'light' ? 'light' : 'dark',
@@ -169,6 +177,7 @@ export function normalizeMenuUi(value) {
     backgroundImage,
     cardBySection: normalizeCardBySection(raw.cardBySection, raw),
     socialLinks,
+    wifi,
   };
 }
 
